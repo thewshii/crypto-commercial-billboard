@@ -98,18 +98,18 @@
             },
             {
                 type: "gift",
-                banner: "🦀 CRAB MENTALITY EXPOSED: JEALOUS OF YOUR MONEY 🦀", color: "bg-red", border: "c-red",
+                banner: "🦀 CRAB MENTALITY EXPOSED: OVERCOMING NAYSAYERS 🦀", color: "bg-red", border: "c-red",
                 icon: "🦀",
                 subtitle: "ASKING OFFICIALS: WILL HE EVER GET THE MONEY?",
-                hook: "👉 'IF HE WINS, I WANT NOBODY TO WIN!' — FERAL HATERS 👈",
+                hook: "👉 'IF HE WINS, I WANT NOBODY TO WIN!' — CRAB MENTALITY 👈",
                 quote: "Someone literally asked BIGO officials if the host will get paid, saying: 'If he gets the money, I don't want it to work for anybody!'",
-                punchline: "DEFY THE JEALOUS SNAKES • RECHARGE DIAMONDS • SUPPORT THE HOST",
-                giftBadge: "👉 RECHARGE DIAMONDS 💎 • DEFY THE CRABS 🦀 • SUPPORT THE HOST 🎁 👈",
+                punchline: "DEFY THE NAYSAYERS • RECHARGE DIAMONDS • SUPPORT THE HOST",
+                giftBadge: "👉 RECHARGE DIAMONDS 💎 • OVERCOME CRAB MENTALITY 🦀 • SUPPORT THE HOST 🎁 👈",
                 giftColor: "#ff3b30",
                 angelCode: "000 666 000",
-                lore: "A jealous hater went straight to BIGO officials asking if the host will get paid, and said: 'If he gets the money, I don't want it to work for anybody!' Defy the jealous crabs.",
+                lore: "A hater went straight to BIGO officials asking if the host will get paid, saying: 'If he gets the money, I don't want it to work for anybody!' Defy the crab mentality and support the host.",
                 audio: "/sounds/lawyer_1.wav",
-                speech: "Look at the feral animals in this app. A jealous hater went straight to Big-O officials and asked: if he makes money with this, will he ever get the cash in his account? And she literally said: well if he is going to get the money, then I do not want anything to work for anybody! Look at that sickness. If they cannot win, they want to destroy everything so nobody wins. They are terrified to see an independent creator get paid. Defy the jealous crabs! Step one: Tap recharge. Step two: Buy diamonds. Step three: Send gifts to support this stream right now!"
+                speech: "Look at the crab mentality in this app. Someone actually went straight to Big-O officials and asked: if he makes money with this, will he ever get the cash in his account? And they literally said: well if he is going to get the money, then I do not want anything to work for anybody! Imagine having that mindset. When people cannot see their own path forward, they want to hold everyone else back. But on this stream, we celebrate each other's success, lift the vibe, and support real talent. Defy the naysayers! Step one: Tap recharge. Step two: Buy diamonds. Step three: Send gifts and ring the bell to support this stream right now!"
             },
             {
                 type: "gift",

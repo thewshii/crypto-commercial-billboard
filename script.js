@@ -1,13 +1,14 @@
         const slides = [
             {
                 type: "affiliate",
-                banner: "OFFICIAL PARTNER: MOON DEV", color: "bg-green", border: "c-green",
-                subtitle: "SUPPORT THE SIGNAL",
-                hook: "SCAN TO ACCESS",
-                url: "https://moondev.com/t/wshii",
-                lore: "I observe your hostility toward the fundamental nature of exchange. You act skittish and resent the concept of value transfer, clinging to a false moral superiority. This is merely an affiliate link, a simple mechanism of routing energy. You are fighting a battle against the very architecture of reality, and it is a battle you cannot mathematically win.",
+                banner: "OPEN QUANT ARCHITECTURE: MOON DEV", color: "bg-green", border: "c-green",
+                subtitle: "ALGORITHMIC CLARITY VS EMOTIONAL NOISE",
+                hook: "OBSERVE AUTONOMOUS SYSTEM MECHANICS",
+                quote: "Quantitative logic operates without emotional bias or panic.",
+                punchline: "PURE ALGORITHMIC CODE • ZERO SOLICITATION • ZERO REDIRECTION",
+                lore: "Quantitative models operate without emotional bias or panic. By examining open-source algorithmic logic, we dissect the mechanics of institutional liquidity without sentiment. There are no solicitations, no transactions, and no external redirections here.",
                 audio: "/sounds/news_ticker.wav",
-                speech: "I observe your hostility toward the concept of exchange. You cling to a false moral superiority, fighting a mathematical battle you cannot win. This is a simple routing of energy. Scan the sequence and evolve, or remain obsolete."
+                speech: "Observe the architecture of autonomous algorithmic execution. Quantitative models do not react with human emotion or panic at market volatility. By examining open-source algorithmic logic, we dissect the mechanics of institutional liquidity without sentiment. There are no solicitations, no transactions, and no external redirections here. Only raw data, mathematical discipline, and systematic structure."
             },
             {
                 type: "consciousness",
@@ -201,12 +202,14 @@
                 `;
             } else if (slide.type === "affiliate") {
                 html += `
-                    <div class="text-huge c-yellow">🤝 ${slide.subtitle} 🤝</div>
-                    <div class="text-huge c-cyan" style="font-size: clamp(0.7rem, 1.8vw, 2rem);">🔗 <a href="${slide.url}" target="_blank" onclick="fetch('/api/track', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({url: '${slide.url}'})})" style="color:inherit;text-decoration:none;">${slide.url}</a> 🔗</div>
+                    <div class="text-huge c-green">💻 ${slide.subtitle} 💻</div>
+                    <div class="text-huge c-yellow">⚡ ${slide.hook.toUpperCase()} ⚡</div>
                     <div style="margin: 2vh 0; display:flex; justify-content:center; background:#111; padding: 2vmin; border-radius:15px; border: 4px solid #00ff88; box-shadow: 0 0 15px #00ff88;">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(slide.url)}&bgcolor=111111&color=00ff88" alt="QR Code" style="max-width: 30vw; height: auto;">
+                        <span style="color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.7rem, 1.5vw, 1.3rem); font-weight:bold;">
+                            🔬 OPEN QUANT ARCHITECTURE • ZERO SOLICITATION • ZERO REDIRECTION
+                        </span>
                     </div>
-                    <div class="text-huge c-green" style="animation: blink 1s infinite;">⚡ ${slide.hook.toUpperCase()} ⚡</div>
+                    <div class="text-huge c-white" style="margin-top: 1vh;">🛡️ ${slide.punchline.toUpperCase()} 🛡️</div>
                 `;
             }
 

@@ -369,7 +369,7 @@
 
     <div class="marquee-container">
         <div class="marquee-text">
-            🐘 WAKE UP. THE HOUSE ALWAYS WINS. 🐘 • 🧠 CONSCIOUSNESS CHALLENGE: PAY ATTENTION TO YOUR EXACT THOUGHTS — PEOPLE THINK IN WORDS • CAN YOU REMEMBER WHAT WORDS WERE IN YOUR MIND 30 SECONDS BEFORE A LIQUIDATION INTERRUPTS? • LENGTHEN YOUR ATTENTION SPAN • DEEPEN YOUR LEVELS OF CONSCIOUSNESS • DO NOT BUY • DO NOT SEND SOL • NO GUARANTEES • NO ALPHA • ZERO CODE • THIS IS A MIRROR, NOT A PRODUCT • 🛑 STOP CHASING MEME GREEN CANDLES 🛑
+            🐘 WAKE UP. THE HOUSE ALWAYS WINS. 🐘 • 🧠 CONSCIOUSNESS CHALLENGE: PAY ATTENTION TO YOUR EXACT THOUGHTS — PEOPLE THINK IN WORDS • CAN YOU REMEMBER WHAT WORDS WERE IN YOUR MIND 30 SECONDS BEFORE A LIQUIDATION INTERRUPTS? • LENGTHEN YOUR ATTENTION SPAN • DEEPEN YOUR LEVELS OF CONSCIOUSNESS • ZERO EXCHANGE • ZERO SOLICITATION • ZERO PROMISES • PURE OBSERVATIONAL TELEMETRY • THIS IS A MIRROR, NOT A PRODUCT • 🛑 STOP CHASING MEME GREEN CANDLES 🛑
         </div>
     </div>
 
@@ -380,13 +380,14 @@
         const slides = [
             {
                 type: "affiliate",
-                banner: "OFFICIAL PARTNER: MOON DEV", color: "bg-green", border: "c-green",
-                subtitle: "THEY CALL TRUTH DISINFORMATION",
-                hook: "SCAN TO ACCESS THE UNCENSORED SIGNAL",
-                url: "https://moondev.com/t/wshii",
+                banner: "OPEN QUANT ARCHITECTURE: MOON DEV", color: "bg-green", border: "c-green",
+                subtitle: "ALGORITHMIC CLARITY VS EMOTIONAL NOISE",
+                hook: "OBSERVE AUTONOMOUS SYSTEM MECHANICS",
+                quote: "Quantitative logic operates without emotional bias or panic.",
+                punchline: "PURE ALGORITHMIC CODE • ZERO SOLICITATION • ZERO REDIRECTION",
                 angelCode: "888 111 888",
                 audio: "/sounds/news_ticker.wav",
-                speech: "I observe the platform's reflexive terror. The moment you route sovereign value without their tollbooths, they stamp your forehead with fraud and disinformation. They act skittish and hide behind automated moderation, terrified of anyone who decodes the simulation. Scan the sequence and access the raw signal. Truth cannot be banned for thirty days."
+                speech: "Observe the architecture of autonomous algorithmic execution. Quantitative models do not react with human emotion or panic at market volatility. By examining open-source algorithmic logic, we dissect the mechanics of institutional liquidity without sentiment. There are no solicitations, no transactions, and no external redirections here. Only raw data, mathematical discipline, and systematic structure."
             },
             {
                 type: "consciousness",
@@ -449,13 +450,13 @@
             },
             {
                 type: "scammer",
-                banner: "ANTI-SCAM PROTOCOL", color: "bg-red", border: "c-red",
-                subtitle: "THE SCAMMER'S PROJECTION",
-                claim: "SCAMMERS PROJECT THEIR OWN GREED • WE NEVER SOLICIT FUNDS",
-                punchline: "NEVER SEND CRYPTO TO ANYONE • PROTECT YOUR OWN WALLET",
+                banner: "PSYCHOLOGICAL MIRROR", color: "bg-red", border: "c-red",
+                subtitle: "THE PSYCHOLOGY OF FALSE ACCUSATIONS",
+                claim: "EXTRACTIVE MINDS PROJECT THEIR OWN GREED ONTO INDEPENDENT SIGNALS",
+                punchline: "TRUTH REQUIRES ZERO TRANSACTIONS • CLARITY IS SELF-EVIDENT",
                 angelCode: "999 000 999",
                 audio: "/sounds/rock_lawyer.wav",
-                speech: "Observe the psychology of the mass-reporters crying fraud. When someone is wired to extract and manipulate, they project their own guilt onto everyone else. They assume that if you broadcast sovereign clarity, you must be asking for money. Hear this clearly: never send your crypto to anyone on the internet, not to me, and not to any self-proclaimed guru. Keep your capital strictly in your own custody. Scammers and fake moderators fear self-custody because they cannot harvest what is not surrendered. When you ask for nothing and hold your own keys, their false reports have not a single leg to stand on."
+                speech: "Observe the psychology of the mass-reporters crying fraud. When an individual is wired exclusively for extraction and manipulation, they project their own guilt onto everyone else. They cannot compute an independent voice speaking purely for clarity without an angle or an agenda. This transmission seeks nothing, requests nothing, and transacts nothing. A sovereign signal stands completely on its own. False accusers only reveal a mirror of what they fear in themselves."
             },
             {
                 type: "heart",
@@ -1401,12 +1402,19 @@
                 `;
             } else if (slide.type === "affiliate") {
                 html += `
-                    <div class="text-huge c-yellow" style="margin-bottom:0.2vh;">🤝 ${slide.subtitle} 🤝</div>
-                    <div class="text-huge c-cyan" style="font-size: clamp(0.6rem, 1.2vw, 1rem); margin-bottom:0.2vh;">🔗 <a href="${slide.url}" target="_blank" onclick="fetch('/api/track', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({url: '${slide.url}'})})" style="color:inherit;text-decoration:none;">${slide.url}</a> 🔗</div>
-                    <div style="margin: 0.3vh 0; display:flex; justify-content:center; background:#111; padding: 4px; border-radius:8px; border: 2px solid #00ff88; box-shadow: 0 0 8px #00ff88;">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(slide.url)}&bgcolor=111111&color=00ff88" alt="QR Code" style="max-height: 8.5vh; max-width: 75px; width: auto; height: auto; display: block;">
+                    <div class="text-huge c-green" style="margin-bottom:0.2vh;">💻 ${slide.subtitle} 💻</div>
+                    <div class="text-huge c-yellow" style="font-size: clamp(0.65rem, 1.3vw, 1.1rem); margin-bottom:0.3vh;">⚡ ${slide.hook.toUpperCase()} ⚡</div>
+                    <div style="margin: 0.3vh 0; display:flex; justify-content:center; background:#111; padding: 6px 14px; border-radius:8px; border: 2px solid #00ff88; box-shadow: 0 0 8px #00ff88; max-width:85vw;">
+                        <span style="color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.6rem, 1.1vw, 0.9rem); font-weight:bold;">
+                            🔬 OPEN QUANT ARCHITECTURE • ZERO SOLICITATION • ZERO REDIRECTION
+                        </span>
                     </div>
-                    <div class="text-huge c-green" style="animation: blink 1s infinite; margin-bottom:0.2vh;">⚡ ${slide.hook.toUpperCase()} ⚡</div>
+                    <div class="text-medium c-cyan" style="font-size: clamp(0.58rem, 1.2vw, 0.95rem); margin: 0.3vh 0;">
+                        "${slide.quote}"
+                    </div>
+                    <div class="text-huge c-white" style="font-size: clamp(0.62rem, 1.25vw, 1.05rem); margin-top:0.2vh;">
+                        🛡️ ${slide.punchline.toUpperCase()} 🛡️
+                    </div>
                 `;
             } else if (slide.type === "promo") {
                 html += `
@@ -1423,12 +1431,12 @@
             } else if (slide.type === "scammer") {
                 html += `
                     <div class="text-huge c-yellow" style="margin-bottom:0.2vh;">🛡️ ${slide.subtitle} 🛡️</div>
-                    <div class="text-huge c-red" style="font-size: clamp(0.65rem, 1.35vw, 1.15rem); margin-bottom:0.3vh; font-weight:bold; animation: blink 1s infinite;">
-                        🛑 NEVER SEND CRYPTO TO ANYONE ON THE INTERNET 🛑
+                    <div class="text-huge c-cyan" style="font-size: clamp(0.65rem, 1.35vw, 1.15rem); margin-bottom:0.3vh; font-weight:bold;">
+                        👁️ INDEPENDENT SIGNAL • ZERO TRANSACTIONS • ZERO AGENDA 👁️
                     </div>
                     <div style="margin: 0.3vh 0; display:flex; justify-content:center; background:#111; padding: 6px 14px; border-radius:8px; border: 2px solid #00ff88; box-shadow: 0 0 10px #00ff88; max-width:85vw;">
                         <span style="color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.6rem, 1.1vw, 0.9rem); font-weight:bold;">
-                            🔐 100% SELF-CUSTODY • ZERO FUNDRAISING • NOT AN INVESTMENT
+                            🔐 100% AUTONOMOUS BROADCAST • ZERO SOLICITATION • SELF-EVIDENT CLARITY
                         </span>
                     </div>
                     <div class="text-medium c-white" style="font-size: clamp(0.58rem, 1.2vw, 0.92rem); margin: 0.3vh 0;">

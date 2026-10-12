@@ -13,15 +13,27 @@
             },
             {
                 type: "consciousness",
-                banner: "ATTENTION & FOCUS PROTOCOL", color: "bg-cyan", border: "c-cyan",
-                subtitle: "FILTERING MENTAL CHATTER",
+                banner: "ATTENTION TRAINING: LEVEL 1", color: "bg-cyan", border: "c-cyan",
+                subtitle: "THE 30-SECOND RECALL DRILL",
+                hook: "CAN YOU REMEMBER YOUR THOUGHTS 30 SECONDS AGO?",
+                quote: "People think in exact words. Observe the verbal monologue running in your mind.",
+                punchline: "TEST: RECALL YOUR EXACT WORDS BEFORE DISTRACTION INTERRUPTS",
+                angelCode: "999 369 999",
+                lore: "People think in words. When an external shock or distraction interrupts, the verbal monologue is erased. The practice is to observe your internal monologue in real-time so that when an emergency arrives, you retain unbroken consciousness. Lengthen your attention span. Broaden your awareness.",
+                audio: "/sounds/alien_ad.wav",
+                speech: "Pay strict attention to your thoughts. When humans think, they think in words. Observe the exact verbal monologue inside your mind right now. Here is your challenge: try to remember the exact words you were thinking thirty seconds before external distraction interrupts this programming. Notice how sudden noise wipes your memory clean. Broaden your awareness. Lengthen your attention span. Strengthen your focus."
+            },
+            {
+                type: "consciousness",
+                banner: "ATTENTION TRAINING: LEVEL 2", color: "bg-cyan", border: "c-cyan",
+                subtitle: "FILTERING BACKGROUND CHATTER",
                 hook: "WHEN BACKGROUND NOISE QUIETS, FOCUS BEGINS",
                 quote: "If you only remember the immediate words, your attention has cleared the background chatter.",
                 punchline: "CLEARING THE SIGNAL IS PROGRESS • PRACTICE SUSTAINED FOCUS",
-                angelCode: "999 369 999",
+                angelCode: "369 999 369",
                 lore: "When people try to recall their thoughts and only remember the immediate audio in front of them, that is progress—it means their attention anchored onto the present and quieted everyday mental chatter. The next step is building sustained attention to observe thoughts without getting swept up in them.",
                 audio: "/sounds/alien_ad.wav",
-                speech: "Notice your focus right now. When you try to recall your thoughts and only remember the immediate words spoken, that is real progress. It means your attention anchored into the present moment and quieted the background chatter. Everyday mental noise can be crowded and distracting. Training your attention means recognizing stray thoughts without getting pulled off course. Clearing the signal is the first step. Broaden your focus, strengthen your attention span, and stay grounded in the present."
+                speech: "Notice your focus right now. When you try to recall your thoughts and realize you only remember the words just spoken on the screen, that is real progress. It means your attention anchored into the present moment and quieted the background chatter. Everyday mental noise can be crowded with distraction. When you quiet the internal chatter, true focus begins. Clearing the signal is step one. Now build sustained attention, lengthen your focus span, and stay grounded in the present."
             },
             {
                 type: "jackpot",

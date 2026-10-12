@@ -6,9 +6,10 @@
                 hook: "OBSERVE AUTONOMOUS SYSTEM MECHANICS",
                 quote: "Quantitative logic operates without emotional bias or panic.",
                 punchline: "PURE ALGORITHMIC CODE • ZERO SOLICITATION • ZERO REDIRECTION",
+                accessCode: "WSHII",
                 lore: "Quantitative models operate without emotional bias or panic. By examining open-source algorithmic logic, we dissect the mechanics of institutional liquidity without sentiment. There are no solicitations, no transactions, and no external redirections here.",
                 audio: "/sounds/news_ticker.wav",
-                speech: "Observe the architecture of autonomous algorithmic execution. Quantitative models do not react with human emotion or panic at market volatility. By examining open-source algorithmic logic, we dissect the mechanics of institutional liquidity without sentiment. There are no solicitations, no transactions, and no external redirections here. Only raw data, mathematical discipline, and systematic structure."
+                speech: "Observe the architecture of autonomous algorithmic execution. Quantitative models operate without human emotion or volatility panic. By examining open-source algorithmic logic from Moon Dev under node tag WSHII, we study systematic structure without platform diversion. Pure mathematics, zero solicitation."
             },
             {
                 type: "consciousness",
@@ -204,10 +205,18 @@
                 html += `
                     <div class="text-huge c-green">💻 ${slide.subtitle} 💻</div>
                     <div class="text-huge c-yellow">⚡ ${slide.hook.toUpperCase()} ⚡</div>
-                    <div style="margin: 2vh 0; display:flex; justify-content:center; background:#111; padding: 2vmin; border-radius:15px; border: 4px solid #00ff88; box-shadow: 0 0 15px #00ff88;">
-                        <span style="color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.7rem, 1.5vw, 1.3rem); font-weight:bold;">
-                            🔬 OPEN QUANT ARCHITECTURE • ZERO SOLICITATION • ZERO REDIRECTION
-                        </span>
+                    <div style="margin: 2vh 0; display:flex; flex-direction:column; align-items:center; background:#0b1118; padding: 2vmin; border-radius:15px; border: 4px solid #00ff88; box-shadow: 0 0 20px rgba(0,255,136,0.35); max-width:85vw;">
+                        <div style="color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.7rem, 1.4vw, 1.2rem); font-weight:bold; letter-spacing:1px; margin-bottom:1vh;">
+                            🔬 SYSTEM NODE: MOON DEV QUANT LABS
+                        </div>
+                        <div style="display:flex; gap:15px; align-items:center; justify-content:center; flex-wrap:wrap;">
+                            <span style="background:#111; color:#ffdd00; border: 2px solid #ffdd00; padding: 4px 16px; border-radius:8px; font-family:'Roboto Mono',monospace; font-size:clamp(0.8rem, 1.6vw, 1.4rem); font-weight:bold; letter-spacing:2px; box-shadow: 0 0 10px rgba(255,221,0,0.35);">
+                                ACCESS TAG: ${slide.accessCode || 'WSHII'}
+                            </span>
+                            <span style="color:#00e5ff; font-family:'Roboto Mono',monospace; font-size:clamp(0.65rem, 1.2vw, 1.1rem); font-weight:bold;">
+                                REF ID: ${slide.accessCode || 'WSHII'} • VERIFIED SIGNAL
+                            </span>
+                        </div>
                     </div>
                     <div class="text-huge c-white" style="margin-top: 1vh;">🛡️ ${slide.punchline.toUpperCase()} 🛡️</div>
                 `;

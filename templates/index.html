@@ -392,6 +392,8 @@
             },
             {
                 type: "consciousness",
+                hasMemoryTimer: true,
+                timerSeconds: 30,
                 banner: "ATTENTION TRAINING: LEVEL 1", color: "bg-cyan", border: "c-cyan",
                 subtitle: "THE 30-SECOND RECALL DRILL",
                 hook: "CAN YOU REMEMBER YOUR THOUGHTS 30 SECONDS AGO?",
@@ -736,6 +738,7 @@
         let slideTimer = null;
         let isSlideSpeaking = false;
         let lastLiquidationEvent = Date.now();
+        let memoryTimerInterval = null;
 
         const liqPhrases = [
             "Registering total loss.",
@@ -803,6 +806,7 @@
 
             // 1. Immediately mute music, SFX, and cancel slide speech
             if (slideTimer) clearTimeout(slideTimer);
+            if (memoryTimerInterval) { clearInterval(memoryTimerInterval); memoryTimerInterval = null; }
             bgAudio.pause();
             audioPlayer.pause();
             window.speechSynthesis.cancel();
@@ -1408,6 +1412,25 @@
                 html += `
                     <div class="text-huge c-cyan" style="margin-bottom:0.3vh;">🧠 ${slide.subtitle} 🧠</div>
                     <div class="text-huge c-yellow" style="margin-bottom:0.4vh;">⚡ ${slide.hook.toUpperCase()} ⚡</div>
+                `;
+
+                if (slide.hasMemoryTimer) {
+                    html += `
+                        <div style="margin: 0.6vh auto; display:flex; flex-direction:column; align-items:center; background:#000000; padding: 10px 22px; border-radius:12px; border: 3px solid #ffdd00; box-shadow: 0 0 25px rgba(255,221,0,0.65), inset 0 0 15px rgba(255,221,0,0.25); max-width:85vw;">
+                            <div style="color:#ffdd00; font-family:'Roboto Mono',monospace; font-size:clamp(0.95rem, 2.2vw, 1.55rem); font-weight:900; letter-spacing:2.5px; text-transform:uppercase; text-shadow: 0 0 12px rgba(255,221,0,0.9); margin-bottom:4px;">
+                                ⏱️ MEMORY TRACKER COUNTDOWN ⏱️
+                            </div>
+                            <div id="memory-timer-clock" style="font-family:'Press Start 2P', 'Roboto Mono', monospace; font-size:clamp(1.8rem, 4.2vw, 3.2rem); font-weight:900; color:#00ff88; text-shadow: 0 0 20px #00ff88; letter-spacing:4px; margin: 6px 0;">
+                                00:30
+                            </div>
+                            <div style="width: 100%; height: 8px; background: #1a1a1a; border-radius: 4px; overflow: hidden; margin-top: 4px; border: 1px solid #333;">
+                                <div id="memory-timer-bar" style="width: 100%; height: 100%; background: linear-gradient(90deg, #ffdd00, #00ff88); box-shadow: 0 0 8px #00ff88; transition: width 1s linear;"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                html += `
                     <div class="text-medium c-white" style="font-size: clamp(0.6rem, 1.25vw, 1.05rem); margin-bottom:0.4vh;">"${slide.quote}"</div>
                     <div class="text-huge c-green" style="animation: blink 1s infinite; font-size: clamp(0.65rem, 1.35vw, 1.15rem); margin-bottom:0.3vh;">
                         ⚡ ${slide.punchline.toUpperCase()} ⚡
@@ -1498,6 +1521,44 @@
 
             container.innerHTML = html;
 
+            // Clear any active memory tracker countdown from previous slide
+            if (memoryTimerInterval) {
+                clearInterval(memoryTimerInterval);
+                memoryTimerInterval = null;
+            }
+
+            let memorySecondsLeft = slide.timerSeconds || 30;
+            if (slide.hasMemoryTimer) {
+                const clockEl = document.getElementById("memory-timer-clock");
+                const barEl = document.getElementById("memory-timer-bar");
+                const totalSec = memorySecondsLeft;
+
+                function updateTimerDisplay() {
+                    if (!clockEl) return;
+                    const s = Math.max(0, memorySecondsLeft);
+                    const formatted = `00:${s < 10 ? '0' : ''}${s}`;
+                    clockEl.innerText = formatted;
+                    if (barEl) {
+                        const pct = (s / totalSec) * 100;
+                        barEl.style.width = `${pct}%`;
+                    }
+                    if (s <= 5) {
+                        clockEl.style.color = '#ff3b30';
+                        clockEl.style.textShadow = '0 0 20px #ff3b30';
+                        clockEl.style.animation = 'blink 0.5s infinite';
+                    }
+                }
+                updateTimerDisplay();
+                memoryTimerInterval = setInterval(() => {
+                    memorySecondsLeft--;
+                    updateTimerDisplay();
+                    if (memorySecondsLeft <= 0) {
+                        clearInterval(memoryTimerInterval);
+                        memoryTimerInterval = null;
+                    }
+                }, 1000);
+            }
+
             // Use Web Speech API directly in the browser so it doesn't freeze
             if (slide.speech) {
                 isSlideSpeaking = true;
@@ -1524,6 +1585,14 @@
             }
 
             // If an emergency liquidation interrupted while this slide was speaking, abort!
+            if (isLiqInterrupting) return;
+
+            // If this is the 30-second challenge slide, let the countdown finish so the audience experiences the full 30-second drill
+            if (slide.hasMemoryTimer && memorySecondsLeft > 0 && !isLiqInterrupting) {
+                while (memorySecondsLeft > 0 && !isLiqInterrupting) {
+                    await new Promise(r => setTimeout(r, 200));
+                }
+            }
             if (isLiqInterrupting) return;
 
             // Once TTS finishes speaking (solo), blast the music (if enabled) and sound effects!

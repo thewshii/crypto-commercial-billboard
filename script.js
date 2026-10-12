@@ -13,6 +13,8 @@
             },
             {
                 type: "consciousness",
+                hasMemoryTimer: true,
+                timerSeconds: 30,
                 banner: "ATTENTION TRAINING: LEVEL 1", color: "bg-cyan", border: "c-cyan",
                 subtitle: "THE 30-SECOND RECALL DRILL",
                 hook: "CAN YOU REMEMBER YOUR THOUGHTS 30 SECONDS AGO?",
@@ -208,6 +210,25 @@
                 html += `
                     <div class="text-huge c-cyan" style="margin-bottom:0.3vh;">🧠 ${slide.subtitle} 🧠</div>
                     <div class="text-huge c-yellow" style="margin-bottom:0.4vh;">⚡ ${slide.hook.toUpperCase()} ⚡</div>
+                `;
+
+                if (slide.hasMemoryTimer) {
+                    html += `
+                        <div style="margin: 1vh auto; display:flex; flex-direction:column; align-items:center; background:#000000; padding: 12px 24px; border-radius:12px; border: 3px solid #ffdd00; box-shadow: 0 0 25px rgba(255,221,0,0.65), inset 0 0 15px rgba(255,221,0,0.25); max-width:85vw;">
+                            <div style="color:#ffdd00; font-family:'Roboto Mono',monospace; font-size:clamp(0.95rem, 2.2vw, 1.55rem); font-weight:900; letter-spacing:2.5px; text-transform:uppercase; text-shadow: 0 0 12px rgba(255,221,0,0.9); margin-bottom:4px;">
+                                ⏱️ MEMORY TRACKER COUNTDOWN ⏱️
+                            </div>
+                            <div id="memory-timer-clock" style="font-family:'Press Start 2P', 'Roboto Mono', monospace; font-size:clamp(1.8rem, 4.2vw, 3.2rem); font-weight:900; color:#00ff88; text-shadow: 0 0 20px #00ff88; letter-spacing:4px; margin: 6px 0;">
+                                00:30
+                            </div>
+                            <div style="width: 100%; height: 8px; background: #1a1a1a; border-radius: 4px; overflow: hidden; margin-top: 4px; border: 1px solid #333;">
+                                <div id="memory-timer-bar" style="width: 100%; height: 100%; background: linear-gradient(90deg, #ffdd00, #00ff88); box-shadow: 0 0 8px #00ff88; transition: width 1s linear;"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                html += `
                     <div class="text-medium c-white" style="font-size: clamp(0.6rem, 1.25vw, 1.05rem); margin-bottom:0.4vh;">"${slide.quote}"</div>
                     <div class="text-huge c-green" style="animation: blink 1s infinite; font-size: clamp(0.65rem, 1.35vw, 1.15rem); margin-bottom:0.3vh;">
                         ⚡ ${slide.punchline.toUpperCase()} ⚡

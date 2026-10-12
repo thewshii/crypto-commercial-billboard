@@ -17,13 +17,14 @@
                 timerSeconds: 30,
                 banner: "ATTENTION TRAINING: LEVEL 1", color: "bg-cyan", border: "c-cyan",
                 subtitle: "THE 30-SECOND RECALL DRILL",
-                hook: "CAN YOU REMEMBER YOUR THOUGHTS 30 SECONDS AGO?",
-                quote: "People think in exact words. Observe the verbal monologue running in your mind.",
-                punchline: "TEST: RECALL YOUR EXACT WORDS BEFORE DISTRACTION INTERRUPTS",
+                hook: "START TRACKING YOUR WORDS RIGHT NOW",
+                quote: "People think in exact words. Start tracking each and every word in your mind.",
+                punchline: "TEST: RECALL YOUR EXACT WORDS BEFORE AN INTERRUPTION WIPES IT",
                 angelCode: "999 369 999",
                 lore: "People think in words. When an external shock or distraction interrupts, the verbal monologue is erased. The practice is to observe your internal monologue in real-time so that when an emergency arrives, you retain unbroken consciousness. Lengthen your attention span. Broaden your awareness.",
                 audio: "/sounds/alien_ad.wav",
-                speech: "Pay strict attention to your thoughts. When humans think, they think in words. Observe the exact verbal monologue inside your mind right now. Here is your challenge: try to remember the exact words you were thinking thirty seconds before external distraction interrupts this programming. Notice how sudden noise wipes your memory clean. Broaden your awareness. Lengthen your attention span. Strengthen your focus."
+                introSpeech: "Start remembering each and every word in your mind right now.",
+                postSpeech: "Time. Now try to remember each and every word in your mind for the last thirty seconds. Notice if external noise wiped it clean."
             },
             {
                 type: "consciousness",

@@ -396,13 +396,14 @@
                 timerSeconds: 30,
                 banner: "ATTENTION TRAINING: LEVEL 1", color: "bg-cyan", border: "c-cyan",
                 subtitle: "THE 30-SECOND RECALL DRILL",
-                hook: "CAN YOU REMEMBER YOUR THOUGHTS 30 SECONDS AGO?",
-                quote: "People think in exact words. Observe the verbal monologue running in your mind.",
-                punchline: "TEST: RECALL YOUR EXACT WORDS BEFORE DISTRACTION INTERRUPTS",
+                hook: "START TRACKING YOUR WORDS RIGHT NOW",
+                quote: "People think in exact words. Start tracking each and every word in your mind.",
+                punchline: "TEST: RECALL YOUR EXACT WORDS BEFORE AN INTERRUPTION WIPES IT",
                 image: "/static/images/mind_consciousness.jpg",
                 angelCode: "999 369 999",
                 audio: "/sounds/alien_ad.wav",
-                speech: "Pay strict attention to your thoughts. When humans think, they think in words. Observe the exact verbal monologue inside your mind right now. Here is your challenge: try to remember the exact words you were thinking thirty seconds before external distraction interrupts this programming. Notice how sudden noise wipes your memory clean. Broaden your awareness. Lengthen your attention span. Strengthen your focus."
+                introSpeech: "Start remembering each and every word in your mind right now.",
+                postSpeech: "Time. Now try to remember each and every word in your mind for the last thirty seconds. Notice if external noise wiped it clean."
             },
             {
                 type: "consciousness",
@@ -784,6 +785,9 @@
                 bannerHtml = `🚨 SOMEONE JUST LOST <span style="font-size:1.2em; color:#fff; background:#ff003c; padding:2px 8px; border-radius:4px; font-weight:900; text-shadow:none; box-shadow:0 0 10px #ff003c;">-$${usd.toLocaleString()} CASH</span> ON ${cleanSym} — THAT WAS LIKELY THEIR ENTIRE LIFE SAVINGS!`;
                 phrase = `Someone just lost ${spokenLoss} on ${cleanSym}. For an ordinary person, that was likely their entire fund, thrown directly into the void. Registering total loss.`;
             }
+
+            bannerHtml += `<div style="font-size:0.75em; color:#ffd700; margin-top:3px; font-weight:bold; letter-spacing:1px; text-shadow:0 0 8px rgba(255,215,0,0.7);">🍪 IF YOU EXPECTED THIS LIQUIDATION, YOU WIN A VIRTUAL COOKIE! 🍪</div>`;
+            phrase += " If you expected this liquidation, claim your virtual cookie.";
 
             if (liqEl) {
                 liqEl.style.color = "#ff003c";
@@ -1527,12 +1531,42 @@
                 memoryTimerInterval = null;
             }
 
-            let memorySecondsLeft = slide.timerSeconds || 30;
+            // Helper function to speak phrases via Web Speech API cleanly
+            async function speakPhrase(text) {
+                if (!text || isLiqInterrupting) return;
+                isSlideSpeaking = true;
+                await new Promise((resolve) => {
+                    window.speechSynthesis.cancel();
+                    window.currentUtterance = new SpeechSynthesisUtterance(text);
+                    window.currentUtterance.rate = 0.9;
+                    window.currentUtterance.pitch = 0.5;
+                    window.currentUtterance.onend = () => { isSlideSpeaking = false; resolve(); };
+                    window.currentUtterance.onerror = () => { isSlideSpeaking = false; resolve(); };
+                    window.speechSynthesis.speak(window.currentUtterance);
+                });
+            }
+
             if (slide.hasMemoryTimer) {
                 const clockEl = document.getElementById("memory-timer-clock");
                 const barEl = document.getElementById("memory-timer-bar");
+                let memorySecondsLeft = slide.timerSeconds || 30;
                 const totalSec = memorySecondsLeft;
 
+                // Step 1: Standby state before prompt is given
+                if (clockEl) clockEl.innerText = "STANDBY: 00:30";
+                if (barEl) barEl.style.width = "100%";
+
+                // Speak the intro prompt first
+                if (slide.introSpeech) {
+                    await speakPhrase(slide.introSpeech);
+                } else if (slide.speech) {
+                    await speakPhrase(slide.speech);
+                }
+
+                if (isLiqInterrupting) return;
+
+                // Step 2: Now begin the live 30-second countdown!
+                triggerBeep();
                 function updateTimerDisplay() {
                     if (!clockEl) return;
                     const s = Math.max(0, memorySecondsLeft);
@@ -1549,6 +1583,7 @@
                     }
                 }
                 updateTimerDisplay();
+
                 memoryTimerInterval = setInterval(() => {
                     memorySecondsLeft--;
                     updateTimerDisplay();
@@ -1557,43 +1592,33 @@
                         memoryTimerInterval = null;
                     }
                 }, 1000);
-            }
 
-            // Use Web Speech API directly in the browser so it doesn't freeze
-            if (slide.speech) {
-                isSlideSpeaking = true;
-                await new Promise((resolve) => {
-                    window.speechSynthesis.cancel(); // Clear any stuck speech
-                    window.currentUtterance = new SpeechSynthesisUtterance(slide.speech);
-                    window.currentUtterance.rate = 0.9; // Slightly slower, more ominous
-                    window.currentUtterance.pitch = 0.5; // Deeper voice
-                    
-                    // On complete or error, we resolve the promise to continue
-                    window.currentUtterance.onend = () => {
-                        isSlideSpeaking = false;
-                        resolve();
-                    };
-                    window.currentUtterance.onerror = () => {
-                        isSlideSpeaking = false;
-                        resolve();
-                    };
-                    
-                    window.speechSynthesis.speak(window.currentUtterance);
-                });
-            } else {
-                isSlideSpeaking = false;
-            }
-
-            // If an emergency liquidation interrupted while this slide was speaking, abort!
-            if (isLiqInterrupting) return;
-
-            // If this is the 30-second challenge slide, let the countdown finish so the audience experiences the full 30-second drill
-            if (slide.hasMemoryTimer && memorySecondsLeft > 0 && !isLiqInterrupting) {
+                // Wait for the full 30-second drill countdown
                 while (memorySecondsLeft > 0 && !isLiqInterrupting) {
                     await new Promise(r => setTimeout(r, 200));
                 }
+                if (isLiqInterrupting) return;
+
+                // Step 3: Countdown complete — deliver the recall check test
+                triggerBeep();
+                if (clockEl) {
+                    clockEl.innerText = "TIME: 00:00";
+                    clockEl.style.color = "#ffdd00";
+                    clockEl.style.textShadow = "0 0 20px #ffdd00";
+                }
+
+                if (slide.postSpeech) {
+                    await speakPhrase(slide.postSpeech);
+                }
+                if (isLiqInterrupting) return;
+
+            } else {
+                // Standard slide presentation
+                if (slide.speech) {
+                    await speakPhrase(slide.speech);
+                }
+                if (isLiqInterrupting) return;
             }
-            if (isLiqInterrupting) return;
 
             // Once TTS finishes speaking (solo), blast the music (if enabled) and sound effects!
             audioPlayer.src = slide.audio;

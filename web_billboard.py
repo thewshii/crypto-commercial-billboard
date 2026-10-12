@@ -7,6 +7,8 @@ import time
 import urllib.parse
 import urllib.request
 from flask import Flask, render_template, send_from_directory, request, jsonify, redirect
+import word_segment
+
 
 def _load_env():
     """Load variables from .env file into os.environ if available."""
@@ -364,6 +366,33 @@ def get_bedrock_newscast():
         "metrics": metrics,
         "cached": cached,
         "timestamp": int(time.time() * 1000)
+    })
+
+@app.route("/api/word", methods=["GET", "POST"])
+def get_word_reflection():
+    incoming = request.json if request.is_json else {}
+    slot = incoming.get("slot") or request.args.get("slot")
+    force = bool(incoming.get("force", False)) or (request.args.get("force", "").lower() in ("true", "1"))
+    
+    reflection, cached = word_segment.generate_word_reflection(
+        slot=slot,
+        force=force,
+        get_bedrock_client_fn=get_bedrock_client,
+        model_id=BEDROCK_HAIKU_MODEL
+    )
+    return jsonify({
+        "status": "ok",
+        "word": reflection,
+        "cached": cached,
+        "current_slot": reflection.get("slot"),
+        "timestamp": int(time.time() * 1000)
+    })
+
+@app.route("/api/word/history", methods=["GET"])
+def get_word_history():
+    return jsonify({
+        "status": "ok",
+        "history": word_segment.load_word_logs()
     })
 
 @app.route("/api/speak", methods=["POST"])

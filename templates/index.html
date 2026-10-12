@@ -746,6 +746,229 @@
                 height: 22px !important;
             }
         }
+
+        /* ========================================================
+           PAUSE FOR THE WORD - SACRED DISPLAY CONTAINER
+           Dedicated tranquil reflection sanctuary separated from sales
+        ======================================================== */
+        .word-screen-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 25;
+            background: radial-gradient(circle at 50% 15%, #1c150b 0%, #0d0905 55%, #050302 100%);
+            box-shadow: inset 0 0 40px rgba(255, 170, 0, 0.25);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            padding: clamp(8px, 1.4vmin, 16px);
+            box-sizing: border-box;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #ffaa00 #100b05;
+        }
+
+        .word-screen-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .word-screen-container::-webkit-scrollbar-thumb {
+            background: #ffaa00;
+            border-radius: 3px;
+        }
+        .word-screen-container::-webkit-scrollbar-track {
+            background: #100b05;
+        }
+
+        .word-sacred-card {
+            width: 96%;
+            max-width: 880px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 7px;
+            text-align: center;
+            margin: auto 0;
+            animation: wordFadeIn 0.5s ease-out;
+        }
+
+        @keyframes wordFadeIn {
+            0% { opacity: 0; transform: scale(0.97); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .word-badge-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 2px;
+        }
+
+        .word-sacred-badge {
+            font-family: 'Press Start 2P', monospace;
+            font-size: clamp(0.58rem, 1vw, 0.82rem);
+            background: #ffaa00;
+            color: #0d0800;
+            font-weight: 900;
+            padding: 4px 10px;
+            border-radius: 4px;
+            letter-spacing: 1.5px;
+            box-shadow: 0 0 12px rgba(255, 170, 0, 0.65);
+        }
+
+        .word-slot-badge {
+            font-family: 'Roboto Mono', monospace;
+            font-size: clamp(0.52rem, 0.85vw, 0.72rem);
+            background: rgba(255, 204, 0, 0.15);
+            color: #ffd700;
+            border: 1px solid #ffd700;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+        }
+
+        .word-title {
+            font-family: 'Georgia', serif;
+            font-size: clamp(1.05rem, 2vw, 1.7rem);
+            font-weight: 900;
+            color: #fff6de;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.6), 0 0 25px rgba(255, 170, 0, 0.3);
+            letter-spacing: 0.8px;
+            margin: 1px 0;
+        }
+
+        .word-theme-banner {
+            font-family: 'Roboto Mono', monospace;
+            font-size: clamp(0.52rem, 0.85vw, 0.72rem);
+            color: #ffb833;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .word-verse-card {
+            background: rgba(24, 18, 12, 0.9);
+            border: 1px solid rgba(255, 170, 0, 0.5);
+            border-radius: 6px;
+            padding: 5px 12px;
+            max-width: 95%;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 0 10px rgba(255, 170, 0, 0.15);
+        }
+
+        .word-verse-icon {
+            font-size: clamp(0.85rem, 1.2vw, 1.1rem);
+        }
+
+        .word-verse-text {
+            font-family: 'Georgia', serif;
+            font-size: clamp(0.62rem, 1vw, 0.86rem);
+            color: #ffe8b5;
+            font-style: italic;
+            line-height: 1.35;
+        }
+
+        .word-traditions-row {
+            font-family: 'Roboto Mono', monospace;
+            font-size: clamp(0.48rem, 0.75vw, 0.65rem);
+            color: #c4b59d;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 2px 8px;
+            border-radius: 3px;
+            border: 1px dashed rgba(255, 204, 0, 0.35);
+        }
+
+        .word-reflection-text {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: clamp(0.72rem, 1.15vw, 0.98rem);
+            line-height: 1.55;
+            color: #f7f3e8;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+            background: rgba(12, 9, 6, 0.82);
+            border: 1px solid rgba(255, 170, 0, 0.35);
+            border-radius: 8px;
+            padding: clamp(8px, 1.3vmin, 14px);
+            width: 95%;
+            text-align: left;
+            white-space: normal;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.7);
+        }
+
+        .word-closing-blessing {
+            font-family: 'Georgia', serif;
+            font-style: italic;
+            font-size: clamp(0.65rem, 1.05vw, 0.88rem);
+            color: #ffd700;
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+            line-height: 1.35;
+            padding: 2px 8px;
+        }
+
+        .word-footer-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 95%;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 2px;
+            padding-top: 5px;
+            border-top: 1px solid rgba(255, 170, 0, 0.25);
+        }
+
+        .word-audio-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Roboto Mono', monospace;
+            font-size: clamp(0.52rem, 0.8vw, 0.7rem);
+            color: #00ff88;
+            text-shadow: 0 0 5px #00ff88;
+        }
+
+        .word-audio-pulse {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #00ff88;
+            box-shadow: 0 0 8px #00ff88;
+            animation: pumpLivePulse 1s infinite alternate;
+        }
+
+        .word-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .word-btn-small {
+            background: #18120a;
+            border: 1px solid #ffaa00;
+            color: #ffdd77;
+            padding: 3px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Roboto Mono', monospace;
+            font-size: clamp(0.52rem, 0.8vw, 0.7rem);
+            font-weight: bold;
+            box-shadow: 0 0 6px rgba(255, 170, 0, 0.3);
+            transition: all 0.2s;
+        }
+
+        .word-btn-small:hover {
+            background: #2b1f0f;
+            border-color: #ffd700;
+            color: #ffffff;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+        }
     </style>
 </head>
 <body>
@@ -761,6 +984,7 @@
             <span id="ws-status-badge" style="font-family:'Roboto Mono',monospace; font-size:clamp(0.55rem, 0.85vw, 0.72rem); color:#00ff88; border:1px solid #00ff88; padding:2px 6px; border-radius:4px; background:#0a0a0a; text-shadow:0 0 5px #00ff88;">FEED: 🟢 LIVE</span>
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
+            <button id="word-btn" onclick="triggerManualWordSegment()" title="Pause for the Word: Three times daily reflection on God" style="background:#261804; border:2px solid #ffaa00; color:#ffdd66; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #ffaa00; box-shadow:0 0 8px rgba(255,170,0,0.35); transition:all 0.2s;">📖 THE WORD</button>
             <button id="ai-scan-btn" onclick="triggerManualBedrockScan()" title="Trigger dynamic 35-minute AI market brief from Bedrock Claude Haiku" style="background:#041a2f; border:2px solid #00e5ff; color:#00e5ff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #00e5ff; box-shadow:0 0 8px rgba(0,229,255,0.3); transition:all 0.2s;">🎙️ AI NEWS</button>
             <button id="test-liq-btn" onclick="testManualLiquidation()" title="Trigger test liquidation alert" style="background:#240008; border:2px solid #ff003c; color:#ff003c; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #ff003c; box-shadow:0 0 8px rgba(255,0,60,0.3); transition:all 0.2s;">⚡ TEST LIQ</button>
             <button id="music-mode-btn" onclick="toggleMusicMode()" style="background:#161616; border:2px solid #00ff88; color:#00ff88; padding:3px 10px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.62rem, 0.9vw, 0.82rem); text-shadow:0 0 5px #00ff88; box-shadow:0 0 8px rgba(0,255,136,0.3); transition:all 0.2s;">🎵 BGM: ON</button>
@@ -836,6 +1060,41 @@
                     <div class="tv-glass-overlay"></div>
                     <div id="slide-container" class="slide-container">
                         <!-- Slide content injected here -->
+                    </div>
+
+                    <!-- Dedicated Sacred Sanctuary Screen: Pause for the Word -->
+                    <div id="word-screen-container" class="word-screen-container" style="display: none;">
+                        <div class="word-sacred-card">
+                            <div class="word-badge-row">
+                                <span class="word-sacred-badge">✦ PAUSE FOR THE WORD ✦</span>
+                                <span id="word-slot-badge" class="word-slot-badge">🌅 MORNING DEVOTION</span>
+                            </div>
+                            <div id="word-title" class="word-title">The Earth Declares His Glory</div>
+                            <div id="word-theme-banner" class="word-theme-banner">THEME: Divine Guidance & Walking the Straight Path</div>
+                            <div id="word-verse-card" class="word-verse-card">
+                                <span class="word-verse-icon">📖</span>
+                                <span id="word-key-verse" class="word-verse-text">Scripture & Wisdom</span>
+                            </div>
+                            <div class="word-traditions-row">
+                                <span id="word-traditions-text" class="word-traditions-tag">FOUR WELLS: The KJV Bible • The Quran • Rastafari • Bob Marley</span>
+                            </div>
+                            <div id="word-reflection-text" class="word-reflection-text">
+                                Loading daily reflection on God...
+                            </div>
+                            <div id="word-closing-blessing" class="word-closing-blessing">
+                                "May peace, one love, and divine favor be upon your day. Selah."
+                            </div>
+                            <div class="word-footer-row">
+                                <div id="word-audio-status" class="word-audio-status">
+                                    <span class="word-audio-pulse"></span>
+                                    <span id="word-audio-label">🔊 AUDIO PLAYING (TTS)</span>
+                                </div>
+                                <div class="word-actions">
+                                    <button class="word-btn-small" onclick="replayWordAudio()" title="Replay reflection audio">▶️ REPLAY</button>
+                                    <button class="word-btn-small" onclick="dismissWordSegment()" title="Resume commercial billboard">✕ RESUME STREAM</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1458,6 +1717,237 @@
             }
         }
 
+        // ==========================================
+        // SACRED CHIME HARMONIC SYNTHESIS
+        // 432Hz / 528Hz Solfeggio Harmonic Stinger for "Pause for the Word"
+        // ==========================================
+        function playSacredChime() {
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const now = ctx.currentTime;
+                // Harmonic sacred frequencies: 216Hz, 432Hz (universal), 528Hz (solfeggio), 864Hz
+                const freqs = [216, 432, 528, 864];
+                freqs.forEach((f, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = "sine";
+                    osc.frequency.setValueAtTime(f, now);
+                    const vol = (idx === 1 || idx === 2) ? 0.22 : 0.12;
+                    gain.gain.setValueAtTime(vol, now);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.8);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 2.8);
+                });
+            } catch (e) {
+                console.log("[AUDIO] Sacred chime error:", e);
+            }
+        }
+
+        // ==========================================
+        // PAUSE FOR THE WORD - DAILY SACRED DEVOTION
+        // Three times a day: Morning (5-11), Midday (12-16), Evening (17-4)
+        // KJV Bible • Quran • Rastafari • Bob Marley
+        // ==========================================
+        let isWordActive = false;
+        let currentWordData = null;
+        let wordSpeechTimeout = null;
+
+        function getCurrentSlotName() {
+            const hr = new Date().getHours();
+            if (hr >= 5 && hr < 12) return "morning";
+            if (hr >= 12 && hr < 17) return "midday";
+            return "evening";
+        }
+
+        function getSlotBadgeLabel(slot) {
+            if (slot === "morning") return "🌅 MORNING DEVOTION";
+            if (slot === "midday") return "☀️ MIDDAY REFLECTION";
+            return "🌙 EVENING WORD";
+        }
+
+        async function fetchWordReflection(slot = null, force = false) {
+            try {
+                const targetSlot = slot || getCurrentSlotName();
+                const url = `/api/word?slot=${targetSlot}&force=${force ? "true" : "false"}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.status === "ok" && data.word) {
+                    return data.word;
+                }
+            } catch (err) {
+                console.log("[WORD] Fetch error:", err);
+            }
+            return null;
+        }
+
+        async function playWordSegment(slot = null, force = false) {
+            if (isWordActive) return;
+            isWordActive = true;
+
+            // 1. Immediately pause commercials, background music, and SFX
+            if (slideTimer) clearTimeout(slideTimer);
+            if (memoryTimerInterval) { clearInterval(memoryTimerInterval); memoryTimerInterval = null; }
+            window.speechSynthesis.cancel();
+            bgAudio.pause();
+            audioPlayer.pause();
+
+            // 2. Hide commercial slide container, reveal dedicated Sacred Word screen
+            const slideContainer = document.getElementById("slide-container");
+            const wordContainer = document.getElementById("word-screen-container");
+            if (slideContainer) slideContainer.style.display = "none";
+            if (wordContainer) wordContainer.style.display = "flex";
+
+            // 3. Indicate loading on button
+            const btn = document.getElementById("word-btn");
+            if (btn) btn.innerText = "⏳ THE WORD...";
+
+            const word = await fetchWordReflection(slot, force);
+            currentWordData = word;
+
+            if (btn) btn.innerText = "📖 THE WORD";
+
+            if (!word) {
+                dismissWordSegment();
+                return;
+            }
+
+            // 4. Update on-screen Sanctuary elements
+            const slotBadge = document.getElementById("word-slot-badge");
+            const titleEl = document.getElementById("word-title");
+            const themeEl = document.getElementById("word-theme-banner");
+            const verseEl = document.getElementById("word-key-verse");
+            const traditionsEl = document.getElementById("word-traditions-text");
+            const reflectionEl = document.getElementById("word-reflection-text");
+            const blessingEl = document.getElementById("word-closing-blessing");
+            const audioLabel = document.getElementById("word-audio-label");
+
+            if (slotBadge) slotBadge.innerText = getSlotBadgeLabel(word.slot);
+            if (titleEl) titleEl.innerText = word.title || "Pause for the Word";
+            if (themeEl) themeEl.innerText = "THEME: " + (word.theme || "Divine Guidance");
+            if (verseEl) verseEl.innerText = word.key_verse || "Scripture & Wisdom";
+            if (traditionsEl) {
+                const wells = Array.isArray(word.wells_drawn) ? word.wells_drawn.join(" • ") : "Sacred Tradition";
+                traditionsEl.innerText = "FOUR WELLS: " + wells;
+            }
+            if (reflectionEl) reflectionEl.innerText = word.reflection || "";
+            if (blessingEl) blessingEl.innerText = `"${word.closing_blessing || 'Peace, one love, and divine favor be upon your day. Selah.'}"`;
+            if (audioLabel) audioLabel.innerText = "🔊 AUDIO PLAYING (TTS)";
+
+            // Scroll to top of Word sanctuary
+            if (wordContainer) wordContainer.scrollTop = 0;
+
+            // 5. Play peaceful sacred harmonic chime stinger
+            playSacredChime();
+            await new Promise(r => setTimeout(r, 1200));
+
+            // 6. Speak the reflection aloud (Project TTS path + Browser SpeechSynthesis)
+            const spokenText = `${word.title}. ${word.reflection} ${word.closing_blessing || ''}`;
+
+            // Project existing TTS path (/api/speak -> termux-tts-speak)
+            try {
+                fetch("/api/speak", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: spokenText })
+                }).catch(() => {});
+            } catch(e) {}
+
+            // Browser SpeechSynthesis fallback & web stream playback
+            await new Promise((resolve) => {
+                if (!('speechSynthesis' in window)) {
+                    setTimeout(resolve, 45000);
+                    return;
+                }
+
+                window.speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance(spokenText);
+                utter.rate = 0.88;
+                utter.pitch = 0.88;
+
+                let finished = false;
+                function finish() {
+                    if (finished) return;
+                    finished = true;
+                    if (audioLabel) audioLabel.innerText = "🕊️ WORD COMPLETE";
+                    resolve();
+                }
+
+                utter.onend = finish;
+                utter.onerror = finish;
+
+                // Failsafe timer (75s) in case onend doesn't trigger
+                wordSpeechTimeout = setTimeout(finish, 75000);
+                window.speechSynthesis.speak(utter);
+            });
+
+            // 7. Hold reverently for 4 seconds after reading, then transition back smoothly
+            await new Promise(r => setTimeout(r, 4000));
+            if (isWordActive) {
+                dismissWordSegment();
+            }
+        }
+
+        function replayWordAudio() {
+            if (!currentWordData) return;
+            const spokenText = `${currentWordData.title}. ${currentWordData.reflection} ${currentWordData.closing_blessing || ''}`;
+            playSacredChime();
+            try {
+                fetch("/api/speak", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: spokenText })
+                }).catch(() => {});
+            } catch(e) {}
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance(spokenText);
+                utter.rate = 0.88;
+                utter.pitch = 0.88;
+                const audioLabel = document.getElementById("word-audio-label");
+                if (audioLabel) audioLabel.innerText = "🔊 REPLAYING AUDIO (TTS)";
+                utter.onend = () => { if (audioLabel) audioLabel.innerText = "🕊️ WORD COMPLETE"; };
+                utter.onerror = () => { if (audioLabel) audioLabel.innerText = "🕊️ WORD COMPLETE"; };
+                window.speechSynthesis.speak(utter);
+            }
+        }
+
+        function dismissWordSegment() {
+            isWordActive = false;
+            if (wordSpeechTimeout) { clearTimeout(wordSpeechTimeout); wordSpeechTimeout = null; }
+            window.speechSynthesis.cancel();
+
+            const slideContainer = document.getElementById("slide-container");
+            const wordContainer = document.getElementById("word-screen-container");
+            if (wordContainer) wordContainer.style.display = "none";
+            if (slideContainer) slideContainer.style.display = "flex";
+
+            // Resume commercial billboard carousel
+            if (!isLiqInterrupting) {
+                renderSlide();
+            }
+        }
+
+        function triggerManualWordSegment() {
+            getAudioContext();
+            playWordSegment(null, true);
+        }
+
+        function checkWordSchedule() {
+            const now = new Date();
+            const todayStr = now.toISOString().slice(0, 10);
+            const slot = getCurrentSlotName();
+            const storageKey = `word_played_${todayStr}_${slot}`;
+
+            if (!localStorage.getItem(storageKey)) {
+                localStorage.setItem(storageKey, "true");
+                console.log(`[WORD] Scheduled auto-play for ${slot} (${todayStr})`);
+                playWordSegment(slot, false);
+            }
+        }
+
         let isLiqInterrupting = false;
         let lastLiqBreakTime = 0;
         let slideTimer = null;
@@ -1896,8 +2386,8 @@
                 liqEl.style.animation = "blink 1s infinite";
             }
 
-            // Throttle full audio interruptions to once every 6 seconds so it doesn't get jammed
-            if (isLiqInterrupting || (now - lastLiqBreakTime < 6000)) {
+            // Throttle full audio interruptions to once every 6 seconds so it doesn't get jammed, and never interrupt the sacred Word
+            if (isLiqInterrupting || isWordActive || (now - lastLiqBreakTime < 6000)) {
                 triggerBeep();
                 return;
             }
@@ -2563,16 +3053,25 @@
         fetchBedrockNewscast(false);
         setInterval(() => fetchBedrockNewscast(false), 75000);
 
+        // Check 3x daily "Pause for the Word" schedule (every 30s)
+        setInterval(checkWordSchedule, 30000);
+
         function startStream() {
             document.getElementById("overlay").style.display = "none";
             getAudioContext();
             bgAudio.volume = 0.3;
-            // bgAudio.play() will be triggered by renderSlide after TTS finishes
-            renderSlide();
+            checkWordSchedule();
+            if (!isWordActive) {
+                renderSlide();
+            }
         }
 
         function nextSlideManual() {
             triggerBeep();
+            if (isWordActive) {
+                dismissWordSegment();
+                return;
+            }
             const knobVhf = document.getElementById("tv-knob-vhf");
             const knobUhf = document.getElementById("tv-knob-uhf");
             const angle = Math.floor(Math.random() * 360);
@@ -2588,7 +3087,7 @@
         }
 
         async function renderSlide() {
-            if (isLiqInterrupting) return;
+            if (isLiqInterrupting || isWordActive) return;
             const slide = slides[currentSlide];
             const container = document.getElementById("slide-container");
             const tvFrame = document.getElementById("tv-screen-frame");

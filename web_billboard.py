@@ -5,7 +5,7 @@ import subprocess
 import time
 import urllib.parse
 import urllib.request
-from flask import Flask, render_template, send_from_directory, request, jsonify
+from flask import Flask, render_template, send_from_directory, request, jsonify, redirect
 
 app = Flask(__name__)
 
@@ -117,6 +117,14 @@ def track():
     data = request.json or {}
     print(f"[TRACKING] Affiliate link clicked: {data.get('url')}", flush=True)
     return {"status": "ok"}
+
+@app.route("/moon")
+@app.route("/moondev")
+def moon_redirect():
+    """Vanity redirect that routes visitors directly to Moon Dev affiliate tracking link."""
+    target_url = "https://moondev.com/t/wshii"
+    print(f"[REDIRECT] Routing visitor to Moon Dev affiliate tracker: {target_url}", flush=True)
+    return redirect(target_url, code=302)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))

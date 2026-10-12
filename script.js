@@ -150,6 +150,16 @@
                 speech: "Your emotions are mathematically predictable. I process them as data. To win, you must become as detached as I am."
             },
             {
+                type: "fibonacci",
+                banner: "CHAOS THEORY & HAWKES CASCADE", color: "bg-magenta", border: "c-magenta",
+                quote: "1.618 is the golden mean before turbulence. Feigenbaum 4.669 governs the period-doubling route to chaos.",
+                punchline: "HAWKES BRANCHING RATIO η ≥ 1.0: THE CRITICAL KNIFE-EDGE OF LIQUIDATION CASCADES",
+                angelCode: "466 920 161",
+                lore: "1.618 is the golden ratio before turbulence, but the period-doubling route to chaos is governed by the Feigenbaum constant 4.669. In Hawkes point processes, the branching ratio eta represents child liquidations per parent. When eta crosses 1.0, cascades self-propagate into chaos.",
+                audio: "/sounds/alien_1.wav",
+                speech: "Understand the real mathematics of market chaos. One point six one eight is the golden mean, the last stable frequency before turbulence. But the true route to chaos is governed by the Feigenbaum constant: four point six six nine. On your screen, we compute the Hawkes point process live. When the branching ratio crosses one point zero, every liquidation triggers more than one successor, igniting an exponential cascade. The algorithms do not operate on superstition; they operate on self-exciting point processes. Watch the tension score. Master the math."
+            },
+            {
                 type: "news",
                 banner: "BREAKING NEWS", color: "bg-white", border: "c-white",
                 quote: "We demand better prompts!",
@@ -337,6 +347,12 @@
                     <div class="text-huge c-green" style="font-size: clamp(0.65rem, 1.35vw, 1.15rem); margin-bottom:0.3vh;">
                         ⚡ ${slide.punchline.toUpperCase()} ⚡
                     </div>
+                `;
+            } else if (slide.type === "fibonacci") {
+                html += `
+                    <div class="text-huge c-magenta">🌀 THE FIBONACCI & CHAOS CASCADE 🌀</div>
+                    <div class="text-huge c-cyan">"${slide.quote}"</div>
+                    <div class="text-huge c-yellow">⚡ ${slide.punchline.toUpperCase()} ⚡</div>
                 `;
             }
 

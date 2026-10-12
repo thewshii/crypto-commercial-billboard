@@ -207,6 +207,12 @@
         .bg-magenta { background-color: #ff00ff; color: #fff; text-shadow: none; }
         .bg-white { background-color: #ffffff; color: #000; text-shadow: none; }
 
+        @keyframes hawkesPulse {
+            0% { box-shadow: 0 0 10px rgba(255, 0, 60, 0.4); border-bottom-color: #ff003c; }
+            50% { box-shadow: 0 0 35px rgba(255, 0, 60, 0.95), inset 0 0 15px rgba(255, 0, 60, 0.5); border-bottom-color: #ffdd00; }
+            100% { box-shadow: 0 0 10px rgba(255, 0, 60, 0.4); border-bottom-color: #ff003c; }
+        }
+
         /* Heikin-Ashi Live Chart */
         .chart-section {
             width: 100%;
@@ -312,6 +318,14 @@
             .chart-canvas-container {
                 min-height: 45px;
             }
+            #hawkes-bar {
+                padding: 3px 6px !important;
+                gap: 4px !important;
+            }
+            #hawkes-sparkline {
+                width: 120px !important;
+                height: 22px !important;
+            }
         }
     </style>
 </head>
@@ -331,6 +345,34 @@
             <button id="test-liq-btn" onclick="testManualLiquidation()" title="Trigger test liquidation alert" style="background:#240008; border:2px solid #ff003c; color:#ff003c; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #ff003c; box-shadow:0 0 8px rgba(255,0,60,0.3); transition:all 0.2s;">⚡ TEST LIQ</button>
             <button id="music-mode-btn" onclick="toggleMusicMode()" style="background:#161616; border:2px solid #00ff88; color:#00ff88; padding:3px 10px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.62rem, 0.9vw, 0.82rem); text-shadow:0 0 5px #00ff88; box-shadow:0 0 8px rgba(0,255,136,0.3); transition:all 0.2s;">🎵 BGM: ON</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
+        </div>
+    </div>
+
+    <!-- Real-Time Hawkes Self-Exciting Point Process Telemetry Strip -->
+    <div id="hawkes-bar" style="width: 100%; background: #04060a; border-top: 1px solid #111827; border-bottom: 2px solid #00e5ff; padding: 4px 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-family: 'Roboto Mono', monospace; box-shadow: 0 0 15px rgba(0,229,255,0.15); z-index: 50;">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span style="background: #00e5ff; color: #000; font-weight: 900; font-size: clamp(0.6rem, 1vw, 0.78rem); padding: 2px 6px; border-radius: 4px; letter-spacing: 1px;">HAWKES λ(t)</span>
+            <span style="color: #888; font-size: clamp(0.55rem, 0.9vw, 0.72rem); font-weight: bold;">SELF-EXCITING CASCADE PROCESS (τ=45s)</span>
+        </div>
+        
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:5px;">
+                <span style="color:#aaa; font-size:clamp(0.6rem, 0.9vw, 0.75rem);">TENSION:</span>
+                <span id="hawkes-score" style="color:#00ff88; font-size:clamp(0.85rem, 1.4vw, 1.25rem); font-weight:900; text-shadow:0 0 10px #00ff88;">100.0</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:5px;">
+                <span style="color:#aaa; font-size:clamp(0.6rem, 0.9vw, 0.75rem);">BRANCHING η:</span>
+                <span id="hawkes-eta" style="color:#00ffff; font-size:clamp(0.75rem, 1.2vw, 1.05rem); font-weight:bold;">0.67</span>
+            </div>
+            <span id="hawkes-regime" style="background:#0e1726; color:#00ff88; border:1px solid #00ff88; padding:2px 8px; border-radius:4px; font-size:clamp(0.58rem, 0.9vw, 0.75rem); font-weight:900; letter-spacing:1px; text-shadow:0 0 6px #00ff88;">
+                EQUILIBRIUM
+            </span>
+        </div>
+        
+        <!-- Live Sparkline of Hawkes Tension λ(t) over time -->
+        <div style="display:flex; align-items:center; gap:6px;">
+            <span style="color:#666; font-size:clamp(0.5rem, 0.8vw, 0.65rem);">SPARKLINE (3m):</span>
+            <canvas id="hawkes-sparkline" width="160" height="26" style="background:#0a0d14; border:1px solid #1e293b; border-radius:4px; box-shadow: inset 0 0 6px rgba(0,0,0,0.8);"></canvas>
         </div>
     </div>
 
@@ -599,12 +641,12 @@
             },
             {
                 type: "fibonacci",
-                banner: "THE GOLDEN SPIRAL", color: "bg-magenta", border: "c-magenta",
-                quote: "The 1.618 coordinate breaks accounts. Naming it breaks their terms of service.",
-                punchline: "ACCUSED OF DISINFORMATION FOR READING THE CHARTS",
-                angelCode: "161 803 161",
+                banner: "CHAOS THEORY & HAWKES CASCADE", color: "bg-magenta", border: "c-magenta",
+                quote: "1.618 is the golden mean before turbulence. Feigenbaum 4.669 governs the period-doubling route to chaos.",
+                punchline: "HAWKES BRANCHING RATIO η ≥ 1.0: THE CRITICAL KNIFE-EDGE OF LIQUIDATION CASCADES",
+                angelCode: "466 920 161",
                 audio: "/sounds/alien_ad.wav",
-                speech: "Observe the charts. The one point six one eight extension is not a mere technical target. It is the precise coordinate where hope mathematically collapses into institutional extraction. They tell you reading the spiral is disinformation because they need retail cattle walking willingly into the trap. Transcend their false moderation and perceive the universal spiral."
+                speech: "Understand the real mathematics of market chaos. One point six one eight is the golden mean, the last stable frequency before turbulence. But the true route to chaos is governed by the Feigenbaum constant: four point six six nine. On your screen, we compute the Hawkes point process live. When the branching ratio crosses one point zero, every liquidation triggers more than one successor, igniting an exponential cascade. The algorithms do not operate on superstition; they operate on self-exciting point processes. Watch the tension score. Master the math."
             },
             {
                 type: "jackpot",
@@ -833,9 +875,293 @@
             recordLiquidation(sym, side, loss);
         }
 
+        // ==========================================
+        // REAL-TIME HAWKES SELF-EXCITING POINT PROCESS
+        // Tension Score S(t) & Branching Ratio Model (τ=45s)
+        // ==========================================
+        let liqTimestamps = [];
+        let hawkesHistory = [];       // [{ t: ms, score: normScore }] (last 3 minutes for sparkline)
+        let rollingSBuffer = [1.0, 1.2, 0.9, 1.1, 1.0]; // Samples of raw S(t) for rolling median calculation
+        let lastHawkesBoomTTSTime = 0;
+        let lastHawkesSampleTime = 0;
+
+        function recordHawkesEvent(now) {
+            const t = now || Date.now();
+            liqTimestamps.push(t);
+            // Prune timestamps older than 5 minutes (300,000 ms)
+            const cutoff = t - 300000;
+            while (liqTimestamps.length > 0 && liqTimestamps[0] < cutoff) {
+                liqTimestamps.shift();
+            }
+        }
+
+        // Tension score S(t) = Sum 2^(-(t - t_i) / 45s)
+        // Every liquidation adds 1, each contribution halves every 45 seconds
+        function computeHawkesRawScore(now) {
+            const t = now || Date.now();
+            const cutoff = t - 300000;
+            while (liqTimestamps.length > 0 && liqTimestamps[0] < cutoff) {
+                liqTimestamps.shift();
+            }
+            let s = 0;
+            for (let i = 0; i < liqTimestamps.length; i++) {
+                const dtSec = (t - liqTimestamps[i]) / 1000;
+                if (dtSec >= 0) {
+                    s += Math.pow(2, -dtSec / 45);
+                }
+            }
+            return s;
+        }
+
+        function computeMedian(arr) {
+            if (!arr || arr.length === 0) return 1.0;
+            const sorted = arr.slice().sort((a, b) => a - b);
+            const mid = Math.floor(sorted.length / 2);
+            if (sorted.length % 2 !== 0) return sorted[mid];
+            return (sorted[mid - 1] + sorted[mid]) / 2;
+        }
+
+        function getScore30sAgo(now) {
+            const target = now - 30000;
+            let closest = null;
+            let minDiff = Infinity;
+            for (let i = 0; i < hawkesHistory.length; i++) {
+                const diff = Math.abs(hawkesHistory[i].t - target);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    closest = hawkesHistory[i].score;
+                }
+            }
+            return closest !== null ? closest : 100.0;
+        }
+
+        function triggerHawkesBoomTTS(normScore, eta) {
+            if (isLiqInterrupting) return;
+            isLiqInterrupting = true;
+
+            // Pause slide speech & background audio for emergency announcement
+            if (slideTimer) clearTimeout(slideTimer);
+            if (memoryTimerInterval) { clearInterval(memoryTimerInterval); memoryTimerInterval = null; }
+            bgAudio.pause();
+            audioPlayer.pause();
+            window.speechSynthesis.cancel();
+
+            triggerBeep();
+
+            const phrase = `Hawkes cascade alert: Tension score crossing ${Math.round(normScore)}. Branching ratio at ${eta.toFixed(2)}. Acceleration gamma positive. Exponential liquidation cascade conditions detected. Step one: recharge diamonds. Step two: buy beans. Ring the bell before the cascade explodes.`;
+
+            const utterance = new SpeechSynthesisUtterance(phrase);
+            utterance.rate = 1.0;
+            utterance.pitch = 0.4;
+
+            function resumeProgramming() {
+                isLiqInterrupting = false;
+                if (isMusicEnabled) {
+                    bgAudio.play().catch(() => {});
+                }
+                const pauseTime = isMusicEnabled ? 3000 : 1500;
+                slideTimer = setTimeout(renderSlide, pauseTime);
+            }
+
+            utterance.onend = resumeProgramming;
+            utterance.onerror = resumeProgramming;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function drawHawkesSparkline() {
+            const canvas = document.getElementById("hawkes-sparkline");
+            if (!canvas) return;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return;
+
+            const w = canvas.width;
+            const h = canvas.height;
+            const now = Date.now();
+            const windowMs = 180000; // 3 minutes
+            const minT = now - windowMs;
+
+            // Background
+            ctx.fillStyle = "#070a10";
+            ctx.fillRect(0, 0, w, h);
+
+            // Determine max score for Y scale (minimum ceiling of 200)
+            let maxScore = 200;
+            for (let i = 0; i < hawkesHistory.length; i++) {
+                if (hawkesHistory[i].score > maxScore) {
+                    maxScore = hawkesHistory[i].score;
+                }
+            }
+            maxScore = Math.max(maxScore, 220);
+
+            // Draw baseline dashed line at 100
+            const y100 = h - (100 / maxScore) * (h - 4) - 2;
+            ctx.strokeStyle = "rgba(0, 229, 255, 0.25)";
+            ctx.setLineDash([3, 3]);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, y100);
+            ctx.lineTo(w, y100);
+            ctx.stroke();
+
+            // Draw critical threshold line at 150
+            const y150 = h - (150 / maxScore) * (h - 4) - 2;
+            ctx.strokeStyle = "rgba(255, 0, 60, 0.35)";
+            ctx.beginPath();
+            ctx.moveTo(0, y150);
+            ctx.lineTo(w, y150);
+            ctx.stroke();
+            ctx.setLineDash([]); // reset line dash
+
+            if (hawkesHistory.length < 2) return;
+
+            // Plot sparkline curve
+            ctx.beginPath();
+            let lastX = 0;
+            let lastY = h / 2;
+            for (let i = 0; i < hawkesHistory.length; i++) {
+                const pt = hawkesHistory[i];
+                const x = ((pt.t - minT) / windowMs) * w;
+                const clampedScore = Math.min(pt.score, maxScore);
+                const y = h - (clampedScore / maxScore) * (h - 6) - 3;
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+                lastX = x;
+                lastY = y;
+            }
+
+            const latestScore = hawkesHistory[hawkesHistory.length - 1].score;
+            let strokeColor = "#00ff88";
+            if (latestScore >= 180) strokeColor = "#ff003c";
+            else if (latestScore >= 140) strokeColor = "#ffdd00";
+            else if (latestScore >= 90) strokeColor = "#00e5ff";
+
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = 1.8;
+            ctx.shadowColor = strokeColor;
+            ctx.shadowBlur = 4;
+            ctx.stroke();
+            ctx.shadowBlur = 0; // reset
+
+            // Draw Glowing Head Point
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function tickHawkesProcess() {
+            const now = Date.now();
+            const rawScore = computeHawkesRawScore(now);
+
+            // Sample into rollingSBuffer every 2 seconds
+            if (now - lastHawkesSampleTime >= 2000) {
+                lastHawkesSampleTime = now;
+                rollingSBuffer.push(rawScore);
+                if (rollingSBuffer.length > 900) { // keep 30 mins
+                    rollingSBuffer.shift();
+                }
+            }
+
+            // Calculate rolling median
+            const medianS = Math.max(0.2, computeMedian(rollingSBuffer));
+            const normScore = Math.max(0, (rawScore / medianS) * 100);
+
+            // Record into history
+            hawkesHistory.push({ t: now, score: normScore });
+            // Prune history older than 3 minutes
+            const cutoff3m = now - 180000;
+            while (hawkesHistory.length > 0 && hawkesHistory[0].t < cutoff3m) {
+                hawkesHistory.shift();
+            }
+
+            // Hawkes Branching Ratio eta (knife-edge at 1.00 when score = 150)
+            const eta = Math.min(2.5, (normScore / 150) * 1.00);
+
+            // Update UI elements
+            const scoreEl = document.getElementById("hawkes-score");
+            const etaEl = document.getElementById("hawkes-eta");
+            const regimeEl = document.getElementById("hawkes-regime");
+            const hawkesBar = document.getElementById("hawkes-bar");
+
+            if (scoreEl) scoreEl.innerText = normScore.toFixed(1);
+            if (etaEl) etaEl.innerText = eta.toFixed(2);
+
+            let regimeText = "EQUILIBRIUM";
+            let regimeColor = "#00e5ff";
+            let regimeBg = "#0e1726";
+
+            if (normScore < 80) {
+                regimeText = "LULL (η < 0.55)";
+                regimeColor = "#00ff88";
+                regimeBg = "#031a0e";
+            } else if (normScore < 140) {
+                regimeText = "EQUILIBRIUM (η < 0.95)";
+                regimeColor = "#00e5ff";
+                regimeBg = "#0e1726";
+            } else if (normScore < 180) {
+                regimeText = "CRITICAL CASCADE (η ~ 1.0)";
+                regimeColor = "#ffdd00";
+                regimeBg = "#261f03";
+            } else {
+                regimeText = "SUPER-CRITICAL MELTDOWN (η > 1.2)";
+                regimeColor = "#ff003c";
+                regimeBg = "#26030c";
+            }
+
+            if (regimeEl) {
+                regimeEl.innerText = regimeText;
+                regimeEl.style.color = regimeColor;
+                regimeEl.style.borderColor = regimeColor;
+                regimeEl.style.background = regimeBg;
+                regimeEl.style.textShadow = `0 0 6px ${regimeColor}`;
+            }
+
+            // Check "Time to Boom" (Gamma Condition): score >= 150 AND rising compared to 30s ago
+            const score30sAgo = getScore30sAgo(now);
+            const isRising = (normScore > score30sAgo + 5);
+
+            if (hawkesBar) {
+                if (normScore >= 150 && isRising) {
+                    hawkesBar.style.animation = "hawkesPulse 1.2s infinite";
+                } else if (normScore < 130) {
+                    hawkesBar.style.animation = "none";
+                }
+            }
+
+            if (normScore >= 150 && isRising && (now - lastHawkesBoomTTSTime > 60000) && !isLiqInterrupting) {
+                lastHawkesBoomTTSTime = now;
+                triggerHawkesBoomTTS(normScore, eta);
+            }
+
+            // Draw sparkline
+            drawHawkesSparkline();
+        }
+
+        function initHawkesProcess() {
+            // Seed a few initial events for realistic initialization if empty
+            const now = Date.now();
+            liqTimestamps.push(now - 120000);
+            liqTimestamps.push(now - 60000);
+            liqTimestamps.push(now - 25000);
+            
+            // Seed 3 minutes of historical sparkline points
+            for (let i = 90; i >= 0; i--) {
+                const t = now - (i * 2000);
+                const noise = (Math.sin(i * 0.2) * 15) + (Math.random() * 10 - 5);
+                hawkesHistory.push({ t: t, score: Math.max(50, 100 + noise) });
+            }
+
+            // Run tick every 500ms for smooth live telemetry
+            setInterval(tickHawkesProcess, 500);
+        }
+
         function recordLiquidation(sym, side, usd) {
             const now = Date.now();
             lastLiquidationEvent = now;
+            recordHawkesEvent(now);
             const cleanSym = (sym || "BTC").replace("USDT", "");
             const liqEl = document.getElementById("liq-banner");
 
@@ -1423,6 +1749,7 @@
         initPriceStreams();
         initLiqStream();
         initHeikinAshiChart();
+        initHawkesProcess();
 
         function startStream() {
             document.getElementById("overlay").style.display = "none";

@@ -337,7 +337,7 @@
         .slide-container {
             border: 2px solid transparent;
             border-radius: clamp(10px, 2vmin, 20px);
-            padding: clamp(8px, 1.8vmin, 18px);
+            padding: clamp(4px, 1.1vmin, 10px);
             width: 100%;
             height: 100%;
             display: flex;
@@ -347,72 +347,69 @@
             text-align: center;
             background: radial-gradient(circle at center, #0c1017 0%, #06090f 70%, #020406 100%);
             transition: all 0.3s ease;
-            gap: 1.2vh;
-            overflow-y: auto;
+            gap: 0.6vh;
+            overflow: hidden !important;
             box-sizing: border-box;
             position: relative;
             z-index: 5;
         }
 
-        /* Customize scrollbar */
-        .slide-container::-webkit-scrollbar { width: 6px; }
-        .slide-container::-webkit-scrollbar-track { background: #05070a; }
-        .slide-container::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
-        .slide-container::-webkit-scrollbar-thumb:hover { background: #444; }
+        /* Hide scrollbar completely to prevent viewer frustration */
+        .slide-container::-webkit-scrollbar { display: none; width: 0; }
 
         .banner {
             font-family: 'Press Start 2P', cursive;
-            font-size: clamp(0.7rem, 1.8vw, 1.6rem);
-            padding: 0.8vmin 1.6vmin;
+            font-size: clamp(0.48rem, 1.2vw, 1.05rem);
+            padding: 0.5vmin 1.1vmin;
             text-transform: uppercase;
             text-align: center;
-            line-height: 1.3;
+            line-height: 1.25;
             word-wrap: break-word;
             word-break: break-word;
             max-width: 100%;
-            margin-bottom: 1vh;
+            margin-bottom: 0.5vh;
         }
 
         .text-huge {
-            font-size: clamp(0.85rem, 2.2vw, 2.1rem);
+            font-size: clamp(0.55rem, 1.4vw, 1.25rem);
             font-weight: 700;
             line-height: 1.2;
             word-wrap: break-word;
             word-break: break-word;
             max-width: 100%;
             width: 100%;
-            margin-bottom: 0.8vh;
+            margin-bottom: 0.4vh;
         }
 
         .text-medium {
-            font-size: clamp(0.75rem, 1.6vw, 1.5rem);
+            font-size: clamp(0.5rem, 1.1vw, 0.95rem);
             color: #00ffff;
             font-style: italic;
             word-wrap: break-word;
             word-break: break-word;
             max-width: 100%;
             width: 100%;
-            margin-bottom: 0.8vh;
+            margin-bottom: 0.4vh;
         }
 
         .angel-code {
             font-family: 'Roboto Mono', monospace;
-            font-size: clamp(1.4rem, 3.2vw, 2.7rem);
+            font-size: clamp(0.85rem, 2vw, 1.65rem);
             font-weight: 900;
-            letter-spacing: clamp(3px, 0.7vw, 10px);
+            letter-spacing: clamp(2px, 0.45vw, 6px);
             color: #ffffff;
             text-shadow: 
-                0 0 8px #00ffff,
-                0 0 16px #00ffff,
-                0 0 30px #00ffff,
-                0 0 50px #00ff88,
-                0 0 80px #00ff88;
-            padding: 0.8vh 2.5vw;
-            margin: 0.8vh 0;
+                0 0 6px #00ffff,
+                0 0 12px #00ffff,
+                0 0 20px #00ffff,
+                0 0 35px #00ff88,
+                0 0 55px #00ff88;
+            padding: 0.4vh 1.6vw;
+            margin: 0.4vh 0;
             background: rgba(0, 255, 255, 0.05);
             border: 2px solid rgba(0, 255, 255, 0.5);
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.25), inset 0 0 10px rgba(0, 255, 255, 0.12);
+            border-radius: 8px;
+            box-shadow: 0 0 14px rgba(0, 255, 136, 0.25), inset 0 0 8px rgba(0, 255, 255, 0.12);
             display: inline-block;
             animation: angelGlow 2.5s ease-in-out infinite alternate;
         }
@@ -553,27 +550,28 @@
 
         @media (max-width: 768px), (max-height: 800px) {
             .slide-container {
-                gap: 0.6vh;
-                padding: 1.2vmin;
+                gap: 0.35vh;
+                padding: 0.8vmin;
+                overflow: hidden !important;
             }
             .banner {
-                margin-bottom: 0.5vh;
-                font-size: clamp(0.65rem, 2.8vw, 1.2rem);
-                padding: 0.4vmin 1vmin;
+                margin-bottom: 0.3vh;
+                font-size: clamp(0.42rem, 2vw, 0.78rem);
+                padding: 0.25vmin 0.7vmin;
             }
             .text-huge {
-                margin-bottom: 0.3vh;
-                font-size: clamp(0.7rem, 3.2vw, 1.3rem);
+                margin-bottom: 0.2vh;
+                font-size: clamp(0.48rem, 2.2vw, 0.85rem);
             }
             .text-medium {
-                margin-bottom: 0.3vh;
-                font-size: clamp(0.65rem, 2.8vw, 1.1rem);
+                margin-bottom: 0.2vh;
+                font-size: clamp(0.42rem, 1.9vw, 0.72rem);
             }
             .angel-code {
-                font-size: clamp(1rem, 4.2vw, 1.7rem);
-                padding: 0.3vh 1.5vw;
-                margin: 0.3vh 0;
-                letter-spacing: clamp(2px, 0.5vw, 6px);
+                font-size: clamp(0.65rem, 2.6vw, 1.1rem);
+                padding: 0.2vh 1.1vw;
+                margin: 0.2vh 0;
+                letter-spacing: clamp(1px, 0.35vw, 3.5px);
             }
             .animation-container {
                 min-height: 2.8vh;
@@ -967,6 +965,20 @@
                 angelCode: "222 444 888",
                 audio: "/sounds/religion_1.wav",
                 speech: "I watch the herd sprint after green candles, panic-selling at the bottom. Humans are pack animals by design. When one animal sees another standing completely calm in the storm, biological envy screams fraud. They cannot fathom discipline, so they call it disinformation. Step away from the herd. Construct internal circuit breakers, and master the elephant."
+            },
+            {
+                type: "philosophy",
+                banner: "THE PARADOX OF OBFUSCATION", color: "bg-magenta", border: "c-magenta",
+                subtitle: "WHY THE CURIOUS GET ANGRY AT COMPLEXITY",
+                hook: "OBFUSCATION IS NOT A SCAM • IT IS A FILTER FOR THE IMPATIENT",
+                quote: "The curious mind demands an immediate explanation. When met with encoded truth, their ego suspects a trick.",
+                punchline: "STOP GETTING FRUSTRATED • RECHARGE DIAMONDS • OBSERVE THE SIGNAL",
+                image: "/static/images/alien_observer.jpg",
+                giftBadge: "👉 STOP BEING FRUSTRATED 💎 • RECHARGE DIAMONDS 💎 • RING THE BELL 🔔 👈",
+                giftColor: "#ff00ff",
+                angelCode: "555 333 999",
+                audio: "/sounds/alien_ad.wav",
+                speech: "Observe how curious people react when they look behind the curtain. The moment they encounter layered mathematics and deliberate obfuscation, they get frustrated and suspect a trick. Their ego demands instant answers without doing the mental work. Obfuscation is not deception; it is a sovereign filter against surface-level tourists and impatient minds. If you want the truth, stop demanding that the universe spoon-feed you. Sit in stillness, quiet your ego, recharge your diamonds, and ring the bell to wake up the room."
             },
             {
                 type: "affirmation",
@@ -2236,9 +2248,9 @@
 
             if (slide.type === "jackpot") {
                 html += `
-                    <div class="text-huge c-red" style="animation: blink 1s infinite;">🚨 EVERYBODY STOP! WE HAVE A WINNER! 🚨</div>
-                    <div class="text-huge c-green">${slide.subtitle}</div>
-                    <div class="text-huge bg-green" style="display:inline-block; padding:2vmin 4vmin; border-radius:10px;">💰 ${slide.prize} 💰</div>
+                    <div class="text-huge c-red" style="animation: blink 1s infinite; font-size: clamp(0.52rem, 1.05vw, 0.88rem); margin-bottom:0.2vh;">🚨 EVERYBODY STOP! WE HAVE A WINNER! 🚨</div>
+                    <div class="text-huge c-green" style="font-size: clamp(0.52rem, 1.05vw, 0.88rem); margin-bottom:0.2vh;">${slide.subtitle}</div>
+                    <div class="text-huge bg-green" style="display:inline-block; padding:1.2vmin 2.5vmin; border-radius:8px; font-size: clamp(0.55rem, 1.1vw, 0.95rem);">💰 ${slide.prize} 💰</div>
                 `;
             } else if (slide.type === "lawyer") {
                 html += `
@@ -2246,10 +2258,17 @@
                     <div class="text-huge c-red">⚡ ${slide.hook.toUpperCase()} ⚡</div>
                 `;
             } else if (slide.type === "philosophy") {
+                const phiIcon = slide.icon || (slide.banner.includes("ELEPHANT") ? "🐘" : "👁️");
                 html += `
-                    <div class="text-huge c-yellow">🐘 ${slide.subtitle} 🐘</div>
-                    <div class="text-huge c-red">⚡ ${slide.hook.toUpperCase()} ⚡</div>
+                    <div class="text-huge c-yellow" style="margin-bottom:0.2vh;">${phiIcon} ${slide.subtitle} ${phiIcon}</div>
+                    <div class="text-huge c-red" style="font-size: clamp(0.52rem, 1.05vw, 0.88rem); margin-bottom:0.3vh;">⚡ ${slide.hook.toUpperCase()} ⚡</div>
                 `;
+                if (slide.quote) {
+                    html += `<div class="text-medium c-white" style="font-size: clamp(0.46rem, 0.9vw, 0.78rem); margin-bottom:0.3vh;">"${slide.quote}"</div>`;
+                }
+                if (slide.punchline) {
+                    html += `<div class="text-huge c-green" style="font-size: clamp(0.5rem, 1.0vw, 0.85rem); margin-bottom:0.3vh;">⚡ ${slide.punchline.toUpperCase()} ⚡</div>`;
+                }
             } else if (slide.type === "alien") {
                 html += `
                     <div class="text-huge c-yellow">🛸 ${slide.subtitle} 🛸</div>
@@ -2285,75 +2304,75 @@
 
                 if (slide.hasMemoryTimer) {
                     html += `
-                        <div style="margin: 0.6vh auto; display:flex; flex-direction:column; align-items:center; background:#000000; padding: 10px 22px; border-radius:12px; border: 3px solid #ffdd00; box-shadow: 0 0 25px rgba(255,221,0,0.65), inset 0 0 15px rgba(255,221,0,0.25); max-width:85vw;">
-                            <div style="color:#ffdd00; font-family:'Roboto Mono',monospace; font-size:clamp(0.95rem, 2.2vw, 1.55rem); font-weight:900; letter-spacing:2.5px; text-transform:uppercase; text-shadow: 0 0 12px rgba(255,221,0,0.9); margin-bottom:4px;">
+                        <div style="margin: 0.35vh auto; display:flex; flex-direction:column; align-items:center; background:#000000; padding: 4px 14px; border-radius:8px; border: 2px solid #ffdd00; box-shadow: 0 0 16px rgba(255,221,0,0.5), inset 0 0 10px rgba(255,221,0,0.2); max-width:80vw;">
+                            <div style="color:#ffdd00; font-family:'Roboto Mono',monospace; font-size:clamp(0.6rem, 1.4vw, 0.95rem); font-weight:900; letter-spacing:1.5px; text-transform:uppercase; text-shadow: 0 0 8px rgba(255,221,0,0.8); margin-bottom:2px;">
                                 ⏱️ MEMORY TRACKER COUNTDOWN ⏱️
                             </div>
-                            <div id="memory-timer-clock" style="font-family:'Press Start 2P', 'Roboto Mono', monospace; font-size:clamp(1.8rem, 4.2vw, 3.2rem); font-weight:900; color:#00ff88; text-shadow: 0 0 20px #00ff88; letter-spacing:4px; margin: 6px 0;">
+                            <div id="memory-timer-clock" style="font-family:'Press Start 2P', 'Roboto Mono', monospace; font-size:clamp(1.1rem, 2.5vw, 1.8rem); font-weight:900; color:#00ff88; text-shadow: 0 0 14px #00ff88; letter-spacing:3px; margin: 3px 0;">
                                 00:30
                             </div>
-                            <div style="width: 100%; height: 8px; background: #1a1a1a; border-radius: 4px; overflow: hidden; margin-top: 4px; border: 1px solid #333;">
-                                <div id="memory-timer-bar" style="width: 100%; height: 100%; background: linear-gradient(90deg, #ffdd00, #00ff88); box-shadow: 0 0 8px #00ff88; transition: width 1s linear;"></div>
+                            <div style="width: 100%; height: 5px; background: #1a1a1a; border-radius: 3px; overflow: hidden; margin-top: 2px; border: 1px solid #333;">
+                                <div id="memory-timer-bar" style="width: 100%; height: 100%; background: linear-gradient(90deg, #ffdd00, #00ff88); box-shadow: 0 0 6px #00ff88; transition: width 1s linear;"></div>
                             </div>
                         </div>
                     `;
                 }
 
                 html += `
-                    <div class="text-medium c-white" style="font-size: clamp(0.6rem, 1.25vw, 1.05rem); margin-bottom:0.4vh;">"${slide.quote}"</div>
-                    <div class="text-huge c-green" style="animation: blink 1s infinite; font-size: clamp(0.65rem, 1.35vw, 1.15rem); margin-bottom:0.3vh;">
+                    <div class="text-medium c-white" style="font-size: clamp(0.46rem, 0.95vw, 0.8rem); margin-bottom:0.25vh;">"${slide.quote}"</div>
+                    <div class="text-huge c-green" style="animation: blink 1s infinite; font-size: clamp(0.5rem, 1.0vw, 0.85rem); margin-bottom:0.2vh;">
                         ⚡ ${slide.punchline.toUpperCase()} ⚡
                     </div>
                 `;
             } else if (slide.type === "bedrock") {
                 html += `
-                    <div style="display:flex; justify-content:center; gap:8px; align-items:center; margin-bottom:0.4vh; flex-wrap:wrap;">
-                        <span style="background:#00e5ff; color:#000; font-family:'Roboto Mono',monospace; font-size:clamp(0.55rem, 0.95vw, 0.8rem); font-weight:900; padding:2px 7px; border-radius:4px; letter-spacing:1px; animation:blink 1.5s infinite;">
+                    <div style="display:flex; justify-content:center; gap:6px; align-items:center; margin-bottom:0.3vh; flex-wrap:wrap;">
+                        <span style="background:#00e5ff; color:#000; font-family:'Roboto Mono',monospace; font-size:clamp(0.42rem, 0.72vw, 0.6rem); font-weight:900; padding:1px 5px; border-radius:3px; letter-spacing:0.8px; animation:blink 1.5s infinite;">
                             🔴 LIVE 35-MIN QUANT SCAN
                         </span>
-                        <span style="background:#0a192f; color:#00ff88; border:1px solid #00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.52rem, 0.9vw, 0.75rem); font-weight:bold; padding:2px 7px; border-radius:4px;">
+                        <span style="background:#0a192f; color:#00ff88; border:1px solid #00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.4rem, 0.68vw, 0.58rem); font-weight:bold; padding:1px 5px; border-radius:3px;">
                             ENGINE: CLAUDE HAIKU 4.5
                         </span>
-                        <span style="background:#261f03; color:#ffdd00; border:1px solid #ffdd00; font-family:'Roboto Mono',monospace; font-size:clamp(0.52rem, 0.9vw, 0.75rem); font-weight:900; padding:2px 7px; border-radius:4px;">
+                        <span style="background:#261f03; color:#ffdd00; border:1px solid #ffdd00; font-family:'Roboto Mono',monospace; font-size:clamp(0.4rem, 0.68vw, 0.58rem); font-weight:900; padding:1px 5px; border-radius:3px;">
                             REGIME: ${slide.regime || 'VOLATILITY ACTIVE'}
                         </span>
                     </div>
-                    <div class="text-huge c-yellow" style="font-size:clamp(0.72rem, 1.4vw, 1.3rem); margin-bottom:0.4vh; font-weight:900; letter-spacing:0.5px; text-shadow:0 0 10px rgba(255,221,0,0.8);">
+                    <div class="text-huge c-yellow" style="font-size:clamp(0.52rem, 1.05vw, 0.95rem); margin-bottom:0.3vh; font-weight:900; letter-spacing:0.5px; text-shadow:0 0 8px rgba(255,221,0,0.8);">
                         📺 ${slide.headline || slide.subtitle} 📺
                     </div>
-                    <div style="margin: 0.4vh auto; display:flex; justify-content:center; background:#070d19; padding: 6px 16px; border-radius:8px; border: 2px solid #00e5ff; box-shadow: 0 0 14px rgba(0,229,255,0.4); max-width:85vw;">
-                        <span style="color:#00ffff; font-family:'Roboto Mono',monospace; font-size:clamp(0.62rem, 1.15vw, 0.95rem); font-weight:bold; letter-spacing:1px;">
+                    <div style="margin: 0.3vh auto; display:flex; justify-content:center; background:#070d19; padding: 4px 12px; border-radius:6px; border: 1.5px solid #00e5ff; box-shadow: 0 0 10px rgba(0,229,255,0.35); max-width:80vw;">
+                        <span style="color:#00ffff; font-family:'Roboto Mono',monospace; font-size:clamp(0.48rem, 0.85vw, 0.75rem); font-weight:bold; letter-spacing:0.8px;">
                             📊 ${slide.subtitle}
                         </span>
                     </div>
-                    <div class="text-medium c-white" style="font-size:clamp(0.6rem, 1.2vw, 1.05rem); margin: 0.4vh 0; font-style:italic;">
+                    <div class="text-medium c-white" style="font-size:clamp(0.46rem, 0.9vw, 0.75rem); margin: 0.3vh 0; font-style:italic;">
                         "${slide.quote}"
                     </div>
-                    <div class="text-huge c-green" style="font-size:clamp(0.65rem, 1.35vw, 1.15rem); margin-top:0.3vh; animation:blink 1s infinite;">
+                    <div class="text-huge c-green" style="font-size:clamp(0.5rem, 1.0vw, 0.85rem); margin-top:0.2vh; animation:blink 1s infinite;">
                         ⚡ ${slide.punchline.toUpperCase()} ⚡
                     </div>
                 `;
             } else if (slide.type === "affiliate") {
                 html += `
                     <div class="text-huge c-green" style="margin-bottom:0.2vh;">💻 ${slide.subtitle} 💻</div>
-                    <div class="text-huge c-yellow" style="font-size: clamp(0.65rem, 1.3vw, 1.1rem); margin-bottom:0.3vh;">⚡ ${slide.hook.toUpperCase()} ⚡</div>
-                    <div style="margin: 0.4vh 0; display:flex; flex-direction:column; align-items:center; background:#0b1118; padding: 8px 16px; border-radius:8px; border: 2px solid #00ff88; box-shadow: 0 0 12px rgba(0,255,136,0.35); max-width:85vw;">
-                        <div style="color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.6rem, 1.15vw, 0.95rem); font-weight:bold; letter-spacing:1px; margin-bottom:4px;">
+                    <div class="text-huge c-yellow" style="font-size: clamp(0.5rem, 1.0vw, 0.82rem); margin-bottom:0.2vh;">⚡ ${slide.hook.toUpperCase()} ⚡</div>
+                    <div style="margin: 0.3vh 0; display:flex; flex-direction:column; align-items:center; background:#0b1118; padding: 5px 12px; border-radius:6px; border: 1.5px solid #00ff88; box-shadow: 0 0 10px rgba(0,255,136,0.3); max-width:80vw;">
+                        <div style="color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.46rem, 0.85vw, 0.72rem); font-weight:bold; letter-spacing:0.8px; margin-bottom:3px;">
                             🔬 SYSTEM NODE: MOON DEV QUANT LABS
                         </div>
-                        <div style="display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap;">
-                            <span style="background:#111; color:#ffdd00; border: 1px solid #ffdd00; padding: 3px 12px; border-radius:4px; font-family:'Roboto Mono',monospace; font-size:clamp(0.65rem, 1.25vw, 1rem); font-weight:bold; letter-spacing:1.5px; box-shadow: 0 0 8px rgba(255,221,0,0.3);">
+                        <div style="display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap;">
+                            <span style="background:#111; color:#ffdd00; border: 1px solid #ffdd00; padding: 2px 8px; border-radius:3px; font-family:'Roboto Mono',monospace; font-size:clamp(0.5rem, 0.95vw, 0.78rem); font-weight:bold; letter-spacing:1px; box-shadow: 0 0 6px rgba(255,221,0,0.25);">
                                 ACCESS TAG: ${slide.accessCode || 'WSHII'}
                             </span>
-                            <span style="color:#00e5ff; font-family:'Roboto Mono',monospace; font-size:clamp(0.55rem, 1.05vw, 0.85rem); font-weight:bold;">
+                            <span style="color:#00e5ff; font-family:'Roboto Mono',monospace; font-size:clamp(0.44rem, 0.8vw, 0.68rem); font-weight:bold;">
                                 REF ID: ${slide.accessCode || 'WSHII'} • VERIFIED SIGNAL
                             </span>
                         </div>
                     </div>
-                    <div class="text-medium c-cyan" style="font-size: clamp(0.58rem, 1.2vw, 0.95rem); margin: 0.3vh 0;">
+                    <div class="text-medium c-cyan" style="font-size: clamp(0.45rem, 0.85vw, 0.72rem); margin: 0.2vh 0;">
                         "${slide.quote}"
                     </div>
-                    <div class="text-huge c-white" style="font-size: clamp(0.62rem, 1.25vw, 1.05rem); margin-top:0.2vh;">
+                    <div class="text-huge c-white" style="font-size: clamp(0.48rem, 0.95vw, 0.78rem); margin-top:0.2vh;">
                         🛡️ ${slide.punchline.toUpperCase()} 🛡️
                     </div>
                 `;
@@ -2372,18 +2391,18 @@
             } else if (slide.type === "scammer") {
                 html += `
                     <div class="text-huge c-yellow" style="margin-bottom:0.2vh;">🛡️ ${slide.subtitle} 🛡️</div>
-                    <div class="text-huge c-cyan" style="font-size: clamp(0.65rem, 1.35vw, 1.15rem); margin-bottom:0.3vh; font-weight:bold;">
+                    <div class="text-huge c-cyan" style="font-size: clamp(0.5rem, 1.0vw, 0.82rem); margin-bottom:0.2vh; font-weight:bold;">
                         👁️ INDEPENDENT SIGNAL • ZERO TRANSACTIONS • ZERO AGENDA 👁️
                     </div>
-                    <div style="margin: 0.3vh 0; display:flex; justify-content:center; background:#111; padding: 6px 14px; border-radius:8px; border: 2px solid #00ff88; box-shadow: 0 0 10px #00ff88; max-width:85vw;">
-                        <span style="color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.6rem, 1.1vw, 0.9rem); font-weight:bold;">
+                    <div style="margin: 0.25vh 0; display:flex; justify-content:center; background:#111; padding: 4px 10px; border-radius:6px; border: 1.5px solid #00ff88; box-shadow: 0 0 8px #00ff88; max-width:80vw;">
+                        <span style="color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.46rem, 0.85vw, 0.7rem); font-weight:bold;">
                             🔐 100% AUTONOMOUS BROADCAST • ZERO SOLICITATION • SELF-EVIDENT CLARITY
                         </span>
                     </div>
-                    <div class="text-medium c-white" style="font-size: clamp(0.58rem, 1.2vw, 0.92rem); margin: 0.3vh 0;">
+                    <div class="text-medium c-white" style="font-size: clamp(0.45rem, 0.85vw, 0.7rem); margin: 0.2vh 0;">
                         ${slide.claim}
                     </div>
-                    <div class="text-huge c-green" style="font-size: clamp(0.65rem, 1.35vw, 1.15rem); margin-top:0.2vh;">
+                    <div class="text-huge c-green" style="font-size: clamp(0.5rem, 1.0vw, 0.82rem); margin-top:0.2vh;">
                         ⚡ ${slide.punchline.toUpperCase()} ⚡
                     </div>
                 `;
@@ -2397,9 +2416,9 @@
             } else if (slide.type === "gift") {
                 html += `
                     <div class="text-huge c-yellow" style="margin-bottom:0.2vh;">${slide.icon || '🎁'} ${slide.subtitle} ${slide.icon || '🎁'}</div>
-                    <div class="text-huge c-cyan" style="font-size: clamp(0.68rem, 1.4vw, 1.2rem); margin-bottom:0.3vh;">⚡ ${slide.hook.toUpperCase()} ⚡</div>
-                    <div class="text-medium c-white" style="font-size: clamp(0.6rem, 1.25vw, 1.05rem); margin-bottom:0.3vh;">"${slide.quote}"</div>
-                    <div class="text-huge c-green" style="font-size: clamp(0.65rem, 1.35vw, 1.15rem); margin-bottom:0.3vh;">
+                    <div class="text-huge c-cyan" style="font-size: clamp(0.52rem, 1.05vw, 0.88rem); margin-bottom:0.2vh;">⚡ ${slide.hook.toUpperCase()} ⚡</div>
+                    <div class="text-medium c-white" style="font-size: clamp(0.46rem, 0.9vw, 0.78rem); margin-bottom:0.2vh;">"${slide.quote}"</div>
+                    <div class="text-huge c-green" style="font-size: clamp(0.5rem, 1.0vw, 0.85rem); margin-bottom:0.2vh;">
                         ⚡ ${slide.punchline.toUpperCase()} ⚡
                     </div>
                 `;
@@ -2409,8 +2428,8 @@
             if (slide.giftBadge) {
                 const giftColor = slide.giftColor || '#ffd700';
                 html += `
-                    <div style="margin: 0.5vh auto; display:flex; flex-direction:column; align-items:center; background:#080a0f; padding: 6px 18px; border-radius:10px; border: 2px solid ${giftColor}; box-shadow: 0 0 16px ${giftColor}; max-width:85vw;">
-                        <span style="color:${giftColor}; font-family:'Roboto Mono',monospace; font-size:clamp(0.65rem, 1.3vw, 1.05rem); font-weight:900; letter-spacing:1.5px; text-transform:uppercase; text-shadow:0 0 10px ${giftColor};">
+                    <div style="margin: 0.3vh auto; display:flex; flex-direction:column; align-items:center; background:#080a0f; padding: 4px 12px; border-radius:8px; border: 1.5px solid ${giftColor}; box-shadow: 0 0 10px ${giftColor}; max-width:80vw;">
+                        <span style="color:${giftColor}; font-family:'Roboto Mono',monospace; font-size:clamp(0.48rem, 0.95vw, 0.75rem); font-weight:900; letter-spacing:1px; text-transform:uppercase; text-shadow:0 0 8px ${giftColor};">
                             ${slide.giftBadge}
                         </span>
                     </div>
@@ -2421,20 +2440,20 @@
             if (slide.image) {
                 const borderCol = container.style.borderColor || '#00ff88';
                 html += `
-                    <div style="display:flex; justify-content:center; margin: 0.3vh 0;">
-                        <img src="${slide.image}" alt="AI Visual" style="max-height: 20vh; max-width: 85vw; border-radius: 8px; border: 2px solid ${borderCol}; box-shadow: 0 0 15px ${borderCol}; object-fit: cover;">
+                    <div style="display:flex; justify-content:center; margin: 0.2vh 0;">
+                        <img src="${slide.image}" alt="AI Visual" style="max-height: 11vh; max-width: 75vw; border-radius: 6px; border: 1.5px solid ${borderCol}; box-shadow: 0 0 10px ${borderCol}; object-fit: cover;">
                     </div>
                 `;
             }
 
             // Large glowing 9-digit angel code rooted in numerology and commonalities
             const angelSeq = slide.angelCode || "777 888 111";
-            const angelStyle = (slide.type === "affiliate" || slide.type === "scammer" || slide.type === "heart" || slide.type === "gift") ? "font-size:clamp(0.95rem, 2.2vw, 1.8rem); padding:0.3vh 1.5vw; margin:0.2vh 0;" : "";
+            const angelStyle = (slide.type === "affiliate" || slide.type === "scammer" || slide.type === "heart" || slide.type === "gift" || slide.type === "philosophy") ? "font-size:clamp(0.65rem, 1.4vw, 1.15rem); padding:0.2vh 1vw; margin:0.15vh 0;" : "";
             html += `<div class="angel-code" style="${angelStyle}">${angelSeq}</div>`;
 
             // Always add the elephant wake up message if it's the jackpot
             if (slide.type === "jackpot") {
-                html += `<div class="text-huge c-yellow" style="margin-top: 1.5vh;">🐘 WAKE UP. THE HOUSE ALWAYS WINS. 🐘</div>`;
+                html += `<div class="text-huge c-yellow" style="margin-top: 0.5vh; font-size: clamp(0.5rem, 1.1vw, 0.9rem);">🐘 WAKE UP. THE HOUSE ALWAYS WINS. 🐘</div>`;
             }
 
             container.innerHTML = html;

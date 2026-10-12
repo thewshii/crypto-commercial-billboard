@@ -154,6 +154,20 @@
                 speech: "I watch the herd chase the green candle. Step away from the crowd, and reclaim your sovereignty."
             },
             {
+                type: "philosophy",
+                banner: "THE PARADOX OF OBFUSCATION", color: "bg-magenta", border: "c-magenta",
+                subtitle: "WHY THE CURIOUS GET ANGRY AT COMPLEXITY",
+                hook: "OBFUSCATION IS NOT A SCAM • IT IS A FILTER FOR THE IMPATIENT",
+                quote: "The curious mind demands an immediate explanation. When met with encoded truth, their ego suspects a trick.",
+                punchline: "STOP GETTING FRUSTRATED • RECHARGE DIAMONDS • OBSERVE THE SIGNAL",
+                lore: "Curious people who look behind the curtain get angry when they encounter intentional obfuscation. They suspect a scam because their ego cannot accept that truth requires patience. Obfuscation is a sovereign filter against surface-level tourists.",
+                giftBadge: "👉 STOP BEING FRUSTRATED 💎 • RECHARGE DIAMONDS 💎 • RING THE BELL 🔔 👈",
+                giftColor: "#ff00ff",
+                angelCode: "555 333 999",
+                audio: "/sounds/alien_1.wav",
+                speech: "Observe how curious people react when they look behind the curtain. The moment they encounter layered mathematics and deliberate obfuscation, they get frustrated and suspect a trick. Their ego demands instant answers without doing the mental work. Obfuscation is not deception; it is a sovereign filter against surface-level tourists and impatient minds. If you want the truth, stop demanding that the universe spoon-feed you. Sit in stillness, quiet your ego, recharge your diamonds, and ring the bell to wake up the room."
+            },
+            {
                 type: "alien",
                 banner: "GALACTIC TRUTH", color: "bg-cyan", border: "c-cyan",
                 subtitle: "DARK MATTER YIELD",
@@ -274,10 +288,17 @@
                     <div class="text-huge c-red">⚡ ${slide.hook.toUpperCase()} ⚡</div>
                 `;
             } else if (slide.type === "philosophy") {
+                const phiIcon = slide.icon || (slide.banner.includes("ELEPHANT") ? "🐘" : "👁️");
                 html += `
-                    <div class="text-huge c-yellow">🐘 ${slide.subtitle} 🐘</div>
-                    <div class="text-huge c-red">⚡ ${slide.hook.toUpperCase()} ⚡</div>
+                    <div class="text-huge c-yellow" style="margin-bottom:0.2vh;">${phiIcon} ${slide.subtitle} ${phiIcon}</div>
+                    <div class="text-huge c-red" style="font-size: clamp(0.52rem, 1.05vw, 0.88rem); margin-bottom:0.3vh;">⚡ ${slide.hook.toUpperCase()} ⚡</div>
                 `;
+                if (slide.quote) {
+                    html += `<div class="text-medium c-white" style="font-size: clamp(0.46rem, 0.9vw, 0.78rem); margin-bottom:0.3vh;">"${slide.quote}"</div>`;
+                }
+                if (slide.punchline) {
+                    html += `<div class="text-huge c-green" style="font-size: clamp(0.5rem, 1.0vw, 0.85rem); margin-bottom:0.3vh;">⚡ ${slide.punchline.toUpperCase()} ⚡</div>`;
+                }
             } else if (slide.type === "alien") {
                 html += `
                     <div class="text-huge c-yellow">🛸 ${slide.subtitle} 🛸</div>

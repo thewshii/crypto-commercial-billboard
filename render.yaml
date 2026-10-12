@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: crypto-commercial-billboard
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn web_billboard:app
+    plan: free

@@ -1,0 +1,155 @@
+{
+  "version": "v2-devwallet",
+  "feature_names": [
+    "dev_buy_sol",
+    "liquidity_usd",
+    "top_holder_pct",
+    "is_social_missing",
+    "age_lt_0.1d",
+    "age_0.1_1d",
+    "age_1_7d",
+    "age_7_30d",
+    "age_30_365d",
+    "age_gt_365d",
+    "age_capped_unknown",
+    "age_missing",
+    "txn_lt_10",
+    "txn_10_50",
+    "txn_50_200",
+    "txn_200_1k",
+    "txn_1k_10k",
+    "txn_10k_40k",
+    "txn_capped_40k",
+    "txn_missing"
+  ],
+  "log1p": [
+    "dev_buy_sol"
+  ],
+  "mean": [
+    0.2927714825395667,
+    8878.35678941555,
+    0.04407377183214372,
+    0.755625,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "std": [
+    2.0762949388456686,
+    2564.6282756207934,
+    0.823423985812827,
+    0.4297160217806726,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+  ],
+  "weights": [
+    0.04887682953658395,
+    0.16696261020511782,
+    -0.12402110145645628,
+    -0.11709712381786234,
+    1.0806868853123588,
+    0.9702181297877563,
+    0.3169659098139214,
+    -0.4752973153460815,
+    -0.5485384936929563,
+    -1.3143586747257716,
+    -0.4210568194814084,
+    0.28335333264991874,
+    -1.3993946160886328,
+    -0.8444245452260388,
+    0.16030381328662277,
+    0.5489880882628243,
+    0.7089062011360036,
+    0.8552974997784502,
+    -0.4210568194814084,
+    0.28335333264991874
+  ],
+  "bias": -0.16203265908233305,
+  "threshold": 0.15,
+  "trained_rows": 3200,
+  "label": "P(rug) \u2014 BUY only if below threshold",
+  "meta": {
+    "val_rows": 800,
+    "val_auc": 0.7032,
+    "val_ev_per_buy_at_thr": -0.1188,
+    "threshold_table": [
+      {
+        "thr": 0.1,
+        "prec_rug_given_buy": 0.23,
+        "recall": 0.005,
+        "ev_per_buy": -0.3893
+      },
+      {
+        "thr": 0.15,
+        "prec_rug_given_buy": 0.1067,
+        "recall": 0.005,
+        "ev_per_buy": -0.1188
+      },
+      {
+        "thr": 0.2,
+        "prec_rug_given_buy": 0.1095,
+        "recall": 0.0175,
+        "ev_per_buy": -0.2101
+      },
+      {
+        "thr": 0.25,
+        "prec_rug_given_buy": 0.1149,
+        "recall": 0.025,
+        "ev_per_buy": -0.2691
+      },
+      {
+        "thr": 0.3,
+        "prec_rug_given_buy": 0.1077,
+        "recall": 0.0475,
+        "ev_per_buy": -0.2253
+      }
+    ],
+    "age_edges_days": [
+      0,
+      0.1,
+      1,
+      7,
+      30,
+      365
+    ],
+    "txn_edges": [
+      0,
+      10,
+      50,
+      200,
+      1000,
+      10000,
+      40000
+    ],
+    "base_rug_rate_assumed": 0.23,
+    "fee_roundtrip_assumed": 0.1,
+    "note": "Candidate for PAPER forward validation only. Not a validated deployment. Retrospective fit; the honest test is ~150 forward paper buys."
+  }
+}

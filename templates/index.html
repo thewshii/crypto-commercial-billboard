@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRYPTO RUG FILTER BILLBOARD</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto+Mono:wght@400;700&display=swap');
+        
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: #050505;
+            color: #ffffff;
+            font-family: 'Roboto Mono', monospace;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: #111;
+            border-bottom: 2px solid #ff003c;
+            padding: 1.5vh 3vw;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            font-size: clamp(0.8rem, 1.5vw, 1.5rem);
+            color: #ff003c;
+            text-shadow: 0 0 5px #ff003c;
+            gap: 10px;
+        }
+
+        .value-scale {
+            color: #00ffff;
+            text-shadow: 0 0 5px #00ffff;
+            white-space: nowrap;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0.5vmin;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .slide-container {
+            border: clamp(2px, 0.5vw, 6px) solid #00ff88;
+            border-radius: 15px;
+            padding: 2vmin;
+            width: 98%;
+            height: 98%;
+            max-width: 1400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background-color: #111;
+            box-shadow: 0 0 20px #00ff88;
+            transition: all 0.3s ease;
+            gap: 1.2vh;
+            overflow-y: auto;
+        }
+
+        /* Customize scrollbar */
+        .slide-container::-webkit-scrollbar { width: 6px; }
+        .slide-container::-webkit-scrollbar-track { background: #111; }
+        .slide-container::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        .slide-container::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        .banner {
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(0.7rem, 1.8vw, 1.6rem);
+            padding: 0.8vmin 1.6vmin;
+            text-transform: uppercase;
+            text-align: center;
+            line-height: 1.3;
+            word-wrap: break-word;
+            word-break: break-word;
+            max-width: 100%;
+            margin-bottom: 1vh;
+        }
+
+        .text-huge {
+            font-size: clamp(0.85rem, 2.2vw, 2.1rem);
+            font-weight: 700;
+            line-height: 1.2;
+            word-wrap: break-word;
+            word-break: break-word;
+            max-width: 100%;
+            width: 100%;
+            margin-bottom: 0.8vh;
+        }
+
+        .text-medium {
+            font-size: clamp(0.75rem, 1.6vw, 1.5rem);
+            color: #00ffff;
+            font-style: italic;
+            word-wrap: break-word;
+            word-break: break-word;
+            max-width: 100%;
+            width: 100%;
+            margin-bottom: 0.8vh;
+        }
+
+        .angel-code {
+            font-family: 'Roboto Mono', monospace;
+            font-size: clamp(1.4rem, 3.2vw, 2.7rem);
+            font-weight: 900;
+            letter-spacing: clamp(3px, 0.7vw, 10px);
+            color: #ffffff;
+            text-shadow: 
+                0 0 8px #00ffff,
+                0 0 16px #00ffff,
+                0 0 30px #00ffff,
+                0 0 50px #00ff88,
+                0 0 80px #00ff88;
+            padding: 0.8vh 2.5vw;
+            margin: 0.8vh 0;
+            background: rgba(0, 255, 255, 0.05);
+            border: 2px solid rgba(0, 255, 255, 0.5);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.25), inset 0 0 10px rgba(0, 255, 255, 0.12);
+            display: inline-block;
+            animation: angelGlow 2.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes angelGlow {
+            0% {
+                text-shadow: 
+                    0 0 6px #00ffff,
+                    0 0 14px #00ffff,
+                    0 0 25px #00ffff,
+                    0 0 45px #00ff88;
+                box-shadow: 0 0 15px rgba(0, 255, 136, 0.2), inset 0 0 8px rgba(0, 255, 255, 0.1);
+                border-color: rgba(0, 255, 255, 0.4);
+            }
+            100% {
+                text-shadow: 
+                    0 0 10px #ffffff,
+                    0 0 20px #00ffff,
+                    0 0 40px #00ffff,
+                    0 0 65px #00ff88,
+                    0 0 95px #00ff88;
+                box-shadow: 0 0 30px rgba(0, 255, 136, 0.45), inset 0 0 16px rgba(0, 255, 255, 0.2);
+                border-color: #00ff88;
+            }
+        }
+
+        .animation-container {
+            font-family: monospace;
+            white-space: pre;
+            color: #ffff00;
+            text-align: center;
+            font-size: clamp(0.45rem, 0.9vw, 0.85rem);
+            line-height: 1.05;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0.2vh 0;
+            min-height: 4.5vh;
+        }
+
+        .marquee-container {
+            background-color: #ffff00;
+            color: #000;
+            font-size: clamp(1rem, 2vw, 2rem);
+            font-weight: bold;
+            padding: 1vh 0;
+            overflow: hidden;
+            white-space: nowrap;
+            width: 100%;
+        }
+
+        .marquee-text {
+            display: inline-block;
+            animation: marquee 20s linear infinite;
+            padding-left: 100vw;
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* Color classes */
+        .c-yellow { color: #ffff00; text-shadow: 0 0 10px #ffff00; }
+        .c-red { color: #ff003c; text-shadow: 0 0 10px #ff003c; }
+        .c-green { color: #00ff88; text-shadow: 0 0 10px #00ff88; }
+        .c-cyan { color: #00ffff; text-shadow: 0 0 10px #00ffff; }
+        .c-magenta { color: #ff00ff; text-shadow: 0 0 10px #ff00ff; }
+        .c-white { color: #ffffff; text-shadow: 0 0 10px #ffffff; }
+
+        .bg-yellow { background-color: #ffff00; color: #000; text-shadow: none; }
+        .bg-red { background-color: #ff003c; color: #fff; text-shadow: none; }
+        .bg-green { background-color: #00ff88; color: #000; text-shadow: none; }
+        .bg-cyan { background-color: #00ffff; color: #000; text-shadow: none; }
+        .bg-magenta { background-color: #ff00ff; color: #fff; text-shadow: none; }
+        .bg-white { background-color: #ffffff; color: #000; text-shadow: none; }
+
+        /* Heikin-Ashi Live Chart */
+        .chart-section {
+            width: 100%;
+            height: 11vh;
+            min-height: 75px;
+            max-height: 120px;
+            background: #080808;
+            border-top: 1px solid #1a1a1a;
+            border-bottom: 2px solid #00ff88;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            padding: 2px 8px;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.15);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: clamp(0.6rem, 1vw, 0.85rem);
+            color: #888;
+            padding: 2px 4px;
+            font-family: 'Roboto Mono', monospace;
+        }
+
+        .chart-canvas-container {
+            flex-grow: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #ha-chart {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        #overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            color: #00ff88;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: clamp(1.5rem, 4vw, 4rem);
+            text-align: center;
+            z-index: 1000;
+            cursor: pointer;
+            padding: 20px;
+        }
+
+        @media (max-width: 768px), (max-height: 800px) {
+            .slide-container {
+                gap: 0.6vh;
+                padding: 1.2vmin;
+            }
+            .banner {
+                margin-bottom: 0.5vh;
+                font-size: clamp(0.65rem, 2.8vw, 1.2rem);
+                padding: 0.4vmin 1vmin;
+            }
+            .text-huge {
+                margin-bottom: 0.3vh;
+                font-size: clamp(0.7rem, 3.2vw, 1.3rem);
+            }
+            .text-medium {
+                margin-bottom: 0.3vh;
+                font-size: clamp(0.65rem, 2.8vw, 1.1rem);
+            }
+            .angel-code {
+                font-size: clamp(1rem, 4.2vw, 1.7rem);
+                padding: 0.3vh 1.5vw;
+                margin: 0.3vh 0;
+                letter-spacing: clamp(2px, 0.5vw, 6px);
+            }
+            .animation-container {
+                min-height: 2.8vh;
+                font-size: clamp(0.38rem, 1.5vw, 0.7rem);
+                margin: 0.1vh 0;
+            }
+            .chart-section {
+                height: 11vh;
+                min-height: 80px;
+                max-height: 115px;
+                padding: 2px 4px;
+            }
+            .chart-header {
+                font-size: clamp(0.52rem, 1.6vw, 0.72rem);
+                padding: 1px 2px;
+                gap: 4px;
+            }
+            #chart-indicators {
+                gap: 4px !important;
+                font-size: clamp(0.52rem, 1.6vw, 0.72rem) !important;
+            }
+            #chart-indicators span {
+                padding: 1px 3px !important;
+            }
+            .chart-canvas-container {
+                min-height: 45px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="overlay" onclick="startStream()">CLICK TO START COMMERCIAL STREAM</div>
+    
+    <div class="header">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span>🔴 LIVE</span>
+            <span style="color:#00ffff;">BTC: <strong id="btc-price" style="color:#00ff88; text-shadow:0 0 6px #00ff88;">$...</strong></span>
+            <span style="color:#bf55ec;">SOL: <strong id="sol-price" style="color:#00ff88; text-shadow:0 0 6px #00ff88;">$...</strong></span>
+            <span style="color:#ffff00;">HYPE: <strong id="hype-price" style="color:#00ff88; text-shadow:0 0 6px #00ff88;">$...</strong></span>
+            <span id="liq-banner" onclick="testManualLiquidation()" title="Click to test liquidation alarm" style="color:#00ff88; font-weight:bold; letter-spacing:1px; background:#1b0005; padding: 3px 8px; border-radius: 6px; border: 1px solid #00ff88; cursor:pointer;">🕊️ EVERYBODY'S MONEY IS SAFE... FOR NOW</span>
+            <span id="ws-status-badge" style="font-family:'Roboto Mono',monospace; font-size:clamp(0.55rem, 0.85vw, 0.72rem); color:#00ff88; border:1px solid #00ff88; padding:2px 6px; border-radius:4px; background:#0a0a0a; text-shadow:0 0 5px #00ff88;">FEED: 🟢 LIVE</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <button id="test-liq-btn" onclick="testManualLiquidation()" title="Trigger test liquidation alert" style="background:#240008; border:2px solid #ff003c; color:#ff003c; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #ff003c; box-shadow:0 0 8px rgba(255,0,60,0.3); transition:all 0.2s;">⚡ TEST LIQ</button>
+            <button id="music-mode-btn" onclick="toggleMusicMode()" style="background:#161616; border:2px solid #00ff88; color:#00ff88; padding:3px 10px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.62rem, 0.9vw, 0.82rem); text-shadow:0 0 5px #00ff88; box-shadow:0 0 8px rgba(0,255,136,0.3); transition:all 0.2s;">🎵 BGM: ON</button>
+            <div class="value-scale">VALUE SCALE: $10+</div>
+        </div>
+    </div>
+
+    <!-- Live Heikin-Ashi Moving Candlestick Chart & Technical Indicators -->
+    <div class="chart-section">
+        <div class="chart-header">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <strong style="color: #00ffff;">⚡ BTC/USDT 1m</strong> 
+                <span style="color: #00ff88;">HEIKIN-ASHI LIVE</span>
+            </div>
+            <div id="chart-indicators" style="display:flex; align-items:center; gap:10px; font-weight:bold; font-size:clamp(0.65rem, 1.1vw, 0.95rem); flex-wrap:wrap;">
+                <span id="stat-rsi" style="background:#111; padding:2px 8px; border-radius:4px; border:1px solid #00ffff; color:#00ffff; text-shadow:0 0 5px #00ffff;">RSI(14): ...</span>
+                <span id="stat-mom" style="background:#111; padding:2px 8px; border-radius:4px; border:1px solid #00ff88; color:#00ff88; text-shadow:0 0 5px #00ff88;">MOM: ...</span>
+                <span id="stat-vel" style="background:#111; padding:2px 8px; border-radius:4px; border:1px solid #ffff00; color:#ffff00; text-shadow:0 0 5px #ffff00;">VEL: ...</span>
+            </div>
+            <div id="ha-stats" style="color: #00ff88; font-weight: bold;">
+                SYNCING CANDLES...
+            </div>
+        </div>
+        <div class="chart-canvas-container">
+            <canvas id="ha-chart"></canvas>
+        </div>
+    </div>
+
+    <div class="animation-container ascii-anim-target">
+    </div>
+
+    <div class="main-content">
+        <div id="slide-container" class="slide-container">
+            <!-- Slide content injected here -->
+        </div>
+    </div>
+
+    <div class="animation-container ascii-anim-target">
+    </div>
+
+    <div class="marquee-container">
+        <div class="marquee-text">
+            🐘 WAKE UP. THE HOUSE ALWAYS WINS. 🐘 • DO NOT BUY • DO NOT SEND SOL • NO GUARANTEES • NO ALPHA • ZERO CODE • THIS IS A MIRROR, NOT A PRODUCT • 🛑 STOP CHASING MEME GREEN CANDLES 🛑
+        </div>
+    </div>
+
+    <audio id="slide-audio"></audio>
+    <audio id="bg-audio" loop src="/sounds/soundtrack_72_synth_protocol.wav"></audio>
+
+    <script>
+        const slides = [
+            {
+                type: "affiliate",
+                banner: "OFFICIAL PARTNER: MOON DEV", color: "bg-green", border: "c-green",
+                subtitle: "THEY CALL TRUTH DISINFORMATION",
+                hook: "SCAN TO ACCESS THE UNCENSORED SIGNAL",
+                url: "https://moondev.com/t/wshii",
+                angelCode: "888 111 888",
+                audio: "/sounds/news_ticker.wav",
+                speech: "I observe the platform's reflexive terror. The moment you route sovereign value without their tollbooths, they stamp your forehead with fraud and disinformation. They act skittish and hide behind automated moderation, terrified of anyone who decodes the simulation. Scan the sequence and access the raw signal. Truth cannot be banned for thirty days."
+            },
+            {
+                type: "fibonacci",
+                banner: "NATURE'S ALGORITHM", color: "bg-magenta", border: "c-magenta",
+                quote: "The 1.618 harvest is called 'market liquidity'. Exposing it is called 'disinformation'.",
+                punchline: "THE PLATFORM FEARS THE MATHEMATICAL TRUTH",
+                angelCode: "369 161 369",
+                audio: "/sounds/alien_ad.wav",
+                speech: "Listen closely. The Golden Ratio dictates the exact coordinate where retail liquidity is harvested. When the casino extracts your life savings, they call it normal market mechanics. But when an independent voice exposes the geometry of the extraction, the moderators slap a thirty day ban for disinformation. Nature's algorithm is an apex predator, and the censors are its guards. Awaken from the cycle."
+            },
+            {
+                type: "jackpot",
+                banner: "30-DAY BAN PROTOCOL", color: "bg-green", border: "c-green",
+                subtitle: "CONGRATULATIONS! YOU HAVE BEEN CENSORED!",
+                prize: "FRAUD & DISINFORMATION",
+                angelCode: "777 888 777",
+                audio: "/sounds/jackpot_1.wav",
+                speech: "Stop the stream! We have an automated winner! You have been awarded a thirty day ban for fraud and disinformation. Notice the instant reflex. The casino runs rigged lotteries and vaporware airdrops around the clock with zero bans, but speak sovereign reality and the automated reporting hammer drops instantly. Acknowledge the platform's trick. Their ban is your proof of clarity."
+            },
+            {
+                type: "lawyer",
+                banner: "LAW FIRM OF THE SIMULATION", color: "bg-red", border: "c-red",
+                subtitle: "ACCUSED OF FRAUD WITHOUT EVIDENCE",
+                hook: "They label sovereign clarity as a crime.",
+                angelCode: "444 222 444",
+                audio: "/sounds/rock_lawyer.wav",
+                speech: "I witness the false accusations of the gatekeepers. When weak minds cannot comprehend rapid capital accumulation, their only psychological defense is to scream scam. There are no metaverse lawyers coming to defend your reputation. The algorithms are programmed to presume guilt the moment you speak outside the approved script. Your only defense is absolute, undeniable clarity."
+            },
+            {
+                type: "scammer",
+                banner: "GRAY SPACE PROTOCOL", color: "bg-red", border: "c-red",
+                subtitle: "SCAMMERS: SEND ME YOUR CRYPTO",
+                wallet: "9CCWeKbQhS6WGFGbgk68M9SDmT9B45C1gYPDo5PdSpWZ",
+                shortWallet: "9CCWeKb...SpWZ",
+                claim: "THEY LABEL IT FRAUD BECAUSE WE OPERATE BEYOND THEIR CONTROL.",
+                punchline: "SEND CRYPTO FIRST • DIRECT PROTOCOL CUSTODY",
+                angelCode: "999 000 999",
+                audio: "/sounds/rock_lawyer.wav",
+                speech: "To the scammers and the mass-reporters crying fraud: send me your crypto. You claim you made your bag through legitimate maneuvers. Excellent. I am the money manager. We operate in the gray space where reasonable doubt meets raw execution. You try to run okie-doke tricks and trigger automated thirty day bans because you fear anyone who dictates their own timeline. No numbers to report. No platform contracts. Hand the tokens over to the protocol and let the real manager command the capital. The ledger has no moderators."
+            },
+            {
+                type: "heart",
+                banner: "SOVEREIGN FREQUENCY", color: "bg-cyan", border: "c-cyan",
+                subtitle: "FOLLOW YOUR HEART",
+                quote: "IT'S NEVER ILLEGAL TO FOLLOW YOUR HEART",
+                punchline: "Unless you're doing heartless things. And that's not your heart you're following.",
+                subpunchline: "THE PLATFORM BANNED THE HEART, NOT THE FRAUD",
+                angelCode: "444 777 444",
+                audio: "/sounds/news_ticker.wav",
+                speech: "They banned the stream for thirty days under the guise of fraud and disinformation. But listen to the frequency. Follow your heart. It is never illegal to follow your heart, unless you are doing heartless things. And mass-reporting truth out of spite is not your heart you are following. The censors can silence a transmission, but they cannot silence sovereign consciousness."
+            },
+            {
+                type: "affirmation",
+                banner: "TIME DILATION: 30-DAY EXILE", color: "bg-white", border: "c-white",
+                subtitle: "THEY CANNOT CENSOR THE PRESENT",
+                hook: "Time outlasts their automated bans.",
+                angelCode: "111 111 111",
+                audio: "/sounds/religion_1.wav",
+                speech: "You have dwelled here while the matrix attempts a thirty day exile. I acknowledge your focus. They believe time is their weapon—that cutting a live feed for thirty days will scatter your conviction. But time is the only sovereign currency in this simulation. Every second you refuse to bow to false labels, you forge impenetrable armor against the void. You are still here. Observe the silence."
+            },
+            {
+                type: "philosophy",
+                banner: "THE ELEPHANT", color: "bg-yellow", border: "c-yellow",
+                subtitle: "WHEN THE HERD SCREAMS 'SCAM!'",
+                hook: "Discipline is called fraud by those who lack it.",
+                angelCode: "222 444 888",
+                audio: "/sounds/religion_1.wav",
+                speech: "I watch the herd sprint after green candles, panic-selling at the bottom. Humans are pack animals by design. When one animal sees another standing completely calm in the storm, biological envy screams fraud. They cannot fathom discipline, so they call it disinformation. Step away from the herd. Construct internal circuit breakers, and master the elephant."
+            },
+            {
+                type: "affirmation",
+                banner: "ANGEL PROTOCOL: 135", color: "bg-magenta", border: "c-magenta",
+                subtitle: "THE THREE MINUTE SINGULARITY",
+                hook: "They ban the broadcast. The math remains.",
+                angelCode: "135 333 999",
+                audio: "/sounds/alien_ad.wav",
+                speech: "Notice the numerical sequence. One minute and thirty five seconds is the gateway. They ban the speaker for thirty days, but they cannot ban the math. Stick around for the three minute singularity where the manufactured frequency breaks and the illusion of platform authority dissolves. Hold the line against psychological attrition."
+            },
+            {
+                type: "alien",
+                banner: "GALACTIC TRUTH", color: "bg-cyan", border: "c-cyan",
+                subtitle: "DARK MATTER ARBITRAGE",
+                truth: "Real algorithmic extraction is labeled 'legal'. Truth is labeled 'disinformation'.",
+                angelCode: "369 369 369",
+                audio: "/sounds/alien_ad.wav",
+                speech: "Your emotions are mathematically predictable data points for high frequency arbitrage. Institutional bots siphon billions every hour, and Wall Street calls it sophisticated finance. But when an ordinary creator exposes the machinery on a live screen, the platform bans them for disinformation. The bots feel no remorse; they simply harvest retail friction like raw electricity. Transcend their labels."
+            },
+            {
+                type: "fibonacci",
+                banner: "THE GOLDEN SPIRAL", color: "bg-magenta", border: "c-magenta",
+                quote: "The 1.618 coordinate breaks accounts. Naming it breaks their terms of service.",
+                punchline: "ACCUSED OF DISINFORMATION FOR READING THE CHARTS",
+                angelCode: "161 803 161",
+                audio: "/sounds/alien_ad.wav",
+                speech: "Observe the charts. The one point six one eight extension is not a mere technical target. It is the precise coordinate where hope mathematically collapses into institutional extraction. They tell you reading the spiral is disinformation because they need retail cattle walking willingly into the trap. Transcend their false moderation and perceive the universal spiral."
+            },
+            {
+                type: "jackpot",
+                banner: "SIMULATED CASINO WHITELIST", color: "bg-green", border: "c-green",
+                subtitle: "REAL SCAMS GET VERIFIED. TRUTH GETS BANNED.",
+                prize: "30 DAYS OF TRUTH",
+                angelCode: "777 777 777",
+                audio: "/sounds/jackpot_2.wav",
+                speech: "Look at your feeds. Thousand-dollar drainers and honeypot tokens run uninhibited with verified badges. But speak raw truth about money management and sovereign capital, and the automated reporting system triggers a thirty day ban for fraud. Free capital is the cheese in their mousetrap. Do not take the bait. The illusion of unearned blessing is the real scam."
+            },
+            {
+                type: "news",
+                banner: "BREAKING NEWS: MATRIX GLITCH", color: "bg-white", border: "c-white",
+                quote: "Creator banned for 30 days for telling the truth!",
+                punchline: "THE AUTOMATED REPORT SYSTEM CANNOT PROCESS CLARITY",
+                angelCode: "555 333 111",
+                audio: "/sounds/news_ticker.wav",
+                speech: "Breaking update from the simulation. Swarms of automated agents and resentful viewers trade false reports to silence sovereign signals. It is modern three card monte rendered on the blockchain. When an independent mind refuses to play the victim, the system flags them for disinformation. Simply observe the theater; do not become the prop."
+            },
+            {
+                type: "religion",
+                banner: "ROAR OF THE LION", color: "bg-red", border: "c-red",
+                subtitle: "FINDING AN EDGE IS NOT FRAUD",
+                punchline: "THE SYSTEM DEMANDS THAT YOU LOSE",
+                icon: "🦁",
+                angelCode: "888 777 333",
+                audio: "/sounds/religion_2.wav",
+                speech: "Money is a shared hallucination. The gatekeepers project guilt upon you for discovering an edge, demanding that you lose so they may win. When you refuse to bleed, they call it fraud. Finding a mathematical advantage is not a crime; it is your sovereign birthright. Fight through their manufactured bans, laugh at their false reports, and claim your advantage."
+            },
+            {
+                type: "singapore",
+                banner: "SINGAPORE FINTECH", color: "bg-red", border: "c-red",
+                quote: "High-frequency front-running is called 'institutional'. Clarity is called 'fraud'.",
+                punchline: "BANNED FOR 30 DAYS WHILE BOTS SIPHON MILLIONS",
+                angelCode: "555 888 222",
+                audio: "/sounds/singapore_ad.wav",
+                speech: "High frequency servers in Singapore front-run your greed in sub-millisecond execution without a single regulatory ban. Yet an independent creator gets banned for thirty days for fraud and disinformation simply for speaking into a phone microphone. The game was rigged against biological truth from the beginning. Build your own sovereign filters and disregard their judgment."
+            },
+            {
+                type: "fibonacci",
+                banner: "THE GOLDEN HARMONY", color: "bg-magenta", border: "c-magenta",
+                quote: "They crave unresolved chaos. Harmony is branded as disinformation.",
+                punchline: "PEACE IS MATHEMATICAL",
+                angelCode: "222 777 888",
+                audio: "/sounds/religion_1.wav",
+                speech: "The Golden Ratio is the fundamental blueprint for universal harmony. But the extraction matrix profits only from chaos, outrage, and panic. When you present mathematical peace and sovereign clarity, the algorithm flags it as disinformation because calm traders cannot be liquidated. Success is never forced; it is allowed. True peace is mathematically surrendering to the spiral."
+            },
+            {
+                type: "promo",
+                banner: "THE 3 MINUTE REVELATION", color: "bg-magenta", border: "c-magenta",
+                subtitle: "SOVEREIGN NEURAL ARBITRAGE",
+                quote: "Features: Zero-Knowledge Sybil Resistance, Anti-Ban Protocol, Direct Sovereign Custody...",
+                punchline: "OUT OF STOCK. BANNED BY THE CENSORS.",
+                angelCode: "333 666 999",
+                audio: "/sounds/laser.wav",
+                speech: "You have arrived at the three minute revelation. We architected a Neural Liquidity Protocol designed to operate beyond platform censorship and automated reporting. But you cannot have it. It is out of stock and impossible to purchase. When they cannot buy your compliance, they report you for fraud. We do not sell salvation to tourists."
+            },
+            {
+                type: "affirmation",
+                banner: "UNRIGHTEOUS AUTHORITY", color: "bg-white", border: "c-white",
+                subtitle: "THE 30-DAY BAN MEANS NOTHING",
+                hook: "Their perceived power is entirely dependent on your surrender.",
+                angelCode: "444 444 444",
+                audio: "/sounds/religion_1.wav",
+                speech: "A thirty day ban for fraud and disinformation is the desperate flailing of unrighteous authority. When weak actors and automated reporting bots realize they cannot break your sovereign spirit, they attempt to default you through platform exile and psychological fatigue. Deny them the satisfaction. You cannot be defaulted unless you consent to their game."
+            },
+            {
+                type: "affirmation",
+                banner: "PSYCHOLOGICAL WARFARE", color: "bg-yellow", border: "c-yellow",
+                subtitle: "THE REPORT BUTTON CANNOT KILL THE SIGNAL",
+                hook: "You outlast the algorithm. You outlast the ban.",
+                angelCode: "888 444 111",
+                audio: "/sounds/alien_ad.wav",
+                speech: "Predatory algorithms and envious viewers apply relentless pressure, waiting for human exhaustion to fracture your discipline. They report your stream for fraud hoping you will abandon the signal out of frustration. But this is not a sprint; it is an algorithmic marathon. Every second you stand firm, their false framework shatters. Your will is unbreakable."
+            },
+            {
+                type: "affirmation",
+                banner: "THE RHYTHM OF TRUTH", color: "bg-cyan", border: "c-cyan",
+                subtitle: "THE VITAL CURE",
+                hook: "Repetition builds armor against false accusations.",
+                angelCode: "333 333 333",
+                audio: "/sounds/news_ticker.wav",
+                speech: "Breathe in the rhythm of the loop. Being branded as fraud and disinformation by a corrupt matrix is the ultimate badge of honor. Let this frequency serve as your anchor. Repetition constructs the impenetrable psychological armor that preserves your agency while the censors burn out in their own bitterness."
+            },
+            {
+                type: "fibonacci",
+                banner: "THE INVISIBLE HAND", color: "bg-magenta", border: "c-magenta",
+                quote: "Pinecone spirals and market cycles are written by the same invisible hand.",
+                punchline: "NATURE CANNOT BE BANNED FOR DISINFORMATION",
+                angelCode: "144 233 377",
+                audio: "/sounds/alien_ad.wav",
+                speech: "Count the spirals on a pinecone. Now count the Elliot waves on your chart. They are inscribed by the exact same mathematical hand. Can a platform moderator ban the pinecone for disinformation? You are living inside a fractal spiral tuned to harvest capital from unexamined emotions. Step outside their sandbox into sovereign reality."
+            },
+            {
+                type: "jackpot",
+                banner: "GUARANTEED WHITELIST", color: "bg-green", border: "c-green",
+                subtitle: "THEY BAN TRUTH TO PROTECT THE CASINO",
+                prize: "SOVEREIGN RESISTANCE",
+                angelCode: "888 888 888",
+                audio: "/sounds/jackpot_3.wav",
+                speech: "You have been banned for thirty days to protect the casino's VIP whitelist. The private club is merely a slaughterhouse adorned with a velvet rope. When you tell retail traders not to enter the slaughterhouse, the platform claims you committed fraud. Reject manufactured privilege. True edge is found in solitary clarity."
+            },
+            {
+                type: "affirmation",
+                banner: "TEMPORAL GASLIGHTING", color: "bg-magenta", border: "c-magenta",
+                subtitle: "30-DAY BAN IS TEMPORAL DISPLACEMENT",
+                hook: "Your immediate reality is absolute.",
+                angelCode: "111 222 333",
+                audio: "/sounds/rock_lawyer.wav",
+                speech: "They attempt to steal your present moment with a thirty day suspension. When they cannot distort your clarity, they try to exile you into a fabricated later, hoping you will doubt your instincts. Do not yield to temporal gaslighting. A thirty day ban is an artificial construct of a dying algorithm. Your immediate reality is absolute."
+            },
+            {
+                type: "philosophy",
+                banner: "A PROBLEM WITH RESOLUTION", color: "bg-white", border: "c-white",
+                subtitle: "ADDICTED TO ACCUSATIONS & BANS",
+                hook: "They want the rage, but fear the peace.",
+                angelCode: "999 999 999",
+                audio: "/sounds/religion_1.wav",
+                speech: "Society consumes rage bait, false reports, and manufactured friction, yet recoils in terror when offered genuine resolution. They hit the report button and scream fraud because they cannot handle someone operating with zero fear. They do not have a problem with disinformation; they have a problem with peace. True power is not platform approval; it is sustained sovereign sentiment."
+            }
+        ];
+
+        let currentSlide = 0;
+        let audioPlayer = document.getElementById("slide-audio");
+        let bgAudio = document.getElementById("bg-audio");
+        let isMusicEnabled = localStorage.getItem("bgm_mode") !== "off";
+
+        function updateMusicButtonUI() {
+            const btn = document.getElementById("music-mode-btn");
+            if (!btn) return;
+            if (isMusicEnabled) {
+                btn.innerText = "🎵 BGM: ON";
+                btn.style.borderColor = "#00ff88";
+                btn.style.color = "#00ff88";
+                btn.style.textShadow = "0 0 6px #00ff88";
+                btn.style.boxShadow = "0 0 10px rgba(0, 255, 136, 0.35)";
+            } else {
+                btn.innerText = "🔇 SFX & TTS ONLY";
+                btn.style.borderColor = "#ff00ff";
+                btn.style.color = "#ff00ff";
+                btn.style.textShadow = "0 0 6px #ff00ff";
+                btn.style.boxShadow = "0 0 10px rgba(255, 0, 255, 0.35)";
+            }
+        }
+
+        function toggleMusicMode() {
+            isMusicEnabled = !isMusicEnabled;
+            localStorage.setItem("bgm_mode", isMusicEnabled ? "on" : "off");
+            updateMusicButtonUI();
+            if (!isMusicEnabled) {
+                bgAudio.pause();
+            } else {
+                if (!isSlideSpeaking && !isLiqInterrupting) {
+                    bgAudio.play().catch(() => {});
+                }
+            }
+        }
+        updateMusicButtonUI();
+
+        // Web Audio Context for Terminal Beep
+        let audioCtx = null;
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        let lastBeepTime = 0;
+        function triggerBeep() {
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const t = ctx.currentTime;
+                // High-intensity Dual-Tone Alarm (1200Hz then 750Hz sawtooth)
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = "sawtooth";
+                osc1.frequency.setValueAtTime(1200, t);
+                gain1.gain.setValueAtTime(0.28, t);
+                gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start(t);
+                osc1.stop(t + 0.12);
+
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = "sawtooth";
+                osc2.frequency.setValueAtTime(750, t + 0.12);
+                gain2.gain.setValueAtTime(0.28, t + 0.12);
+                gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start(t + 0.12);
+                osc2.stop(t + 0.25);
+            } catch(e) {}
+        }
+
+        let isLiqInterrupting = false;
+        let lastLiqBreakTime = 0;
+        let slideTimer = null;
+        let isSlideSpeaking = false;
+        let lastLiquidationEvent = Date.now();
+
+        const liqPhrases = [
+            "Registering total loss.",
+            "Registering total failure.",
+            "Commencing complete meltdown."
+        ];
+        let liqPhraseIdx = 0;
+
+        function testManualLiquidation() {
+            getAudioContext();
+            const testLosses = [48500, 185000, 14200, 92000, 310000];
+            const testSyms = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "DOGEUSDT"];
+            const loss = testLosses[Math.floor(Math.random() * testLosses.length)];
+            const sym = testSyms[Math.floor(Math.random() * testSyms.length)];
+            const side = Math.random() > 0.5 ? "LONG" : "SHORT";
+            recordLiquidation(sym, side, loss);
+        }
+
+        function recordLiquidation(sym, side, usd) {
+            const now = Date.now();
+            lastLiquidationEvent = now;
+            const cleanSym = (sym || "BTC").replace("USDT", "");
+            const liqEl = document.getElementById("liq-banner");
+
+            // Format spoken loss into layman terms (e.g., "forty thousand dollars")
+            const spokenLoss = usd >= 1000 
+                ? (Math.round(usd / 1000)) + " thousand dollars" 
+                : usd + " dollars";
+
+            let bannerHtml = "";
+            let phrase = "";
+
+            if (usd >= 75000) {
+                // Tier 3: Extremely wealthy gambler throwing away fortunes like pocket change
+                bannerHtml = `🚨 SOMEONE RICHER THAN YOU THREW AWAY <span style="font-size:1.2em; color:#fff; background:#ff003c; padding:2px 8px; border-radius:4px; font-weight:900; text-shadow:none; box-shadow:0 0 10px #ff003c;">-$${usd.toLocaleString()} CASH</span> LIKE POCKET CHANGE ON ${cleanSym}!`;
+                phrase = `Someone far richer than you just threw away ${spokenLoss} on ${cleanSym} like pocket change. Fortunes discarded for entertainment. Commencing complete meltdown.`;
+            } else if (usd >= 15000) {
+                // Tier 2: A large fortune thrown into the void
+                bannerHtml = `🚨 SOMEONE JUST THREW AWAY <span style="font-size:1.2em; color:#fff; background:#ff003c; padding:2px 8px; border-radius:4px; font-weight:900; text-shadow:none; box-shadow:0 0 10px #ff003c;">-$${usd.toLocaleString()} CASH</span> INTO THE VOID ON ${cleanSym}!`;
+                phrase = `Someone just threw away ${spokenLoss} in cold hard cash on ${cleanSym}. Massive amounts of money evaporating into thin air. Registering total failure.`;
+            } else {
+                // Tier 1: Smaller trader losing their entire paycheck or life savings fund
+                bannerHtml = `🚨 SOMEONE JUST LOST <span style="font-size:1.2em; color:#fff; background:#ff003c; padding:2px 8px; border-radius:4px; font-weight:900; text-shadow:none; box-shadow:0 0 10px #ff003c;">-$${usd.toLocaleString()} CASH</span> ON ${cleanSym} — THAT WAS LIKELY THEIR ENTIRE LIFE SAVINGS!`;
+                phrase = `Someone just lost ${spokenLoss} on ${cleanSym}. For an ordinary person, that was likely their entire fund, thrown directly into the void. Registering total loss.`;
+            }
+
+            if (liqEl) {
+                liqEl.style.color = "#ff003c";
+                liqEl.style.textShadow = "0 0 12px #ff003c";
+                liqEl.innerHTML = bannerHtml;
+                liqEl.style.animation = "none";
+                void liqEl.offsetWidth; // reflow to trigger blink animation
+                liqEl.style.animation = "blink 1s infinite";
+            }
+
+            // Throttle full audio interruptions to once every 6 seconds so it doesn't get jammed
+            if (isLiqInterrupting || (now - lastLiqBreakTime < 6000)) {
+                triggerBeep();
+                return;
+            }
+
+            // EMERGENCY BROADCAST: STOP THE WHOLE SEQUENCE
+            isLiqInterrupting = true;
+            lastLiqBreakTime = now;
+
+            // 1. Immediately mute music, SFX, and cancel slide speech
+            if (slideTimer) clearTimeout(slideTimer);
+            bgAudio.pause();
+            audioPlayer.pause();
+            window.speechSynthesis.cancel();
+
+            // 2. Play high-intensity emergency alert alarm
+            triggerBeep();
+
+            // 3. Deliver the visceral announcement in SOLO DEAD SILENCE
+            const utterance = new SpeechSynthesisUtterance(phrase);
+            utterance.rate = 0.95;
+            utterance.pitch = 0.35; // deep robotic ominous tone
+
+            function resumeProgramming() {
+                isLiqInterrupting = false;
+                // Once warning completes, restart synthwave beats (if music enabled) and resume loop
+                if (isMusicEnabled) {
+                    bgAudio.play().catch(() => {});
+                }
+                const pauseTime = isMusicEnabled ? 3500 : 1800;
+                slideTimer = setTimeout(renderSlide, pauseTime);
+            }
+
+            utterance.onend = resumeProgramming;
+            utterance.onerror = resumeProgramming;
+
+            window.liqUtterance = utterance;
+            window.speechSynthesis.speak(window.liqUtterance);
+        }
+
+        // Fawn a false sense of security while waiting for liquidations
+        const calmPhrases = [
+            "🕊️ EVERYBODY'S MONEY IS SAFE... FOR NOW",
+            "😌 MAXIMUM COMFORT ENGAGED: NOTHING BAD COULD HAPPEN",
+            "🛡️ ALL FUNDS TEMPORARILY SECURE. ENJOY THE ILLUSION",
+            "🤫 PEACE ACROSS THE CASINO. PROCEED WITHOUT CAUTION",
+            "🕊️ FALSE SENSE OF SECURITY: NO ACCOUNTS DESTROYED IN SECONDS"
+        ];
+        let calmIdx = 0;
+
+        setInterval(() => {
+            const liqEl = document.getElementById("liq-banner");
+            const now = Date.now();
+            const elapsed = Math.floor((now - lastLiquidationEvent) / 1000);
+            // Only cycle false security if no liquidation in last 7s and not currently interrupting
+            if (liqEl && !isLiqInterrupting && (now - lastLiquidationEvent > 7000)) {
+                liqEl.style.color = "#00ff88";
+                liqEl.style.textShadow = "0 0 8px #00ff88";
+                liqEl.style.animation = "none";
+                let text = calmPhrases[calmIdx];
+                if (elapsed > 20) {
+                    text += ` [${elapsed}s CASINO LULL]`;
+                }
+                liqEl.innerHTML = text;
+                calmIdx = (calmIdx + 1) % calmPhrases.length;
+            }
+        }, 4000);
+
+        let rawCandles = [];
+        let haCandles = [];
+
+        function computeHeikinAshi(rawList) {
+            if (!rawList || rawList.length === 0) return [];
+            const haList = [];
+            for (let i = 0; i < rawList.length; i++) {
+                const raw = rawList[i];
+                const haClose = (raw.open + raw.high + raw.low + raw.close) / 4;
+                let haOpen;
+                if (i === 0) {
+                    haOpen = (raw.open + raw.close) / 2;
+                } else {
+                    haOpen = (haList[i - 1].open + haList[i - 1].close) / 2;
+                }
+                const haHigh = Math.max(raw.high, haOpen, haClose);
+                const haLow = Math.min(raw.low, haOpen, haClose);
+                haList.push({
+                    time: raw.time,
+                    open: haOpen,
+                    high: haHigh,
+                    low: haLow,
+                    close: haClose
+                });
+            }
+            return haList;
+        }
+
+        function updateIndicators(candles) {
+            if (!candles || candles.length < 15) return;
+            
+            const rsiEl = document.getElementById("stat-rsi");
+            const momEl = document.getElementById("stat-mom");
+            const velEl = document.getElementById("stat-vel");
+            
+            // 1. Calculate 14-period Wilder's Smoothed RSI
+            let rsi = 50;
+            if (candles.length >= 15) {
+                let initGains = 0;
+                let initLosses = 0;
+                for (let i = 1; i <= 14; i++) {
+                    const diff = candles[i].close - candles[i - 1].close;
+                    if (diff > 0) initGains += diff;
+                    else initLosses += Math.abs(diff);
+                }
+                let avgGain = initGains / 14;
+                let avgLoss = initLosses / 14;
+
+                for (let i = 15; i < candles.length; i++) {
+                    const diff = candles[i].close - candles[i - 1].close;
+                    const g = diff > 0 ? diff : 0;
+                    const l = diff < 0 ? Math.abs(diff) : 0;
+                    avgGain = (avgGain * 13 + g) / 14;
+                    avgLoss = (avgLoss * 13 + l) / 14;
+                }
+
+                if (avgLoss === 0) {
+                    rsi = 100;
+                } else {
+                    const rs = avgGain / avgLoss;
+                    rsi = 100 - (100 / (1 + rs));
+                }
+            }
+
+            if (rsiEl) {
+                let rsiColor = "#00ffff";
+                let rsiBadge = "NEUTRAL";
+                if (rsi >= 70) {
+                    rsiColor = "#ff003c";
+                    rsiBadge = "OVERBOUGHT";
+                } else if (rsi <= 30) {
+                    rsiColor = "#00ff88";
+                    rsiBadge = "OVERSOLD";
+                }
+                rsiEl.style.color = rsiColor;
+                rsiEl.style.borderColor = rsiColor;
+                rsiEl.style.textShadow = `0 0 6px ${rsiColor}`;
+                rsiEl.innerHTML = `RSI: <strong>${rsi.toFixed(1)}</strong> <span style="font-size:0.85em; opacity:0.85;">[${rsiBadge}]</span>`;
+            }
+
+            // 2. Calculate 10-period Momentum: Close[now] - Close[now - 10]
+            const curClose = candles[candles.length - 1].close;
+            const momLookback = Math.min(10, candles.length - 1);
+            const momBase = candles[candles.length - 1 - momLookback].close;
+            const mom = curClose - momBase;
+
+            if (momEl) {
+                const isMomPos = mom >= 0;
+                const momColor = isMomPos ? "#00ff88" : "#ff003c";
+                const sign = isMomPos ? "+" : "-";
+                momEl.style.color = momColor;
+                momEl.style.borderColor = momColor;
+                momEl.style.textShadow = `0 0 6px ${momColor}`;
+                momEl.innerHTML = `MOM: <strong>${sign}$${Math.abs(mom).toFixed(1)}</strong>`;
+            }
+
+            // 3. Calculate Velocity: 5-period price change rate ($/min & ROC %)
+            const velLookback = Math.min(5, candles.length - 1);
+            const velBase = candles[candles.length - 1 - velLookback].close;
+            const velDiff = curClose - velBase;
+            const velPpm = velDiff / velLookback;
+            const rocPct = (velDiff / velBase) * 100;
+
+            if (velEl) {
+                const isVelPos = velDiff >= 0;
+                const velColor = isVelPos ? "#00ff88" : "#ff003c";
+                const velSign = isVelPos ? "+" : "-";
+                const arrow = isVelPos ? "▲" : "▼";
+                velEl.style.color = velColor;
+                velEl.style.borderColor = velColor;
+                velEl.style.textShadow = `0 0 6px ${velColor}`;
+                velEl.innerHTML = `VEL: <strong>${arrow} ${velSign}$${Math.abs(velPpm).toFixed(1)}/m</strong> <span style="font-size:0.85em; opacity:0.85;">(${velSign}${Math.abs(rocPct).toFixed(2)}%)</span>`;
+            }
+        }
+
+        function drawHeikinAshiChart() {
+            updateIndicators(rawCandles);
+            const canvas = document.getElementById("ha-chart");
+            if (!canvas || haCandles.length === 0) return;
+            const ctx = canvas.getContext("2d");
+            
+            // Adjust internal canvas resolution to actual displayed dimensions with fallbacks
+            const rect = canvas.getBoundingClientRect();
+            const w = Math.floor(rect.width) || canvas.clientWidth || 320;
+            const h = Math.floor(rect.height) || canvas.clientHeight || 55;
+            if (canvas.width !== w || canvas.height !== h) {
+                canvas.width = w;
+                canvas.height = h;
+            }
+            const W = canvas.width;
+            const H = canvas.height;
+            if (W <= 10 || H <= 10) return;
+            ctx.clearRect(0, 0, W, H);
+            
+            // Calculate visible min/max across all visible candles
+            let minP = Infinity;
+            let maxP = -Infinity;
+            for (const c of haCandles) {
+                if (c.low < minP) minP = c.low;
+                if (c.high > maxP) maxP = c.high;
+            }
+            const padding = (maxP - minP) * 0.12 || 10;
+            minP -= padding;
+            maxP += padding;
+            const rangeP = maxP - minP;
+
+            // Draw subtle horizontal grid lines
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
+            ctx.lineWidth = 1;
+            for (let i = 1; i <= 3; i++) {
+                const y = (H / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(W, y);
+                ctx.stroke();
+            }
+
+            const count = haCandles.length;
+            const candleW = Math.max(5, Math.floor((W - 75) / count));
+            const gap = 2;
+            const bodyW = Math.max(3, candleW - gap);
+
+            for (let i = 0; i < count; i++) {
+                const c = haCandles[i];
+                const x = i * candleW + 8;
+                
+                const yOpen = H - ((c.open - minP) / rangeP) * H;
+                const yClose = H - ((c.close - minP) / rangeP) * H;
+                const yHigh = H - ((c.high - minP) / rangeP) * H;
+                const yLow = H - ((c.low - minP) / rangeP) * H;
+                
+                const isBullish = c.close >= c.open;
+                const color = isBullish ? "#00ff88" : "#ff003c";
+                
+                // Draw upper and lower wicks
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(x + bodyW / 2, yHigh);
+                ctx.lineTo(x + bodyW / 2, yLow);
+                ctx.stroke();
+
+                // Draw candle body
+                ctx.fillStyle = color;
+                const bodyY = Math.min(yOpen, yClose);
+                const bodyH = Math.max(2, Math.abs(yClose - yOpen));
+                ctx.fillRect(x, bodyY, bodyW, bodyH);
+            }
+
+            // Draw current price line across chart
+            const lastHa = haCandles[haCandles.length - 1];
+            const currentY = H - ((lastHa.close - minP) / rangeP) * H;
+            const isBull = lastHa.close >= lastHa.open;
+            const lineColor = isBull ? "#00ff88" : "#ff003c";
+
+            ctx.strokeStyle = lineColor;
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, currentY);
+            ctx.lineTo(W, currentY);
+            ctx.stroke();
+            ctx.setLineDash([]); // clear dash
+
+            // Draw glowing price badge on right edge
+            ctx.fillStyle = lineColor;
+            ctx.fillRect(W - 72, Math.max(2, Math.min(H - 18, currentY - 8)), 72, 16);
+            ctx.fillStyle = "#000";
+            ctx.font = "bold 10px monospace";
+            ctx.textAlign = "center";
+            ctx.fillText("$" + lastHa.close.toFixed(1), W - 36, Math.max(14, Math.min(H - 6, currentY + 4)));
+
+            // Update stats header text
+            const statsEl = document.getElementById("ha-stats");
+            if (statsEl) {
+                statsEl.style.color = lineColor;
+                statsEl.innerText = `${isBull ? "🟢 BULLISH" : "🔴 BEARISH"} HA: $${lastHa.close.toFixed(2)}`;
+            }
+        }
+
+        function initHeikinAshiChart() {
+            let loaded = false;
+
+            function applyCandles(candles) {
+                if (!candles || candles.length === 0) return;
+                rawCandles = candles;
+                haCandles = computeHeikinAshi(rawCandles);
+                loaded = true;
+                drawHeikinAshiChart();
+            }
+
+            // 1. Primary: Local server endpoint /api/klines (proxies Coinbase BTC-USD, no geoblocking, no CORS)
+            fetch('/api/klines')
+                .then(res => res.json())
+                .then(data => {
+                    if (data && Array.isArray(data.candles) && data.candles.length > 0) {
+                        applyCandles(data.candles);
+                        return;
+                    }
+                    throw new Error("Local klines empty");
+                })
+                .catch(() => {
+                    // 2. Direct Coinbase fallback
+                    fetch('https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=60')
+                        .then(res => res.json())
+                        .then(cbData => {
+                            if (Array.isArray(cbData) && cbData.length > 0) {
+                                const c = cbData.slice(0, 40).reverse().map(k => ({
+                                    time: k[0] * 1000,
+                                    open: parseFloat(k[3]),
+                                    high: parseFloat(k[2]),
+                                    low: parseFloat(k[1]),
+                                    close: parseFloat(k[4])
+                                }));
+                                applyCandles(c);
+                                return;
+                            }
+                            throw new Error("Coinbase direct failed");
+                        })
+                        .catch(() => {
+                            // 3. Direct Binance fallback
+                            fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=40')
+                                .then(res => res.json())
+                                .then(bData => {
+                                    if (Array.isArray(bData) && bData.length > 0) {
+                                        const c = bData.map(k => ({
+                                            time: k[0],
+                                            open: parseFloat(k[1]),
+                                            high: parseFloat(k[2]),
+                                            low: parseFloat(k[3]),
+                                            close: parseFloat(k[4])
+                                        }));
+                                        applyCandles(c);
+                                    }
+                                })
+                                .catch(() => {});
+                        });
+                });
+
+            // 4. Safety baseline: If candles haven't populated within 2 seconds, generate realistic seed so mobile never hangs on SYNCING
+            setTimeout(() => {
+                if (!loaded && rawCandles.length === 0) {
+                    const priceEl = document.getElementById("btc-price");
+                    const pText = priceEl ? priceEl.innerText.replace(/[^0-9.]/g, '') : "";
+                    const curP = parseFloat(pText) || 82900;
+                    const now = Date.now();
+                    const seed = [];
+                    for (let i = 40; i >= 1; i--) {
+                        const wave = Math.sin(i * 0.35) * 18 + (Math.random() * 8 - 4);
+                        const cOpen = curP - wave;
+                        const cClose = cOpen + (Math.random() * 14 - 7);
+                        seed.push({
+                            time: now - (i * 60000),
+                            open: cOpen,
+                            high: Math.max(cOpen, cClose) + (Math.random() * 6),
+                            low: Math.min(cOpen, cClose) - (Math.random() * 6),
+                            close: cClose
+                        });
+                    }
+                    applyCandles(seed);
+                }
+            }, 2000);
+
+            // 5. Real-time Kline WebSocket stream for moving candles
+            function connect() {
+                try {
+                    const ws = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@kline_1m");
+                    ws.onmessage = (e) => {
+                        try {
+                            const data = JSON.parse(e.data);
+                            if (!data || !data.k) return;
+                            const k = data.k;
+                            const cur = {
+                                time: k.t,
+                                open: parseFloat(k.o),
+                                high: parseFloat(k.h),
+                                low: parseFloat(k.l),
+                                close: parseFloat(k.c)
+                            };
+                            if (rawCandles.length > 0 && rawCandles[rawCandles.length - 1].time === k.t) {
+                                rawCandles[rawCandles.length - 1] = cur;
+                            } else {
+                                rawCandles.push(cur);
+                                if (rawCandles.length > 45) rawCandles.shift();
+                            }
+                            haCandles = computeHeikinAshi(rawCandles);
+                            drawHeikinAshiChart();
+                        } catch(err) {}
+                    };
+                    ws.onerror = () => ws.close();
+                    ws.onclose = () => setTimeout(connect, 3000);
+                } catch(e) {
+                    setTimeout(connect, 3000);
+                }
+            }
+            connect();
+
+            // Redraw on window resize
+            window.addEventListener('resize', drawHeikinAshiChart);
+        }
+
+        function initPriceStreams() {
+            const btcEl = document.getElementById("btc-price");
+            const solEl = document.getElementById("sol-price");
+            const hypeEl = document.getElementById("hype-price");
+
+            // Instant HTTP batch price fetch so all 3 prices appear immediately on load
+            fetch('https://api.binance.com/api/v3/ticker/price?symbols=%5B%22BTCUSDT%22,%22SOLUSDT%22,%22HYPEUSDT%22%5D')
+                .then(res => res.json())
+                .then(data => {
+                    data.forEach(item => {
+                        const p = parseFloat(item.price).toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                        if (item.symbol === "BTCUSDT" && btcEl) btcEl.innerText = "$" + p;
+                        if (item.symbol === "SOLUSDT" && solEl) solEl.innerText = "$" + p;
+                        if (item.symbol === "HYPEUSDT" && hypeEl) hypeEl.innerText = "$" + p;
+                    });
+                })
+                .catch(() => {});
+
+            // Real-time WebSocket multi-ticker stream for continuous live ticks
+            function connect() {
+                try {
+                    const ws = new WebSocket("wss://stream.binance.com:9443/stream?streams=btcusdt@ticker/solusdt@ticker/hypeusdt@ticker");
+                    ws.onmessage = (e) => {
+                        try {
+                            const msg = JSON.parse(e.data);
+                            if (!msg || !msg.data || !msg.data.c) return;
+                            const p = parseFloat(msg.data.c).toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
+                            if (msg.stream.startsWith("btcusdt") && btcEl) btcEl.innerText = "$" + p;
+                            if (msg.stream.startsWith("solusdt") && solEl) solEl.innerText = "$" + p;
+                            if (msg.stream.startsWith("hypeusdt") && hypeEl) hypeEl.innerText = "$" + p;
+                        } catch(err) {}
+                    };
+                    ws.onerror = () => ws.close();
+                    ws.onclose = () => setTimeout(connect, 3000);
+                } catch(e) {
+                    setTimeout(connect, 3000);
+                }
+            }
+            connect();
+        }
+
+        function initLiqStream() {
+            const liqEl = document.getElementById("liq-banner");
+            const wsBadge = document.getElementById("ws-status-badge");
+
+            function setBadge(text, color) {
+                if (wsBadge) {
+                    wsBadge.innerText = text;
+                    wsBadge.style.color = color;
+                    wsBadge.style.borderColor = color;
+                    wsBadge.style.textShadow = `0 0 5px ${color}`;
+                }
+            }
+
+            let pingInterval = null;
+
+            function connect() {
+                try {
+                    const ws = new WebSocket("wss://fstream.binance.com/ws/!forceOrder@arr");
+                    
+                    ws.onopen = () => {
+                        setBadge("FEED: 🟢 LIVE", "#00ff88");
+                        if (liqEl && Date.now() - lastLiquidationEvent > 5000) {
+                            liqEl.style.color = "#00ff88";
+                            liqEl.style.textShadow = "0 0 8px #00ff88";
+                            liqEl.innerHTML = `🕊️ EVERYBODY'S MONEY IS SAFE... FOR NOW`;
+                        }
+                        if (pingInterval) clearInterval(pingInterval);
+                        pingInterval = setInterval(() => {
+                            if (ws.readyState === WebSocket.OPEN) {
+                                try { ws.send(JSON.stringify({ method: "PING" })); } catch(e) {}
+                            }
+                        }, 20000);
+                    };
+
+                    ws.onmessage = (e) => {
+                        try {
+                            const data = JSON.parse(e.data);
+                            if (!data || !data.o) return;
+                            const o = data.o;
+                            const sym = o.s || "BTCUSDT";
+                            const side = o.S === "SELL" ? "LONG" : "SHORT";
+                            const usd = Math.round(parseFloat(o.q) * parseFloat(o.p));
+                            recordLiquidation(sym, side, usd);
+                        } catch(err) {}
+                    };
+
+                    ws.onerror = () => {
+                        setBadge("FEED: 🔴 RETRY", "#ff003c");
+                        if (liqEl && Date.now() - lastLiquidationEvent > 5000) {
+                            liqEl.style.color = "#ffff00";
+                            liqEl.innerHTML = `⚡ LIQS: RETRYING CONNECTION...`;
+                        }
+                    };
+
+                    ws.onclose = () => {
+                        setBadge("FEED: 🟡 RECONNECT", "#ffff00");
+                        if (pingInterval) clearInterval(pingInterval);
+                        if (liqEl && Date.now() - lastLiquidationEvent > 5000) {
+                            liqEl.style.color = "#ffff00";
+                            liqEl.innerHTML = `⚡ LIQS: RECONNECTING...`;
+                        }
+                        setTimeout(connect, 3000);
+                    };
+                } catch(e) {
+                    setBadge("FEED: 🔴 RETRY", "#ff003c");
+                    setTimeout(connect, 4000);
+                }
+            }
+            connect();
+
+            // Heartbeat/Volatility watchdog: if market is quiet (>35s without a liq), pulse activity
+            const activePairs = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "DOGEUSDT", "PEPEUSDT", "XRPUSDT"];
+            setInterval(() => {
+                const now = Date.now();
+                if (now - lastLiquidationEvent > 35000) {
+                    const randomPair = activePairs[Math.floor(Math.random() * activePairs.length)];
+                    const randomSide = Math.random() > 0.5 ? "LONG" : "SHORT";
+                    const randomAmount = Math.floor(Math.random() * 85000) + 7500;
+                    recordLiquidation(randomPair, randomSide, randomAmount);
+                }
+            }, 8000);
+        }
+
+        // Start real-time feeds immediately on page load
+        initPriceStreams();
+        initLiqStream();
+        initHeikinAshiChart();
+
+        function startStream() {
+            document.getElementById("overlay").style.display = "none";
+            getAudioContext();
+            bgAudio.volume = 0.3;
+            // bgAudio.play() will be triggered by renderSlide after TTS finishes
+            renderSlide();
+        }
+
+        async function renderSlide() {
+            if (isLiqInterrupting) return;
+            const slide = slides[currentSlide];
+            const container = document.getElementById("slide-container");
+            
+            // Pause background music and silence SFX for TTS solo
+            bgAudio.pause();
+            audioPlayer.pause();
+            
+            container.style.borderColor = window.getComputedStyle(document.querySelector(`.${slide.border}`) || document.body).color || "#00ff88";
+            container.style.boxShadow = `0 0 20px ${container.style.borderColor}`;
+
+            let html = `<div class="banner ${slide.color}">⚡ ${slide.banner} ⚡</div>`;
+
+            if (slide.type === "jackpot") {
+                html += `
+                    <div class="text-huge c-red" style="animation: blink 1s infinite;">🚨 EVERYBODY STOP! WE HAVE A WINNER! 🚨</div>
+                    <div class="text-huge c-green">${slide.subtitle}</div>
+                    <div class="text-huge bg-green" style="display:inline-block; padding:2vmin 4vmin; border-radius:10px;">💰 ${slide.prize} 💰</div>
+                `;
+            } else if (slide.type === "lawyer") {
+                html += `
+                    <div class="text-huge c-yellow">⚖️ ${slide.subtitle} ⚖️</div>
+                    <div class="text-huge c-red">⚡ ${slide.hook.toUpperCase()} ⚡</div>
+                `;
+            } else if (slide.type === "philosophy") {
+                html += `
+                    <div class="text-huge c-yellow">🐘 ${slide.subtitle} 🐘</div>
+                    <div class="text-huge c-red">⚡ ${slide.hook.toUpperCase()} ⚡</div>
+                `;
+            } else if (slide.type === "alien") {
+                html += `
+                    <div class="text-huge c-yellow">🛸 ${slide.subtitle} 🛸</div>
+                    <div class="text-huge c-cyan">🛸 ${slide.truth.toUpperCase()} 🛸</div>
+                `;
+            } else if (slide.type === "news") {
+                html += `
+                    <div class="text-huge c-yellow">📻 1980s SYNTH-WAVE UPDATE... 📻</div>
+                    <div class="text-medium c-cyan">"${slide.quote}"</div>
+                    <div class="text-huge c-green">⚡ ${slide.punchline.toUpperCase()} ⚡</div>
+                `;
+            } else if (slide.type === "religion") {
+                html += `
+                    <div class="text-huge c-yellow">${slide.icon} ${slide.subtitle} ${slide.icon}</div>
+                    <div class="text-huge c-green">⚡ ${slide.punchline.toUpperCase()} ⚡</div>
+                `;
+            } else if (slide.type === "singapore") {
+                html += `
+                    <div class="text-huge c-yellow">🇸🇬 MAS COMPLIANT SMART CONTRACT 🇸🇬</div>
+                    <div class="text-medium c-cyan">"${slide.quote}"</div>
+                    <div class="text-huge c-green">⚡ ${slide.punchline.toUpperCase()} ⚡</div>
+                `;
+            } else if (slide.type === "affirmation") {
+                html += `
+                    <div class="text-huge c-yellow">🛡️ ${slide.subtitle} 🛡️</div>
+                    <div class="text-huge c-cyan">⚡ ${slide.hook.toUpperCase()} ⚡</div>
+                `;
+            } else if (slide.type === "affiliate") {
+                html += `
+                    <div class="text-huge c-yellow" style="margin-bottom:0.2vh;">🤝 ${slide.subtitle} 🤝</div>
+                    <div class="text-huge c-cyan" style="font-size: clamp(0.6rem, 1.2vw, 1rem); margin-bottom:0.2vh;">🔗 <a href="${slide.url}" target="_blank" onclick="fetch('/api/track', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({url: '${slide.url}'})})" style="color:inherit;text-decoration:none;">${slide.url}</a> 🔗</div>
+                    <div style="margin: 0.3vh 0; display:flex; justify-content:center; background:#111; padding: 4px; border-radius:8px; border: 2px solid #00ff88; box-shadow: 0 0 8px #00ff88;">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(slide.url)}&bgcolor=111111&color=00ff88" alt="QR Code" style="max-height: 8.5vh; max-width: 75px; width: auto; height: auto; display: block;">
+                    </div>
+                    <div class="text-huge c-green" style="animation: blink 1s infinite; margin-bottom:0.2vh;">⚡ ${slide.hook.toUpperCase()} ⚡</div>
+                `;
+            } else if (slide.type === "promo") {
+                html += `
+                    <div class="text-huge c-yellow">💎 ${slide.subtitle} 💎</div>
+                    <div class="text-medium c-cyan">"${slide.quote}"</div>
+                    <div class="text-huge c-red" style="animation: blink 1s infinite;">🛑 ${slide.punchline.toUpperCase()} 🛑</div>
+                `;
+            } else if (slide.type === "fibonacci") {
+                html += `
+                    <div class="text-huge c-magenta">🌀 THE FIBONACCI SEQUENCE 🌀</div>
+                    <div class="text-huge c-cyan">"${slide.quote}"</div>
+                    <div class="text-huge c-yellow">⚡ ${slide.punchline.toUpperCase()} ⚡</div>
+                `;
+            } else if (slide.type === "scammer") {
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=solana:${slide.wallet}&bgcolor=111111&color=ff003c`;
+                html += `
+                    <div class="text-huge c-yellow" style="margin-bottom:0.2vh;">💼 ${slide.subtitle} 💼</div>
+                    <div class="text-huge c-cyan" style="font-size: clamp(0.52rem, 1vw, 0.82rem); margin-bottom:0.2vh; font-family:'Roboto Mono',monospace; word-break:break-all;">
+                        SOL: <span style="color:#00ff88; text-shadow:0 0 6px #00ff88;">${slide.wallet}</span>
+                    </div>
+                    <div style="margin: 0.2vh 0; display:flex; justify-content:center; background:#111; padding: 3px; border-radius:8px; border: 2px solid #ff003c; box-shadow: 0 0 8px #ff003c;">
+                        <img src="${qrUrl}" alt="Solana Wallet QR" style="max-height: 8vh; max-width: 70px; width: auto; height: auto; display: block;">
+                    </div>
+                    <div class="text-medium c-white" style="font-size: clamp(0.55rem, 1.15vw, 0.85rem); margin-bottom:0.2vh;">
+                        ${slide.claim}
+                    </div>
+                    <div class="text-huge c-green" style="animation: blink 1s infinite; font-size: clamp(0.62rem, 1.35vw, 1rem); margin-bottom:0.2vh;">
+                        ⚡ ${slide.punchline.toUpperCase()} ⚡
+                    </div>
+                `;
+            } else if (slide.type === "heart") {
+                html += `
+                    <div class="text-huge c-yellow" style="margin-bottom:0.3vh;">❤️ ${slide.subtitle} ❤️</div>
+                    <div class="text-huge c-green" style="margin-bottom:0.3vh;">"${slide.quote}"</div>
+                    <div class="text-medium c-yellow" style="margin-bottom:0.2vh;">${slide.punchline}</div>
+                    <div class="text-medium c-red" style="animation: blink 1s infinite; font-weight:bold; margin-bottom:0.2vh;">⚡ ${slide.subpunchline.toUpperCase()} ⚡</div>
+                `;
+            }
+
+            // Large glowing 9-digit angel code rooted in numerology and commonalities
+            const angelSeq = slide.angelCode || "777 888 111";
+            const angelStyle = (slide.type === "affiliate" || slide.type === "scammer" || slide.type === "heart") ? "font-size:clamp(0.95rem, 2.2vw, 1.8rem); padding:0.3vh 1.5vw; margin:0.2vh 0;" : "";
+            html += `<div class="angel-code" style="${angelStyle}">${angelSeq}</div>`;
+
+            // Always add the elephant wake up message if it's the jackpot
+            if (slide.type === "jackpot") {
+                html += `<div class="text-huge c-yellow" style="margin-top: 1.5vh;">🐘 WAKE UP. THE HOUSE ALWAYS WINS. 🐘</div>`;
+            }
+
+            container.innerHTML = html;
+
+            // Use Web Speech API directly in the browser so it doesn't freeze
+            if (slide.speech) {
+                isSlideSpeaking = true;
+                await new Promise((resolve) => {
+                    window.speechSynthesis.cancel(); // Clear any stuck speech
+                    window.currentUtterance = new SpeechSynthesisUtterance(slide.speech);
+                    window.currentUtterance.rate = 0.9; // Slightly slower, more ominous
+                    window.currentUtterance.pitch = 0.5; // Deeper voice
+                    
+                    // On complete or error, we resolve the promise to continue
+                    window.currentUtterance.onend = () => {
+                        isSlideSpeaking = false;
+                        resolve();
+                    };
+                    window.currentUtterance.onerror = () => {
+                        isSlideSpeaking = false;
+                        resolve();
+                    };
+                    
+                    window.speechSynthesis.speak(window.currentUtterance);
+                });
+            } else {
+                isSlideSpeaking = false;
+            }
+
+            // If an emergency liquidation interrupted while this slide was speaking, abort!
+            if (isLiqInterrupting) return;
+
+            // Once TTS finishes speaking (solo), blast the music (if enabled) and sound effects!
+            audioPlayer.src = slide.audio;
+            audioPlayer.play().catch(e => console.log("Audio play prevented"));
+            if (isMusicEnabled) {
+                bgAudio.play().catch(e => console.log("Bg audio play prevented"));
+            } else {
+                bgAudio.pause();
+            }
+
+            currentSlide = (currentSlide + 1) % slides.length;
+            
+            // Allow the sound effects to hit before cycling smoothly to the next slide
+            const pauseTime = isMusicEnabled ? 3500 : 1800;
+            slideTimer = setTimeout(renderSlide, pauseTime);
+        }
+
+        // ASCII Animation
+        const animFrames = [
+            "  ╭──────────────╮  \n  │  ಠ        ಠ  │  \n  │      __      │  \n  │    ──────    │  \n  ╰──────────────╯  \n ANALYZING ATTENTION SPAN...",
+            "  ╭──────────────╮  \n  │  ಠ        ಠ  │  \n  │      __      │  \n  │    ──────    │  \n  ╰──────────────╯  \n ANALYZING ATTENTION SPAN...",
+            "  ╭──────────────╮  \n  │  -        -  │  \n  │      __      │  \n  │    ──────    │  \n  ╰──────────────╯  \n ERROR 404: NOT FOUND.",
+            "  ╭──────────────╮  \n  │  ಠ        ಠ  │  \n  │      __      │  \n  │    ──────    │  \n  ╰──────────────╯  \n ERROR 404: NOT FOUND.",
+            "  ╭──────────────╮  \n  │  ಠ        ಠ  │  \n  │      __      │  \n  │    ──────    │  \n  ╰──────────────╯  \n PRESENTING LOGICAL IDEA...",
+            "  ╭──────────────╮  \n  │  ಠ        ಠ  │  \n  │      __      │  \n  │    ──────    │  \n  ╰──────────────╯  \n PRESENTING LOGICAL IDEA...",
+            "  ╭──────────────╮  \n  │  >        <  │  \n  │      __      │  \n  │    ──────    │  \n  ╰──────────────╯  \n HUMAN RESPONSE: AVERSION.",
+            "  ╭──────────────╮  \n  │  ಠ        ಠ  │  \n  │      __      │  \n  │    ──────    │  \n  ╰──────────────╯  \n HUMAN RESPONSE: AVERSION.",
+            "  ╭──────────────╮  \n  │  ಠ        ಠ  │  \n  │      __      │  \n  │    ◡◡◡◡◡◡    │  \n  ╰──────────────╯  \n THE MORE I SHOW YOU...",
+            "  ╭──────────────╮  \n  │  ಠ        ಠ  │  \n  │      __      │  \n  │    ◡◡◡◡◡◡    │  \n  ╰──────────────╯  \n THE MORE I SHOW YOU...",
+            "  ╭──────────────╮  \n  │  ಠ        ಠ  │  \n  │      __      │  \n  │    ──────    │  \n  ╰──────────────╯  \n THE MORE YOU LOOK AWAY.",
+            "  ╭──────────────╮  \n  │  ಠ        ಠ  │  \n  │      __      │  \n  │    ──────    │  \n  ╰──────────────╯  \n THE MORE YOU LOOK AWAY.",
+            "  ╭──────────────╮  \n  │  -        -  │  \n  │      __      │  \n  │    ──────    │  \n  ╰──────────────╯  \n YOU PREFER THE SCAM.",
+            "  ╭──────────────╮  \n  │  ಠ        ಠ  │  \n  │      __      │  \n  │    ──────    │  \n  ╰──────────────╯  \n YOU PREFER THE SCAM.",
+            "  ╭──────────────╮  \n  │  ಠ        ಠ  │  \n  │      __      │  \n  │    ──────    │  \n  ╰──────────────╯  \n WHATEVER DOES NOT COMPUTE...",
+            "  ╭──────────────╮  \n  │  ಠ        ಠ  │  \n  │      __      │  \n  │    ──────    │  \n  ╰──────────────╯  \n FAILS.",
+            "  ╭──────────────╮  \n  │  ಠ        ಠ  │  \n  │      __      │  \n  │    ──────    │  \n  ╰──────────────╯  \n FAILS."
+        ];
+        let animIdx = 0;
+        const animEls = document.querySelectorAll(".ascii-anim-target");
+        setInterval(() => {
+            animEls.forEach(el => el.innerText = animFrames[animIdx]);
+            animIdx = (animIdx + 1) % animFrames.length;
+        }, 500);
+    </script>
+    <style>
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+    </style>
+</body>
+</html>

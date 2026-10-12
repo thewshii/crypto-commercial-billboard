@@ -13,15 +13,15 @@
             },
             {
                 type: "consciousness",
-                banner: "LEVELS OF CONSCIOUSNESS", color: "bg-cyan", border: "c-cyan",
-                subtitle: "OBSERVE YOUR VERBAL MONOLOGUE",
-                hook: "CAN YOU REMEMBER YOUR THOUGHTS 30 SECONDS AGO?",
-                quote: "People think in exact words. Watch the words and sentences running in your mind.",
-                punchline: "TEST: RECALL YOUR EXACT WORDS BEFORE A LIQUIDATION INTERRUPTS",
+                banner: "ATTENTION & FOCUS PROTOCOL", color: "bg-cyan", border: "c-cyan",
+                subtitle: "FILTERING MENTAL CHATTER",
+                hook: "WHEN BACKGROUND NOISE QUIETS, FOCUS BEGINS",
+                quote: "If you only remember the immediate words, your attention has cleared the background chatter.",
+                punchline: "CLEARING THE SIGNAL IS PROGRESS • PRACTICE SUSTAINED FOCUS",
                 angelCode: "999 369 999",
-                lore: "People think in words. When an external shock or liquidation interrupts, the verbal monologue is erased. The practice is to observe your internal monologue in real-time so that when an emergency arrives, you retain unbroken consciousness. Lengthen your attention span. Broaden your awareness.",
+                lore: "When people try to recall their thoughts and only remember the immediate audio in front of them, that is progress—it means their attention anchored onto the present and quieted everyday mental chatter. The next step is building sustained attention to observe thoughts without getting swept up in them.",
                 audio: "/sounds/alien_ad.wav",
-                speech: "Pay strict attention to your thoughts. When humans think, they think in words. Observe the exact verbal monologue inside your head right now. Your challenge is to remember the exact words you were thinking thirty seconds before an emergency liquidation interrupts this normal programming. Notice how sudden shocks wipe your memory clean. Broaden your awareness. Lengthen your attention span. Reach deeper levels of consciousness."
+                speech: "Notice your focus right now. When you try to recall your thoughts and only remember the immediate words spoken, that is real progress. It means your attention anchored into the present moment and quieted the background chatter. Everyday mental noise can be crowded and distracting. Training your attention means recognizing stray thoughts without getting pulled off course. Clearing the signal is the first step. Broaden your focus, strengthen your attention span, and stay grounded in the present."
             },
             {
                 type: "jackpot",

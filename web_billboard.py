@@ -17,6 +17,36 @@ def index():
 def get_sound(filename):
     return send_from_directory("sounds", filename)
 
+@app.route("/static/<path:filename>")
+def get_static(filename):
+    return send_from_directory("static", filename)
+
+@app.route("/api/generate-image", methods=["POST"])
+def generate_image():
+    fal_key = os.environ.get("FAL_KEY", "fal_sk_af08e82663704fb486f8b1b30982eea0:b8a65b3ec856e8a0b00ae9fdf9085f21")
+    data = request.json or {}
+    prompt = data.get("prompt", "mysterious man in black agent in dark suit, cinematic noir")
+    try:
+        req = urllib.request.Request(
+            "https://fal.run/fal-ai/flux/schnell",
+            data=json.dumps({
+                "prompt": prompt,
+                "image_size": "square_hd",
+                "num_inference_steps": 4
+            }).encode("utf-8"),
+            headers={
+                "Authorization": f"Key {fal_key}",
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0"
+            }
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            result = json.loads(resp.read().decode())
+            image_url = result["images"][0]["url"]
+            return jsonify({"status": "ok", "url": image_url})
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
+
 @app.route("/api/klines")
 def get_klines():
     """Proxy 1m BTC candles from Coinbase (unrestricted globally) with failover to Binance."""

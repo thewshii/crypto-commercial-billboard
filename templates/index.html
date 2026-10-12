@@ -395,9 +395,30 @@
                 hook: "CAN YOU REMEMBER YOUR THOUGHTS 30 SECONDS AGO?",
                 quote: "People think in exact words. Watch the words and sentences running in your mind.",
                 punchline: "TEST: RECALL YOUR EXACT WORDS BEFORE A LIQUIDATION INTERRUPTS",
+                image: "/static/images/mind_consciousness.jpg",
                 angelCode: "999 369 999",
                 audio: "/sounds/alien_ad.wav",
                 speech: "Pay strict attention to your thoughts. When humans think, they think in words. Observe the exact verbal monologue inside your head right now. Your challenge is to remember the exact words you were thinking thirty seconds before an emergency liquidation interrupts this normal programming. Notice how sudden shocks wipe your memory clean. Broaden your awareness. Lengthen your attention span. Reach deeper levels of consciousness."
+            },
+            {
+                type: "affirmation",
+                banner: "CLASSIFIED INVESTIGATION: MEN IN BLACK", color: "bg-white", border: "c-white",
+                subtitle: "PSYCHOLOGICAL SURVEILLANCE PROTOCOL",
+                hook: "THEY OBSERVE FROM THE SHADOWS",
+                image: "/static/images/mib_agent.jpg",
+                angelCode: "000 777 000",
+                audio: "/sounds/rock_lawyer.wav",
+                speech: "Classified advisory. The Men in Black operate in the liminal spaces between live platforms and objective reality. They do not intervene with force; they observe psychological patterns. When an individual develops sovereign discipline outside approved behavioral models, their surveillance protocol activates. Notice the cold stillness of the observer. Do not react. Maintain your emotional circuit breakers."
+            },
+            {
+                type: "affirmation",
+                banner: "PSYCHOLOGICAL DETECTION RADAR", color: "bg-yellow", border: "c-yellow",
+                subtitle: "REAL-TIME NEURAL TELEMETRY",
+                hook: "SCANNING CROWD BIOLOGY & EMOTIONAL VOLATILITY",
+                image: "/static/images/psychological_radar.jpg",
+                angelCode: "555 444 333",
+                audio: "/sounds/scanner.wav",
+                speech: "The psychological detection radar is active. Observe the phosphor wavelengths on the monitor. Every time a retail trader panics at a red candle or chases a green pump, their biological frequency spikes on institutional telemetry. They harvest your fear like raw voltage. Flatten your frequency. Become mathematically silent. Outlast their detectors."
             },
             {
                 type: "fibonacci",
@@ -481,6 +502,7 @@
                 banner: "GALACTIC TRUTH", color: "bg-cyan", border: "c-cyan",
                 subtitle: "DARK MATTER ARBITRAGE",
                 truth: "Real algorithmic extraction is labeled 'legal'. Truth is labeled 'disinformation'.",
+                image: "/static/images/alien_observer.jpg",
                 angelCode: "369 369 369",
                 audio: "/sounds/alien_ad.wav",
                 speech: "Your emotions are mathematically predictable data points for high frequency arbitrage. Institutional bots siphon billions every hour, and Wall Street calls it sophisticated finance. But when an ordinary creator exposes the machinery on a live screen, the platform bans them for disinformation. The bots feel no remorse; they simply harvest retail friction like raw electricity. Transcend their labels."
@@ -506,8 +528,10 @@
             {
                 type: "news",
                 banner: "BREAKING NEWS: MATRIX GLITCH", color: "bg-white", border: "c-white",
+                subtitle: "THE SURVEILLANCE ROOM",
                 quote: "Creator banned for 30 days for telling the truth!",
                 punchline: "THE AUTOMATED REPORT SYSTEM CANNOT PROCESS CLARITY",
+                image: "/static/images/matrix_censors.jpg",
                 angelCode: "555 333 111",
                 audio: "/sounds/news_ticker.wav",
                 speech: "Breaking update from the simulation. Swarms of automated agents and resentful viewers trade false reports to silence sovereign signals. It is modern three card monte rendered on the blockchain. When an independent mind refuses to play the victim, the system flags them for disinformation. Simply observe the theater; do not become the prop."
@@ -1421,6 +1445,16 @@
                     <div class="text-huge c-green" style="margin-bottom:0.3vh;">"${slide.quote}"</div>
                     <div class="text-medium c-yellow" style="margin-bottom:0.2vh;">${slide.punchline}</div>
                     <div class="text-medium c-red" style="animation: blink 1s infinite; font-weight:bold; margin-bottom:0.2vh;">⚡ ${slide.subpunchline.toUpperCase()} ⚡</div>
+                `;
+            }
+
+            // If slide has an image (generated via fal.ai), display it centered with matching glowing neon border
+            if (slide.image) {
+                const borderCol = container.style.borderColor || '#00ff88';
+                html += `
+                    <div style="display:flex; justify-content:center; margin: 0.3vh 0;">
+                        <img src="${slide.image}" alt="AI Visual" style="max-height: 20vh; max-width: 85vw; border-radius: 8px; border: 2px solid ${borderCol}; box-shadow: 0 0 15px ${borderCol}; object-fit: cover;">
+                    </div>
                 `;
             }
 

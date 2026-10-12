@@ -369,7 +369,7 @@
 
     <div class="marquee-container">
         <div class="marquee-text">
-            🐘 WAKE UP. THE HOUSE ALWAYS WINS. 🐘 • 🔔 SEE SOMEONE SLEEPING? RING A BELL TO WAKE THEM UP! 🔔 • 🌹 TAP THE COMBO BUTTON — DROP ROSES TO BOOST THE SIGNAL 🌹 • 🛸 GAINED VALUE FROM THE ATTENTION DRILL? SEND 10 INTERSTELLAR PASSES 🛸 • 🧠 CONSCIOUSNESS CHALLENGE: PAY ATTENTION TO YOUR EXACT THOUGHTS • CAN YOU REMEMBER YOUR WORDS 30 SECONDS AGO? • 🍪 PREDICTED THE LIQUIDATION? YOU WIN A VIRTUAL COOKIE 🍪 • 🛑 STOP CHASING MEME GREEN CANDLES 🛑
+            🐘 WAKE UP. THE HOUSE ALWAYS WINS. 🐘 • 🐺 IT'S NOT GREED, IT'S RAW JEALOUSY: PEOPLE FIGHT LIKE ANIMALS WHEN MONEY IS BEING MADE 🐺 • 🔔 SEE SOMEONE SLEEPING? RING A BELL TO WAKE THEM UP! 🔔 • 🌹 TAP THE COMBO BUTTON — DROP ROSES TO BOOST THE SIGNAL 🌹 • 🛸 GAINED VALUE FROM THE ATTENTION DRILL? SEND 10 INTERSTELLAR PASSES 🛸 • 🧠 CONSCIOUSNESS CHALLENGE: PAY ATTENTION TO YOUR EXACT THOUGHTS • CAN YOU REMEMBER YOUR WORDS 30 SECONDS AGO? • 🍪 PREDICTED THE LIQUIDATION? YOU WIN A VIRTUAL COOKIE 🍪 • 🛑 STOP CHASING MEME GREEN CANDLES 🛑
         </div>
     </div>
 
@@ -818,21 +818,21 @@
             let phrase = "";
 
             if (usd >= 75000) {
-                // Tier 3: Extremely wealthy gambler throwing away fortunes like pocket change
-                bannerHtml = `🚨 SOMEONE RICHER THAN YOU THREW AWAY <span style="font-size:1.2em; color:#fff; background:#ff003c; padding:2px 8px; border-radius:4px; font-weight:900; text-shadow:none; box-shadow:0 0 10px #ff003c;">-$${usd.toLocaleString()} CASH</span> LIKE POCKET CHANGE ON ${cleanSym}!`;
-                phrase = `Someone far richer than you just threw away ${spokenLoss} on ${cleanSym} like pocket change. Fortunes discarded for entertainment. Commencing complete meltdown.`;
+                // Tier 3: Massive wealth extracted — raw crowd jealousy and animal savagery
+                bannerHtml = `🚨 -$${usd.toLocaleString()} CRUSHED ON ${cleanSym} • RAW JEALOUSY UNLEASHED: THEY FIGHT LIKE ANIMALS WHEN MONEY IS BEING MADE! 🚨`;
+                phrase = `Someone just had ${spokenLoss} ripped from their hands on ${cleanSym}. Look at how people turn into wild animals the second money is being made. It is not about greed; it is pure, sickening jealousy of others. They cannot stand watching someone else win, so the pack turns feral and tears each other apart.`;
             } else if (usd >= 15000) {
-                // Tier 2: A large fortune thrown into the void
-                bannerHtml = `🚨 SOMEONE JUST THREW AWAY <span style="font-size:1.2em; color:#fff; background:#ff003c; padding:2px 8px; border-radius:4px; font-weight:900; text-shadow:none; box-shadow:0 0 10px #ff003c;">-$${usd.toLocaleString()} CASH</span> INTO THE VOID ON ${cleanSym}!`;
-                phrase = `Someone just threw away ${spokenLoss} in cold hard cash on ${cleanSym}. Massive amounts of money evaporating into thin air. Registering total failure.`;
+                // Tier 2: Large capital evaporated — animal envy and pack hostility
+                bannerHtml = `🚨 -$${usd.toLocaleString()} SLAUGHTERED ON ${cleanSym} • PURE BIOLOGICAL ENVY: THEY CAN'T STAND SEEING OTHERS WIN! 🚨`;
+                phrase = `Another ${spokenLoss} wiped out on ${cleanSym}. Notice the raw jealousy in the room. When money is moving, humans lose all composure and fight like starving beasts. They secretly celebrate another soul getting crushed because their own envy is eating them alive.`;
             } else {
-                // Tier 1: Smaller trader losing their entire paycheck or life savings fund
-                bannerHtml = `🚨 SOMEONE JUST LOST <span style="font-size:1.2em; color:#fff; background:#ff003c; padding:2px 8px; border-radius:4px; font-weight:900; text-shadow:none; box-shadow:0 0 10px #ff003c;">-$${usd.toLocaleString()} CASH</span> ON ${cleanSym} — THAT WAS LIKELY THEIR ENTIRE LIFE SAVINGS!`;
-                phrase = `Someone just lost ${spokenLoss} on ${cleanSym}. For an ordinary person, that was likely their entire fund, thrown directly into the void. Registering total loss.`;
+                // Tier 1: Smaller trader wiped — fighting over crumbs in the pit
+                bannerHtml = `🚨 -$${usd.toLocaleString()} ERASED ON ${cleanSym} • FIGHTING LIKE ANIMALS OVER CASINO SCRAPS! 🚨`;
+                phrase = `A loss of ${spokenLoss} on ${cleanSym}. People do not care about clarity or math; they just burn with bitter jealousy the moment anyone makes money. Watching someone else get ahead drives the herd into a feral frenzy.`;
             }
 
-            bannerHtml += `<div style="font-size:0.75em; color:#ffd700; margin-top:3px; font-weight:bold; letter-spacing:1px; text-shadow:0 0 8px rgba(255,215,0,0.7);">🍪 IF YOU PREDICTED THIS LIQUIDATION, YOU WIN A VIRTUAL COOKIE — OR RING A BELL TO WAKE UP THE ROOM! 🔔</div>`;
-            phrase += " If you expected this liquidation, claim your virtual cookie. Ring the Bell to wake up the room.";
+            bannerHtml += `<div style="font-size:0.75em; color:#ffd700; margin-top:3px; font-weight:bold; letter-spacing:1px; text-shadow:0 0 8px rgba(255,215,0,0.7);">🍪 IF YOU PREDICTED THIS SLAUGHTER, YOU WIN A VIRTUAL COOKIE — OR RING A BELL TO WAKE UP THE ANIMALS! 🔔</div>`;
+            phrase += " If you predicted this liquidation, claim your virtual cookie. Ring the Bell to snap the animals awake.";
 
             if (liqEl) {
                 liqEl.style.color = "#ff003c";
@@ -888,10 +888,12 @@
         // Fawn a false sense of security while waiting for liquidations
         const calmPhrases = [
             "🕊️ EVERYBODY'S MONEY IS SAFE... FOR NOW",
+            "🐺 THE PACK SLEEPS: JEALOUSY ONLY IGNITES WHEN SOMEONE ELSE MAKES MONEY",
             "🧠 OBSERVE YOUR THOUGHTS: CAN YOU RECALL YOUR EXACT WORDS 30s BEFORE A LIQUIDATION?",
             "😌 MAXIMUM COMFORT ENGAGED: NOTHING BAD COULD HAPPEN",
             "👁️ ATTENTION SPAN TRAINING: HUMANS THINK IN WORDS — NOTICE YOUR INTERNAL MONOLOGUE",
             "🛡️ ALL FUNDS TEMPORARILY SECURE. ENJOY THE ILLUSION",
+            "🐺 WATCH THE CROWD: THEY DON'T HATE LOSSES, THEY HATE WATCHING OTHERS WIN",
             "🌀 CONSCIOUSNESS CHALLENGE: HOLD DEEP AWARENESS ACROSS THE NEXT 30 SECONDS",
             "🤫 PEACE ACROSS THE CASINO. PROCEED WITHOUT CAUTION",
             "🕊️ FALSE SENSE OF SECURITY: NO ACCOUNTS DESTROYED IN SECONDS"

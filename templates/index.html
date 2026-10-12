@@ -1364,6 +1364,100 @@
             } catch(e) {}
         }
 
+        // ==========================================
+        // NEWS BROADCAST SYNTHESIS SOUND
+        // Retro Electronic News Ident (Teletype Blips + Brass Fanfare + Sub Gong)
+        // ==========================================
+        let lastNewsSynthTime = 0;
+        function playNewsBroadcastSynthesis() {
+            const nowMs = Date.now();
+            if (nowMs - lastNewsSynthTime < 3500) return; // Debounce to prevent overlapping triggers
+            lastNewsSynthTime = nowMs;
+
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const now = ctx.currentTime;
+
+                // 1. Teletype Data Pulse Burst (rapid electronic wire service chirps)
+                const beeps = [0, 0.07, 0.14, 0.21, 0.28, 0.35];
+                const freqs = [2200, 1800, 2600, 1900, 2400, 2800];
+                beeps.forEach((dt, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = "sine";
+                    osc.frequency.setValueAtTime(freqs[i % freqs.length], now + dt);
+                    gain.gain.setValueAtTime(0.18, now + dt);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + dt + 0.045);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + dt);
+                    osc.stop(now + dt + 0.045);
+                });
+
+                // 2. Iconic 4-Note News Broadcast Synthesizer Stinger (Bloomberg / Network News Ident)
+                // Chords: D5 (587Hz) -> F#5 (740Hz) -> A5 (880Hz) -> D6 (1175Hz)
+                const notes = [
+                    { f: 587.33, t: 0.44, dur: 0.14 }, // D5
+                    { f: 739.99, t: 0.59, dur: 0.14 }, // F#5
+                    { f: 880.00, t: 0.74, dur: 0.16 }, // A5
+                    { f: 1174.66, t: 0.92, dur: 0.75 } // D6 (Crescendo hold)
+                ];
+
+                notes.forEach(n => {
+                    // Sawtooth brass lead with lowpass resonance filter
+                    const osc = ctx.createOscillator();
+                    const filter = ctx.createBiquadFilter();
+                    const gain = ctx.createGain();
+
+                    osc.type = "sawtooth";
+                    osc.frequency.setValueAtTime(n.f, now + n.t);
+
+                    filter.type = "lowpass";
+                    filter.frequency.setValueAtTime(3600, now + n.t);
+                    filter.frequency.exponentialRampToValueAtTime(1400, now + n.t + n.dur);
+
+                    gain.gain.setValueAtTime(0.24, now + n.t);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.dur);
+
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    osc.start(now + n.t);
+                    osc.stop(now + n.t + n.dur);
+
+                    // Sub-octave sine for broadcast body & warmth
+                    const sub = ctx.createOscillator();
+                    const subGain = ctx.createGain();
+                    sub.type = "sine";
+                    sub.frequency.setValueAtTime(n.f / 2, now + n.t);
+                    subGain.gain.setValueAtTime(0.18, now + n.t);
+                    subGain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.dur);
+                    sub.connect(subGain);
+                    subGain.connect(ctx.destination);
+                    sub.start(now + n.t);
+                    sub.stop(now + n.t + n.dur);
+                });
+
+                // 3. Deep Sub-Bass News Gong/Boom Impact on the 4th note (at t = 0.92s)
+                const boom = ctx.createOscillator();
+                const boomGain = ctx.createGain();
+                boom.type = "triangle";
+                boom.frequency.setValueAtTime(120, now + 0.92);
+                boom.frequency.exponentialRampToValueAtTime(45, now + 1.7);
+                boomGain.gain.setValueAtTime(0.32, now + 0.92);
+                boomGain.gain.exponentialRampToValueAtTime(0.001, now + 1.7);
+                boom.connect(boomGain);
+                boomGain.connect(ctx.destination);
+                boom.start(now + 0.92);
+                boom.stop(now + 1.7);
+
+            } catch (e) {
+                console.log("[AUDIO] News broadcast synthesis error:", e);
+            }
+        }
+
         let isLiqInterrupting = false;
         let lastLiqBreakTime = 0;
         let slideTimer = null;
@@ -2813,6 +2907,10 @@
 
             } else {
                 // Standard slide presentation
+                if (slide.type === "bedrock") {
+                    playNewsBroadcastSynthesis();
+                    await new Promise(r => setTimeout(r, 1750));
+                }
                 if (slide.speech) {
                     await speakPhrase(slide.speech);
                 }

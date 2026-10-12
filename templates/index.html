@@ -369,7 +369,7 @@
 
     <div class="marquee-container">
         <div class="marquee-text">
-            🐘 WAKE UP. THE HOUSE ALWAYS WINS. 🐘 • 🧠 CONSCIOUSNESS CHALLENGE: PAY ATTENTION TO YOUR EXACT THOUGHTS — PEOPLE THINK IN WORDS • CAN YOU REMEMBER WHAT WORDS WERE IN YOUR MIND 30 SECONDS BEFORE A LIQUIDATION INTERRUPTS? • LENGTHEN YOUR ATTENTION SPAN • DEEPEN YOUR LEVELS OF CONSCIOUSNESS • ZERO EXCHANGE • ZERO SOLICITATION • ZERO PROMISES • PURE OBSERVATIONAL TELEMETRY • THIS IS A MIRROR, NOT A PRODUCT • 🛑 STOP CHASING MEME GREEN CANDLES 🛑
+            🐘 WAKE UP. THE HOUSE ALWAYS WINS. 🐘 • 🔔 SEE SOMEONE SLEEPING? RING A BELL TO WAKE THEM UP! 🔔 • 🌹 TAP THE COMBO BUTTON — DROP ROSES TO BOOST THE SIGNAL 🌹 • 🛸 GAINED VALUE FROM THE ATTENTION DRILL? SEND 10 INTERSTELLAR PASSES 🛸 • 🧠 CONSCIOUSNESS CHALLENGE: PAY ATTENTION TO YOUR EXACT THOUGHTS • CAN YOU REMEMBER YOUR WORDS 30 SECONDS AGO? • 🍪 PREDICTED THE LIQUIDATION? YOU WIN A VIRTUAL COOKIE 🍪 • 🛑 STOP CHASING MEME GREEN CANDLES 🛑
         </div>
     </div>
 
@@ -416,6 +416,51 @@
                 angelCode: "369 999 369",
                 audio: "/sounds/alien_ad.wav",
                 speech: "Notice your focus right now. When you try to recall your thoughts and realize you only remember the words just spoken on the screen, that is real progress. It means your attention anchored into the present moment and quieted the background chatter. Everyday mental noise can be crowded with distraction. When you quiet the internal chatter, true focus begins. Clearing the signal is step one. Now build sustained attention, lengthen your focus span, and stay grounded in the present."
+            },
+            {
+                type: "gift",
+                banner: "VALUE EXCHANGE: 10 PASSES", color: "bg-cyan", border: "c-cyan",
+                icon: "🛸",
+                subtitle: "EXPAND THE GALACTIC FREQUENCY",
+                hook: "DID THE ATTENTION DRILL EXPAND YOUR MIND?",
+                quote: "If you gained clarity from the 30-second focus challenge, fuel the independent signal.",
+                punchline: "TRANSMIT 10 INTERSTELLAR PASSES • OPEN THE ALIEN PORTAL",
+                giftBadge: "🛸 SEND 10 INTERSTELLAR PASSES • FUEL THE SOVEREIGN BROADCAST 🛸",
+                giftColor: "#00e5ff",
+                image: "/static/images/alien_observer.jpg",
+                angelCode: "369 101 369",
+                audio: "/sounds/alien_ad.wav",
+                speech: "Consciousness telemetry check. If this memory challenge opened your awareness, cleared the mental static, or gave you genuine value, transmit ten Interstellar Passes. We are broadcasting on an alien frequency far outside ordinary casino programming. Send ten Interstellar Passes to calibrate the portal and fuel this sovereign broadcast."
+            },
+            {
+                type: "gift",
+                banner: "WAKE UP PROTOCOL: RING THE BELL", color: "bg-yellow", border: "c-yellow",
+                icon: "🔔",
+                subtitle: "ARE YOU SHARP YET?",
+                hook: "SEE SOMEONE SLEEPING IN THE CHAT? RING THE BELL!",
+                quote: "Send an audible chime to their phone and wake them up before the next liquidation hits.",
+                punchline: "DROP A BELL • WAKE UP THE ROOM • SHAKE THE SIMULATION",
+                giftBadge: "🔔 DROP A BELL GIFT • RING THE ALARM TO WAKE UP THE ROOM 🔔",
+                giftColor: "#ffdd00",
+                image: "/static/images/mind_consciousness.jpg",
+                angelCode: "777 333 777",
+                audio: "/sounds/jackpot_1.wav",
+                speech: "Are you sharp yet? Look around the room. If you see someone sleeping in the chat, zoning out, or hypnotized by the candles, send a Bell and let it ring! Test the algorithm to see if the Bell chime sounds on their phone and wakes them up before the next liquidation strikes!"
+            },
+            {
+                type: "gift",
+                banner: "SOVEREIGN SIGNAL: ROSE COMBO", color: "bg-magenta", border: "c-magenta",
+                icon: "🌹",
+                subtitle: "TAP THE HOTKEY COMBO BUTTON",
+                hook: "DROP ROSES TO BOOST BROADCAST POWER",
+                quote: "Roses are the default energy currency. Build a combo streak to reinforce the frequency.",
+                punchline: "COMBO STREAK ENGAGED • FLOOD THE CHAT WITH ROSES",
+                giftBadge: "🌹 TAP COMBO BUTTON • DROP ROSES • BOOST THE FREQUENCY 🌹",
+                giftColor: "#ff0077",
+                image: "/static/images/matrix_censors.jpg",
+                angelCode: "888 222 888",
+                audio: "/sounds/laser.wav",
+                speech: "Signal stabilization check. Roses are the default energy units in this simulation. Tap your combo hotkey right now, drop free roses, and build a combo streak to boost our broadcast power against platform suppression. Keep the sovereign frequency loud and clear."
             },
             {
                 type: "affirmation",
@@ -786,8 +831,8 @@
                 phrase = `Someone just lost ${spokenLoss} on ${cleanSym}. For an ordinary person, that was likely their entire fund, thrown directly into the void. Registering total loss.`;
             }
 
-            bannerHtml += `<div style="font-size:0.75em; color:#ffd700; margin-top:3px; font-weight:bold; letter-spacing:1px; text-shadow:0 0 8px rgba(255,215,0,0.7);">🍪 IF YOU EXPECTED THIS LIQUIDATION, YOU WIN A VIRTUAL COOKIE! 🍪</div>`;
-            phrase += " If you expected this liquidation, claim your virtual cookie.";
+            bannerHtml += `<div style="font-size:0.75em; color:#ffd700; margin-top:3px; font-weight:bold; letter-spacing:1px; text-shadow:0 0 8px rgba(255,215,0,0.7);">🍪 IF YOU PREDICTED THIS LIQUIDATION, YOU WIN A VIRTUAL COOKIE — OR RING A BELL TO WAKE UP THE ROOM! 🔔</div>`;
+            phrase += " If you expected this liquidation, claim your virtual cookie. Ring the Bell to wake up the room.";
 
             if (liqEl) {
                 liqEl.style.color = "#ff003c";
@@ -1501,6 +1546,27 @@
                     <div class="text-medium c-yellow" style="margin-bottom:0.2vh;">${slide.punchline}</div>
                     <div class="text-medium c-red" style="animation: blink 1s infinite; font-weight:bold; margin-bottom:0.2vh;">⚡ ${slide.subpunchline.toUpperCase()} ⚡</div>
                 `;
+            } else if (slide.type === "gift") {
+                html += `
+                    <div class="text-huge c-yellow" style="margin-bottom:0.2vh;">${slide.icon || '🎁'} ${slide.subtitle} ${slide.icon || '🎁'}</div>
+                    <div class="text-huge c-cyan" style="font-size: clamp(0.68rem, 1.4vw, 1.2rem); margin-bottom:0.3vh;">⚡ ${slide.hook.toUpperCase()} ⚡</div>
+                    <div class="text-medium c-white" style="font-size: clamp(0.6rem, 1.25vw, 1.05rem); margin-bottom:0.3vh;">"${slide.quote}"</div>
+                    <div class="text-huge c-green" style="font-size: clamp(0.65rem, 1.35vw, 1.15rem); margin-bottom:0.3vh;">
+                        ⚡ ${slide.punchline.toUpperCase()} ⚡
+                    </div>
+                `;
+            }
+
+            // If slide has a BIGO Live native gift prompt badge
+            if (slide.giftBadge) {
+                const giftColor = slide.giftColor || '#ffd700';
+                html += `
+                    <div style="margin: 0.5vh auto; display:flex; flex-direction:column; align-items:center; background:#080a0f; padding: 6px 18px; border-radius:10px; border: 2px solid ${giftColor}; box-shadow: 0 0 16px ${giftColor}; max-width:85vw;">
+                        <span style="color:${giftColor}; font-family:'Roboto Mono',monospace; font-size:clamp(0.65rem, 1.3vw, 1.05rem); font-weight:900; letter-spacing:1.5px; text-transform:uppercase; text-shadow:0 0 10px ${giftColor};">
+                            ${slide.giftBadge}
+                        </span>
+                    </div>
+                `;
             }
 
             // If slide has an image (generated via fal.ai), display it centered with matching glowing neon border
@@ -1515,7 +1581,7 @@
 
             // Large glowing 9-digit angel code rooted in numerology and commonalities
             const angelSeq = slide.angelCode || "777 888 111";
-            const angelStyle = (slide.type === "affiliate" || slide.type === "scammer" || slide.type === "heart") ? "font-size:clamp(0.95rem, 2.2vw, 1.8rem); padding:0.3vh 1.5vw; margin:0.2vh 0;" : "";
+            const angelStyle = (slide.type === "affiliate" || slide.type === "scammer" || slide.type === "heart" || slide.type === "gift") ? "font-size:clamp(0.95rem, 2.2vw, 1.8rem); padding:0.3vh 1.5vw; margin:0.2vh 0;" : "";
             html += `<div class="angel-code" style="${angelStyle}">${angelSeq}</div>`;
 
             // Always add the elephant wake up message if it's the jackpot

@@ -472,6 +472,139 @@
             100% { transform: translateX(-100%); }
         }
 
+        /* Glowing Yellow Horizontal Divider Below TV Box */
+        .tv-yellow-divider {
+            width: 100%;
+            height: 4px;
+            background: #ffff00;
+            box-shadow: 0 0 12px #ffff00, 0 0 25px rgba(255, 255, 0, 0.7);
+            flex-shrink: 0;
+            z-index: 40;
+        }
+
+        /* Prominent PumpPortal Real-Time Token Spotlight Strip (Single Token, Font >= 30px) */
+        .pumpportal-strip {
+            width: 100%;
+            background: linear-gradient(90deg, #07090e 0%, #171302 50%, #07090e 100%);
+            border-bottom: 2px solid #332b00;
+            padding: 4px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            z-index: 35;
+            box-sizing: border-box;
+            overflow: hidden;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.9);
+        }
+
+        .pumpportal-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: clamp(0.5rem, 0.8vw, 0.7rem);
+            color: #ffdd00;
+            font-family: 'Roboto Mono', monospace;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+            text-shadow: 0 0 6px rgba(255, 221, 0, 0.7);
+        }
+
+        .pumpportal-live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ff88;
+            box-shadow: 0 0 8px #00ff88;
+            display: inline-block;
+            animation: pumpLivePulse 1.2s infinite alternate;
+        }
+
+        @keyframes pumpLivePulse {
+            0% { opacity: 0.6; box-shadow: 0 0 4px #00ff88; }
+            100% { opacity: 1; box-shadow: 0 0 12px #00ff88, 0 0 16px #00ff88; }
+        }
+
+        .pumpportal-hero-card {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            width: 100%;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .pumpportal-hero-card.token-flash {
+            animation: pumpTokenFlash 0.45s ease-out;
+        }
+
+        @keyframes pumpTokenFlash {
+            0% { transform: scale(1.03); filter: brightness(1.7); }
+            100% { transform: scale(1.0); filter: brightness(1.0); }
+        }
+
+        .pumpportal-symbol {
+            font-family: 'Press Start 2P', monospace;
+            font-size: clamp(30px, 3.2vw, 42px);
+            font-weight: 900;
+            color: #00ff88;
+            text-shadow: 0 0 12px #00ff88, 0 0 25px rgba(0, 255, 136, 0.85);
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        .pumpportal-name {
+            font-family: 'Roboto Mono', monospace;
+            font-size: clamp(30px, 2.7vw, 38px);
+            font-weight: 900;
+            color: #ffffff;
+            text-shadow: 0 0 8px #ffffff, 0 0 18px #00e5ff;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 60vw;
+        }
+
+        .pumpportal-meta-badge {
+            font-family: 'Roboto Mono', monospace;
+            font-size: clamp(0.7rem, 1.1vw, 0.95rem);
+            font-weight: bold;
+            color: #ffff00;
+            background: #1e1900;
+            border: 1px solid #ffff00;
+            padding: 2px 8px;
+            border-radius: 4px;
+            text-shadow: 0 0 6px #ffff00;
+            box-shadow: 0 0 8px rgba(255, 255, 0, 0.3);
+            white-space: nowrap;
+        }
+
+        .pumpportal-ca-badge {
+            font-family: 'Roboto Mono', monospace;
+            font-size: clamp(0.65rem, 0.95vw, 0.85rem);
+            color: #00ffff;
+            background: #00151f;
+            border: 1px solid #00ffff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 6px #00ffff;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .pumpportal-ca-badge:hover {
+            background: #00334d;
+            box-shadow: 0 0 10px #00ffff;
+        }
+
         /* Color classes */
         .c-yellow { color: #ffff00; text-shadow: 0 0 10px #ffff00; }
         .c-red { color: #ff003c; text-shadow: 0 0 10px #ff003c; }
@@ -739,7 +872,22 @@
         </div>
     </div>
 
-    <div class="animation-container ascii-anim-target">
+    <!-- Glowing Yellow Horizontal Line Below TV Box -->
+    <div class="tv-yellow-divider"></div>
+
+    <!-- Prominent New Solana Token Feed from PumpPortal WebSocket (Single Token Spotlight, Font >= 30px) -->
+    <div id="pumpportal-strip" class="pumpportal-strip">
+        <div class="pumpportal-header">
+            <span id="pump-status-dot" class="pumpportal-live-dot"></span>
+            <span id="pump-status-txt">PUMPPORTAL WS • REAL-TIME NEW TOKEN LAUNCH 🟢 LIVE</span>
+            <span style="color:#888; font-size:0.85em;">(STREAMING BLOCKCHAIN MINT)</span>
+        </div>
+        <div id="pump-token-card" class="pumpportal-hero-card">
+            <span id="pump-token-symbol" class="pumpportal-symbol">🪙 $PEPE</span>
+            <span id="pump-token-name" class="pumpportal-name">CONNECTING TO PUMPPORTAL...</span>
+            <span id="pump-token-mcap" class="pumpportal-meta-badge">MCAP: 27.96 SOL</span>
+            <span id="pump-token-ca" class="pumpportal-ca-badge" onclick="copyPumpContract()" title="Click to copy Contract Address">CA: CONNECTING...</span>
+        </div>
     </div>
 
     <div class="marquee-container">
@@ -2195,11 +2343,124 @@
             }, 8000);
         }
 
+        // ==========================================
+        // PUMPPORTAL BLOCKCHAIN WEBSOCKET (SOLANA NEW TOKENS)
+        // Single Token Spotlight (Font >= 30px), One-by-One Stream
+        // ==========================================
+        let pumpWs = null;
+        let pumpReconnectTimer = null;
+        let pumpPingTimer = null;
+        let currentPumpMint = "";
+
+        function copyPumpContract() {
+            if (currentPumpMint) {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(currentPumpMint).then(() => {
+                        const caEl = document.getElementById("pump-token-ca");
+                        if (caEl) {
+                            const orig = caEl.innerText;
+                            caEl.innerText = "COPIED TO CLIPBOARD!";
+                            setTimeout(() => { caEl.innerText = orig; }, 1800);
+                        }
+                    }).catch(() => {});
+                }
+            }
+        }
+
+        function updatePumpTokenDisplay(token) {
+            const symEl = document.getElementById("pump-token-symbol");
+            const nameEl = document.getElementById("pump-token-name");
+            const mcapEl = document.getElementById("pump-token-mcap");
+            const caEl = document.getElementById("pump-token-ca");
+            const cardEl = document.getElementById("pump-token-card");
+
+            if (!symEl || !nameEl) return;
+
+            currentPumpMint = token.mint || "";
+            const rawSym = (token.symbol || "").trim();
+            const sym = rawSym ? (rawSym.startsWith("$") ? rawSym : "$" + rawSym) : "$TOKEN";
+            const name = (token.name || "NEW SOLANA TOKEN").trim();
+            const mcapVal = parseFloat(token.marketCapSol);
+            const mcap = (!isNaN(mcapVal) && mcapVal > 0) ? mcapVal.toFixed(2) + " SOL" : "28.00 SOL";
+            const caShort = currentPumpMint ? (currentPumpMint.slice(0, 6) + "..." + currentPumpMint.slice(-4)) : "";
+
+            symEl.innerText = "🪙 " + sym;
+            nameEl.innerText = name;
+            if (mcapEl) mcapEl.innerText = "MCAP: " + mcap;
+            if (caEl) {
+                caEl.innerText = caShort ? "CA: " + caShort : "CA: LIVE";
+                caEl.title = currentPumpMint ? "Click to copy contract: " + currentPumpMint : "Contract Address";
+            }
+
+            if (cardEl) {
+                cardEl.classList.remove("token-flash");
+                void cardEl.offsetWidth; // Force CSS reflow to re-trigger pop flash
+                cardEl.classList.add("token-flash");
+            }
+        }
+
+        function initPumpPortalStream() {
+            if (pumpReconnectTimer) clearTimeout(pumpReconnectTimer);
+            if (pumpPingTimer) clearInterval(pumpPingTimer);
+
+            try {
+                pumpWs = new WebSocket("wss://pumpportal.fun/api/data");
+
+                pumpWs.onopen = () => {
+                    const dot = document.getElementById("pump-status-dot");
+                    const txt = document.getElementById("pump-status-txt");
+                    if (dot) dot.style.background = "#00ff88";
+                    if (txt) txt.innerText = "PUMPPORTAL WS • REAL-TIME NEW TOKEN LAUNCH 🟢 LIVE";
+                    
+                    try {
+                        pumpWs.send(JSON.stringify({ method: "subscribeNewToken" }));
+                    } catch(err) {}
+
+                    // Keepalive ping every 25 seconds
+                    pumpPingTimer = setInterval(() => {
+                        if (pumpWs && pumpWs.readyState === WebSocket.OPEN) {
+                            try { pumpWs.send(JSON.stringify({ method: "ping" })); } catch(e) {}
+                        }
+                    }, 25000);
+                };
+
+                pumpWs.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (!data) return;
+                        if (data.message && data.message.includes("Successfully subscribed")) return;
+                        if (data.symbol || data.name || data.mint) {
+                            updatePumpTokenDisplay(data);
+                        }
+                    } catch(err) {}
+                };
+
+                pumpWs.onerror = () => {
+                    const dot = document.getElementById("pump-status-dot");
+                    const txt = document.getElementById("pump-status-txt");
+                    if (dot) dot.style.background = "#ff003c";
+                    if (txt) txt.innerText = "PUMPPORTAL WS • RETRYING... 🔴";
+                };
+
+                pumpWs.onclose = () => {
+                    if (pumpPingTimer) clearInterval(pumpPingTimer);
+                    const dot = document.getElementById("pump-status-dot");
+                    const txt = document.getElementById("pump-status-txt");
+                    if (dot) dot.style.background = "#ffff00";
+                    if (txt) txt.innerText = "PUMPPORTAL WS • RECONNECTING... 🟡";
+                    pumpReconnectTimer = setTimeout(initPumpPortalStream, 2500);
+                };
+            } catch(e) {
+                pumpReconnectTimer = setTimeout(initPumpPortalStream, 3000);
+            }
+        }
+
         // Start real-time feeds immediately on page load
         initPriceStreams();
         initLiqStream();
         initHeikinAshiChart();
         initHawkesProcess();
+        initPumpPortalStream();
         fetchBedrockNewscast(false);
         setInterval(() => fetchBedrockNewscast(false), 75000);
 

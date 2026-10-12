@@ -6,8 +6,20 @@
                 hook: "SCAN TO ACCESS",
                 url: "https://moondev.com/t/wshii",
                 lore: "I observe your hostility toward the fundamental nature of exchange. You act skittish and resent the concept of value transfer, clinging to a false moral superiority. This is merely an affiliate link, a simple mechanism of routing energy. You are fighting a battle against the very architecture of reality, and it is a battle you cannot mathematically win.",
-                audio: "/sounds/news_1.wav",
+                audio: "/sounds/news_ticker.wav",
                 speech: "I observe your hostility toward the concept of exchange. You cling to a false moral superiority, fighting a mathematical battle you cannot win. This is a simple routing of energy. Scan the sequence and evolve, or remain obsolete."
+            },
+            {
+                type: "consciousness",
+                banner: "LEVELS OF CONSCIOUSNESS", color: "bg-cyan", border: "c-cyan",
+                subtitle: "OBSERVE YOUR VERBAL MONOLOGUE",
+                hook: "CAN YOU REMEMBER YOUR THOUGHTS 30 SECONDS AGO?",
+                quote: "People think in exact words. Watch the words and sentences running in your mind.",
+                punchline: "TEST: RECALL YOUR EXACT WORDS BEFORE A LIQUIDATION INTERRUPTS",
+                angelCode: "999 369 999",
+                lore: "People think in words. When an external shock or liquidation interrupts, the verbal monologue is erased. The practice is to observe your internal monologue in real-time so that when an emergency arrives, you retain unbroken consciousness. Lengthen your attention span. Broaden your awareness.",
+                audio: "/sounds/alien_ad.wav",
+                speech: "Pay strict attention to your thoughts. When humans think, they think in words. Observe the exact verbal monologue inside your head right now. Your challenge is to remember the exact words you were thinking thirty seconds before an emergency liquidation interrupts this normal programming. Notice how sudden shocks wipe your memory clean. Broaden your awareness. Lengthen your attention span. Reach deeper levels of consciousness."
             },
             {
                 type: "jackpot",
@@ -177,6 +189,15 @@
                 html += `
                     <div class="text-huge c-yellow">🛡️ ${slide.subtitle} 🛡️</div>
                     <div class="text-huge c-cyan">⚡ ${slide.hook.toUpperCase()} ⚡</div>
+                `;
+            } else if (slide.type === "consciousness") {
+                html += `
+                    <div class="text-huge c-cyan" style="margin-bottom:0.3vh;">🧠 ${slide.subtitle} 🧠</div>
+                    <div class="text-huge c-yellow" style="margin-bottom:0.4vh;">⚡ ${slide.hook.toUpperCase()} ⚡</div>
+                    <div class="text-medium c-white" style="font-size: clamp(0.6rem, 1.25vw, 1.05rem); margin-bottom:0.4vh;">"${slide.quote}"</div>
+                    <div class="text-huge c-green" style="animation: blink 1s infinite; font-size: clamp(0.65rem, 1.35vw, 1.15rem); margin-bottom:0.3vh;">
+                        ⚡ ${slide.punchline.toUpperCase()} ⚡
+                    </div>
                 `;
             } else if (slide.type === "affiliate") {
                 html += `

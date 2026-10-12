@@ -369,7 +369,7 @@
 
     <div class="marquee-container">
         <div class="marquee-text">
-            🐘 WAKE UP. THE HOUSE ALWAYS WINS. 🐘 • DO NOT BUY • DO NOT SEND SOL • NO GUARANTEES • NO ALPHA • ZERO CODE • THIS IS A MIRROR, NOT A PRODUCT • 🛑 STOP CHASING MEME GREEN CANDLES 🛑
+            🐘 WAKE UP. THE HOUSE ALWAYS WINS. 🐘 • 🧠 CONSCIOUSNESS CHALLENGE: PAY ATTENTION TO YOUR EXACT THOUGHTS — PEOPLE THINK IN WORDS • CAN YOU REMEMBER WHAT WORDS WERE IN YOUR MIND 30 SECONDS BEFORE A LIQUIDATION INTERRUPTS? • LENGTHEN YOUR ATTENTION SPAN • DEEPEN YOUR LEVELS OF CONSCIOUSNESS • DO NOT BUY • DO NOT SEND SOL • NO GUARANTEES • NO ALPHA • ZERO CODE • THIS IS A MIRROR, NOT A PRODUCT • 🛑 STOP CHASING MEME GREEN CANDLES 🛑
         </div>
     </div>
 
@@ -387,6 +387,17 @@
                 angelCode: "888 111 888",
                 audio: "/sounds/news_ticker.wav",
                 speech: "I observe the platform's reflexive terror. The moment you route sovereign value without their tollbooths, they stamp your forehead with fraud and disinformation. They act skittish and hide behind automated moderation, terrified of anyone who decodes the simulation. Scan the sequence and access the raw signal. Truth cannot be banned for thirty days."
+            },
+            {
+                type: "consciousness",
+                banner: "LEVELS OF CONSCIOUSNESS", color: "bg-cyan", border: "c-cyan",
+                subtitle: "OBSERVE YOUR VERBAL MONOLOGUE",
+                hook: "CAN YOU REMEMBER YOUR THOUGHTS 30 SECONDS AGO?",
+                quote: "People think in exact words. Watch the words and sentences running in your mind.",
+                punchline: "TEST: RECALL YOUR EXACT WORDS BEFORE A LIQUIDATION INTERRUPTS",
+                angelCode: "999 369 999",
+                audio: "/sounds/alien_ad.wav",
+                speech: "Pay strict attention to your thoughts. When humans think, they think in words. Observe the exact verbal monologue inside your head right now. Your challenge is to remember the exact words you were thinking thirty seconds before an emergency liquidation interrupts this normal programming. Notice how sudden shocks wipe your memory clean. Broaden your awareness. Lengthen your attention span. Reach deeper levels of consciousness."
             },
             {
                 type: "fibonacci",
@@ -788,8 +799,11 @@
         // Fawn a false sense of security while waiting for liquidations
         const calmPhrases = [
             "🕊️ EVERYBODY'S MONEY IS SAFE... FOR NOW",
+            "🧠 OBSERVE YOUR THOUGHTS: CAN YOU RECALL YOUR EXACT WORDS 30s BEFORE A LIQUIDATION?",
             "😌 MAXIMUM COMFORT ENGAGED: NOTHING BAD COULD HAPPEN",
+            "👁️ ATTENTION SPAN TRAINING: HUMANS THINK IN WORDS — NOTICE YOUR INTERNAL MONOLOGUE",
             "🛡️ ALL FUNDS TEMPORARILY SECURE. ENJOY THE ILLUSION",
+            "🌀 CONSCIOUSNESS CHALLENGE: HOLD DEEP AWARENESS ACROSS THE NEXT 30 SECONDS",
             "🤫 PEACE ACROSS THE CASINO. PROCEED WITHOUT CAUTION",
             "🕊️ FALSE SENSE OF SECURITY: NO ACCOUNTS DESTROYED IN SECONDS"
         ];
@@ -1353,6 +1367,15 @@
                 html += `
                     <div class="text-huge c-yellow">🛡️ ${slide.subtitle} 🛡️</div>
                     <div class="text-huge c-cyan">⚡ ${slide.hook.toUpperCase()} ⚡</div>
+                `;
+            } else if (slide.type === "consciousness") {
+                html += `
+                    <div class="text-huge c-cyan" style="margin-bottom:0.3vh;">🧠 ${slide.subtitle} 🧠</div>
+                    <div class="text-huge c-yellow" style="margin-bottom:0.4vh;">⚡ ${slide.hook.toUpperCase()} ⚡</div>
+                    <div class="text-medium c-white" style="font-size: clamp(0.6rem, 1.25vw, 1.05rem); margin-bottom:0.4vh;">"${slide.quote}"</div>
+                    <div class="text-huge c-green" style="animation: blink 1s infinite; font-size: clamp(0.65rem, 1.35vw, 1.15rem); margin-bottom:0.3vh;">
+                        ⚡ ${slide.punchline.toUpperCase()} ⚡
+                    </div>
                 `;
             } else if (slide.type === "affiliate") {
                 html += `

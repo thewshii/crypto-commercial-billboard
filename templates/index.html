@@ -4370,74 +4370,106 @@ startStream();
 })();
 </script>
 <!-- End of injected debug logger -->
-<!-- Audio tracer: logs every audio action with the caller stack (copy via "Copy logs") -->
+<!-- Audio arbiter: single choke point. Every audio action is traced, then judged against AudioRules. -->
 <script>
 (function () {
   const t0 = performance.now();
   const lastSeen = {};
+  const ruleLast = {};
+
+  // ================= RULES (edit here; everything else stays untouched) =================
+  // A rule is a switch: { name, enabled, kinds, caller, when, action | cooldownMs }
+  //   kinds      : which actions it applies to ('TTS.speak','TTS.cancel','MEDIA.play','MEDIA.pause','WEBAUDIO.start')
+  //   caller     : regex tested against the call stack (function names) e.g. /recordLiquidation/
+  //   when(ctx)  : optional extra condition, ctx = {kind, detail, who, now}
+  //   action     : 'deny'  -> block while the rule matches
+  //   cooldownMs : allow the first match, deny repeats inside the window
+  // Rules ship disabled: default behavior is identical to before. Flip enabled:true to steer.
+  window.AudioRules = [
+    { name: 'war-sfx-not-over-tts', enabled: false, kinds: ['WEBAUDIO.start'], caller: /playWarSound|WAR_SOUNDS/,
+      when: () => window.speechSynthesis && window.speechSynthesis.speaking, action: 'deny' },
+    { name: 'beep-cooldown', enabled: false, kinds: ['WEBAUDIO.start'], caller: /triggerBeep/, cooldownMs: 3000 },
+    { name: 'brink-tts-cooldown', enabled: false, kinds: ['TTS.speak'], caller: /triggerRegimeBrinkTTS/, cooldownMs: 60000 }
+  ];
+
   function caller() {
     const lines = (new Error().stack || '').split('\n').slice(1);
-    const useful = lines.filter(l => !/audioTrace|index\.html:\d+:\d+\)?$/.test('') && l.indexOf('__aT') === -1);
-    return useful.slice(3, 7).map(l => l.trim().replace(/^at /, '').replace(/https?:\/\/[^/]+/, '')).join(' <- ');
+    return lines.filter(l => l.indexOf('__aT') === -1).slice(3, 7)
+      .map(l => l.trim().replace(/^at /, '').replace(/https?:\/\/[^/]+/, '')).join(' <- ');
   }
-  function trace(kind, detail) {
-    const who = caller();
-    const key = kind + who;
-    const now = performance.now();
-    if (lastSeen[key] && now - lastSeen[key] < 150) return; // coalesce bursts (machine-gun, rotors)
-    lastSeen[key] = now;
-    console.log('AUDIO +' + ((now - t0) / 1000).toFixed(2) + 's ' + kind + (detail ? ' [' + detail + ']' : '') + ' :: ' + who);
-  }
-  window.__aT = trace;
 
-  // <audio>/<video> play, pause, and autoplay rejections
+  // Returns true if the action is allowed. Logs everything (bursts coalesced).
+  function judge(kind, detail) {
+    const who = caller();
+    const now = performance.now();
+    let allowed = true, by = '';
+    for (const r of window.AudioRules) {
+      if (r.enabled === false) continue;
+      if (r.kinds && r.kinds.indexOf(kind) === -1) continue;
+      if (r.caller && !r.caller.test(who)) continue;
+      if (r.when) { try { if (!r.when({ kind, detail, who, now })) continue; } catch (e) { continue; } }
+      if (r.cooldownMs) {
+        if (ruleLast[r.name] && now - ruleLast[r.name] < r.cooldownMs) { allowed = false; by = r.name; break; }
+        ruleLast[r.name] = now;
+      } else if (r.action === 'deny') { allowed = false; by = r.name; break; }
+    }
+    const key = kind + who + (allowed ? '' : '!');
+    if (!lastSeen[key] || now - lastSeen[key] >= 150) {
+      lastSeen[key] = now;
+      console.log('AUDIO +' + ((now - t0) / 1000).toFixed(2) + 's ' + (allowed ? '' : 'DENIED(' + by + ') ') +
+        kind + (detail ? ' [' + detail + ']' : '') + ' :: ' + who);
+    }
+    return allowed;
+  }
+  window.__aT = judge;
+
   const origPlay = HTMLMediaElement.prototype.play;
   HTMLMediaElement.prototype.play = function () {
     const id = this.id || this.src.split('/').pop() || 'media';
-    trace('MEDIA.play', id);
+    if (!judge('MEDIA.play', id)) return Promise.resolve();
     const p = origPlay.apply(this, arguments);
-    if (p && p.catch) p.catch(e => trace('MEDIA.play BLOCKED/FAILED', id + ' ' + e.name + ': ' + e.message));
+    if (p && p.catch) p.catch(e => judge('MEDIA.play BLOCKED/FAILED', id + ' ' + e.name + ': ' + e.message));
     return p;
   };
   const origPause = HTMLMediaElement.prototype.pause;
   HTMLMediaElement.prototype.pause = function () {
-    trace('MEDIA.pause', this.id || this.src.split('/').pop() || 'media');
+    if (!judge('MEDIA.pause', this.id || this.src.split('/').pop() || 'media')) return;
     return origPause.apply(this, arguments);
   };
 
-  // Speech synthesis
   if (window.speechSynthesis) {
-    const ss = window.speechSynthesis;
-    const proto = Object.getPrototypeOf(ss);
+    const proto = Object.getPrototypeOf(window.speechSynthesis);
     const oSpeak = proto.speak, oCancel = proto.cancel;
     proto.speak = function (u) {
-      trace('TTS.speak', '"' + String(u && u.text).slice(0, 50) + '"');
+      if (!judge('TTS.speak', '"' + String(u && u.text).slice(0, 50) + '"')) {
+        // keep the app's callback chain alive: a denied utterance "ends" immediately
+        setTimeout(() => { try { u && u.onend && u.onend(new Event('end')); } catch (e) {} }, 0);
+        return;
+      }
       return oSpeak.apply(this, arguments);
     };
     proto.cancel = function () {
-      trace('TTS.cancel', 'speaking=' + this.speaking + ' pending=' + this.pending);
+      if (!judge('TTS.cancel', 'speaking=' + this.speaking + ' pending=' + this.pending)) return;
       return oCancel.apply(this, arguments);
     };
   }
 
-  // Web Audio: every synthesized sound (beeps, chimes, war SFX)
   const AC = window.AudioContext || window.webkitAudioContext;
   if (AC) {
     const oStart = AudioScheduledSourceNode.prototype.start;
     AudioScheduledSourceNode.prototype.start = function () {
-      trace('WEBAUDIO.start', this.constructor.name);
+      if (!judge('WEBAUDIO.start', this.constructor.name)) return;
       return oStart.apply(this, arguments);
     };
     const oResume = AC.prototype.resume;
     AC.prototype.resume = function () {
-      trace('WEBAUDIO.resume', 'state=' + this.state);
+      judge('WEBAUDIO.resume', 'state=' + this.state);
       return oResume.apply(this, arguments);
     };
   }
 
-  // Autoplay-policy hint when the audio context stays suspended
   setInterval(() => {
-    if (window.audioCtx && window.audioCtx.state === 'suspended') trace('WEBAUDIO.SUSPENDED', 'no user gesture yet');
+    if (window.audioCtx && window.audioCtx.state === 'suspended') judge('WEBAUDIO.SUSPENDED', 'no user gesture yet');
   }, 5000);
 })();
 </script>

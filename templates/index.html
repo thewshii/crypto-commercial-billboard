@@ -3728,6 +3728,8 @@
         initPumpPortalStream();
         fetchBedrockNewscast(false);
         setInterval(() => fetchBedrockNewscast(false), 75000);
+// Auto‑start stream on page load (no click required)
+startStream();
 
         // Check 3x daily "Pause for the Word" schedule (every 30s)
         setInterval(checkWordSchedule, 30000);

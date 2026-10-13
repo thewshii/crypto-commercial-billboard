@@ -3133,7 +3133,7 @@
             // FLOOD GUARD: too many regime flips + high brink => skip raw readout, say "game over", leave the sequence untouched
             const floodFlips = regimeFlipHistory.filter(t => now - t <= 600000).length;
             const lastTension = hawkesHistory.length ? hawkesHistory[hawkesHistory.length - 1].score : 0;
-            if (floodFlips >= 30 && currentBrink > 35 && lastTension <= 75) {
+            if (floodFlips >= 3 && currentBrink > 35 && lastTension <= 75) {
                 if (!isWordActive && !window.gameOverSpeaking && (now - (window.lastGameOverTime || 0) > 8000)) {
                     window.lastGameOverTime = now;
                     window.gameOverSpeaking = true;
@@ -4393,7 +4393,13 @@ startStream();
     { name: 'war-sfx-not-over-tts', enabled: false, kinds: ['WEBAUDIO.start'], caller: /playWarSound|WAR_SOUNDS/,
       when: () => window.speechSynthesis && window.speechSynthesis.speaking, action: 'deny' },
     { name: 'beep-cooldown', enabled: false, kinds: ['WEBAUDIO.start'], caller: /triggerBeep/, cooldownMs: 3000 },
-    { name: 'brink-tts-cooldown', enabled: true, kinds: ['TTS.speak'], caller: /triggerRegimeBrinkTTS/, cooldownMs: 60000 }
+    // Brink line may cancel-and-restart itself for up to 17s per burst, then stays quiet until 60s after the burst began
+    { name: 'brink-tts-17s-burst', enabled: true, kinds: ['TTS.speak', 'TTS.cancel'], caller: /triggerRegimeBrinkTTS/,
+      deny: (ctx) => {
+        const st = (window.__brinkBurst = window.__brinkBurst || { start: 0 });
+        if (!st.start || ctx.now - st.start > 60000) { st.start = ctx.now; return false; }
+        return (ctx.now - st.start) > 17000;
+      } }
   ];
 
   function caller() {
@@ -4412,6 +4418,7 @@ startStream();
       if (r.kinds && r.kinds.indexOf(kind) === -1) continue;
       if (r.caller && !r.caller.test(who)) continue;
       if (r.when) { try { if (!r.when({ kind, detail, who, now })) continue; } catch (e) { continue; } }
+      if (r.deny) { try { if (r.deny({ kind, detail, who, now })) { allowed = false; by = r.name; break; } } catch (e) {} continue; }
       if (r.cooldownMs) {
         if (ruleLast[r.name] && now - ruleLast[r.name] < r.cooldownMs) { allowed = false; by = r.name; break; }
         ruleLast[r.name] = now;

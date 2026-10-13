@@ -1061,7 +1061,7 @@
             <div style="display:flex; align-items:center; gap:4px;" title="Regime changes in trailing 10 minutes">
                 <span style="color:#888; font-size:clamp(0.52rem, 0.8vw, 0.68rem); font-weight:bold;">FLIPS:</span>
                 <span id="regime-flips-badge" style="color:#ffdd00; font-weight:bold; font-size:clamp(0.65rem, 0.95vw, 0.82rem); text-shadow:0 0 5px rgba(255,221,0,0.6);">
-                    <span id="regime-flips-val">0</span> / 10m
+                    <span id="regime-flips-val">0</span> flips per 10 min
                 </span>
             </div>
             
@@ -1801,6 +1801,183 @@
             } catch (e) {
                 console.log("[AUDIO] Sacred chime error:", e);
             }
+        // ==========================================
+        // RETRO 8-BIT ARCADE GAME START SOUND
+        // Chiptune Rising Arpeggio Fanfare (Level Start / Coin Insert)
+        // ==========================================
+        function playGameStartSound() {
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const now = ctx.currentTime;
+
+                // Classic arcade fanfare notes (C4, E4, G4, C5, E5, G5, C6)
+                const notes = [
+                    { f: 261.63, t: 0.00, d: 0.08 },
+                    { f: 329.63, t: 0.08, d: 0.08 },
+                    { f: 392.00, t: 0.16, d: 0.08 },
+                    { f: 523.25, t: 0.24, d: 0.08 },
+                    { f: 659.25, t: 0.32, d: 0.09 },
+                    { f: 783.99, t: 0.41, d: 0.10 },
+                    { f: 1046.50, t: 0.52, d: 0.35 }  // Sustained triumphant high C6
+                ];
+
+                notes.forEach(n => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = "square"; // 8-bit NES/Arcade chiptune square wave
+                    osc.frequency.setValueAtTime(n.f, now + n.t);
+
+                    gain.gain.setValueAtTime(0.20, now + n.t);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
+
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + n.t);
+                    osc.stop(now + n.t + n.d);
+                });
+
+                // Harmonized Sub-bass / Triangle Kick at the climax
+                const bass = ctx.createOscillator();
+                const bassGain = ctx.createGain();
+                bass.type = "triangle";
+                bass.frequency.setValueAtTime(130.81, now + 0.52); // C3
+                bassGain.gain.setValueAtTime(0.25, now + 0.52);
+                bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.90);
+                bass.connect(bassGain);
+                bassGain.connect(ctx.destination);
+                bass.start(now + 0.52);
+                bass.stop(now + 0.90);
+            } catch(e) {
+                console.log("[AUDIO] Game start sound error:", e);
+            }
+        }
+
+        // ==========================================
+        // ATTENTION TRAINING LIQUIDATION GAME STATE
+        // High Score = Average seconds survived before a liquidation
+        // ==========================================
+        let isAttentionTimerActive = false;
+        let attentionTimerSecondsLeft = 30;
+        let attentionTimerTotalSec = 30;
+        let attentionTimerStartTime = 0;
+
+        function getAttentionScores() {
+            try {
+                const s = localStorage.getItem("attention_scores");
+                return s ? JSON.parse(s) : [20, 22, 19]; // Default baseline seed ~20s
+            } catch(e) {
+                return [20, 22, 19];
+            }
+        }
+
+        function recordAttentionScore(sec) {
+            try {
+                const scores = getAttentionScores();
+                scores.push(sec);
+                if (scores.length > 50) scores.shift();
+                localStorage.setItem("attention_scores", JSON.stringify(scores));
+                const sum = scores.reduce((a, b) => a + b, 0);
+                const avg = sum / scores.length;
+                localStorage.setItem("attention_avg_highscore", avg.toFixed(1));
+                return avg;
+            } catch(e) {
+                return sec;
+            }
+        }
+
+        function getAttentionHighScoreAvg() {
+            try {
+                const scores = getAttentionScores();
+                if (scores.length === 0) return "20.0";
+                const sum = scores.reduce((a, b) => a + b, 0);
+                return (sum / scores.length).toFixed(1);
+            } catch(e) {
+                return "20.0";
+            }
+        }
+
+        function handleAttentionGameLiquidation(rawStr) {
+            isAttentionTimerActive = false;
+            if (memoryTimerInterval) {
+                clearInterval(memoryTimerInterval);
+                memoryTimerInterval = null;
+            }
+
+            // Seconds lasted = 30s minus seconds remaining on timer
+            const secondsLeft = Math.max(0, attentionTimerSecondsLeft);
+            const secondsLasted = Math.max(1, Math.min(30, 30 - secondsLeft));
+
+            // High score is set by the running average of seconds survived before a liquidation
+            const avgScore = recordAttentionScore(secondsLasted);
+
+            // Update UI elements
+            const clockEl = document.getElementById("memory-timer-clock");
+            const barEl = document.getElementById("memory-timer-bar");
+            const scoreValEl = document.getElementById("attention-highscore-val");
+            const lastRunEl = document.getElementById("attention-last-run");
+            const gameBanner = document.getElementById("attention-game-banner");
+
+            if (clockEl) {
+                clockEl.innerText = `STOPPED: 00:${secondsLeft < 10 ? '0' : ''}${secondsLeft}`;
+                clockEl.style.color = "#ff003c";
+                clockEl.style.textShadow = "0 0 18px #ff003c";
+                clockEl.style.animation = "blink 0.5s infinite";
+            }
+            if (barEl) {
+                barEl.style.background = "#ff003c";
+                barEl.style.boxShadow = "0 0 10px #ff003c";
+            }
+            if (scoreValEl) scoreValEl.innerText = avgScore.toFixed(1);
+            if (lastRunEl) lastRunEl.innerText = `LASTED: ${secondsLasted}s`;
+            if (gameBanner) {
+                gameBanner.innerHTML = `🚨 LIQUIDATION STOPPED DRILL • LASTED ${secondsLasted}s • SEND GIFT FOR ANOTHER PLAY 🎁`;
+                gameBanner.style.color = "#ffdd00";
+            }
+
+            // 1. STOP EVERY SOUND
+            if (slideTimer) clearTimeout(slideTimer);
+            bgAudio.pause();
+            audioPlayer.pause();
+            window.speechSynthesis.cancel();
+
+            // 2. Play game start sound
+            playGameStartSound();
+
+            // 3. TTS Delivery: "congratulations you lasted n seconds send a gift and see if it gives u another play"
+            const phrase = `Congratulations, you lasted ${secondsLasted} seconds. Send a gift and see if it gives you another play.`;
+
+            setTimeout(() => {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const utter = new SpeechSynthesisUtterance(phrase);
+                    utter.rate = 0.95;
+                    utter.pitch = 0.45;
+
+                    function resumeAfterGame() {
+                        if (isMusicEnabled) {
+                            bgAudio.play().catch(() => {});
+                        }
+                        currentSlide = (currentSlide + 1) % slides.length;
+                        slideTimer = setTimeout(renderSlide, 3500);
+                    }
+
+                    utter.onend = resumeAfterGame;
+                    utter.onerror = resumeAfterGame;
+                    window.speechSynthesis.speak(utter);
+                } else {
+                    currentSlide = (currentSlide + 1) % slides.length;
+                    slideTimer = setTimeout(renderSlide, 3500);
+                }
+            }, 750);
+        }
+
+        function triggerAttentionRetry() {
+            getAudioContext();
+            playGameStartSound();
+            if (slideTimer) clearTimeout(slideTimer);
+            window.speechSynthesis.cancel();
+            renderSlide();
         }
 
         // ==========================================
@@ -2044,7 +2221,7 @@
                     T: now
                 }
             });
-            recordLiquidation(sym, side, loss, mockRaw);
+            recordLiquidation(sym, side, loss, mockRaw, now);
         }
 
         // ==========================================
@@ -2056,7 +2233,11 @@
         let liqEvents = [];           // [{ t: ms, side: "LONG" | "SHORT", usd: number }] (last 50 events)
         let hawkesHistory = [];       // [{ t: ms, score: normScore }] (last 3 minutes for sparkline)
         let rollingSBuffer = [1.0, 1.2, 0.9, 1.1, 1.0]; // Samples of raw S(t) for rolling median calculation (1-hour buffer)
+        let rollingNormBuffer = [100.0, 100.0, 100.0];  // Samples of normalized score for rolling median baseline (1-hour buffer)
         let lastHawkesSampleTime = 0;
+        let currentBaseline = 100.0;
+        let currentAntiPeaceThreshold = 110.0;
+        let currentPeaceHysteresisThreshold = 95.0;
 
         // Regime Meter State Machine Tracking
         let currentRegime = "BUSCANDO PEACE"; // "BUSCANDO PEACE" | "ANTI-PEACE"
@@ -2124,7 +2305,7 @@
         // STEP 1 — BPM (The Tempo): 60 / (median gap in seconds between last 20 liquidations)
         function computeRegimeBPM() {
             if (liqEvents.length < 2) return 14;
-            const last20 = liqEvents.slice(-20);
+            const last20 = liqEvents.slice(-20).sort((a, b) => a.t - b.t);
             const gaps = [];
             for (let i = 1; i < last20.length; i++) {
                 const gapSec = (last20[i].t - last20[i - 1].t) / 1000;
@@ -2182,26 +2363,26 @@
             }
             maxScore = Math.max(maxScore, 220);
 
-            // Draw baseline dashed line at 100 (cyan/dim)
-            const y100 = h - (100 / maxScore) * (h - 4) - 2;
+            // Draw baseline dashed line at current baseline (cyan/dim)
+            const yBase = h - (currentBaseline / maxScore) * (h - 4) - 2;
             ctx.strokeStyle = "rgba(0, 229, 255, 0.25)";
             ctx.setLineDash([3, 3]);
             ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.moveTo(0, y100);
-            ctx.lineTo(w, y100);
+            ctx.moveTo(0, yBase);
+            ctx.lineTo(w, yBase);
             ctx.stroke();
 
-            // Draw Anti-Peace 1.1x threshold line at 110 (amber/red)
-            const y110 = h - (110 / maxScore) * (h - 4) - 2;
+            // Draw Anti-Peace 1.1x threshold line at currentAntiPeaceThreshold (amber/red)
+            const y110 = h - (currentAntiPeaceThreshold / maxScore) * (h - 4) - 2;
             ctx.strokeStyle = "rgba(255, 170, 0, 0.35)";
             ctx.beginPath();
             ctx.moveTo(0, y110);
             ctx.lineTo(w, y110);
             ctx.stroke();
 
-            // Draw Peace Hysteresis 0.95x threshold line at 95 (emerald)
-            const y95 = h - (95 / maxScore) * (h - 4) - 2;
+            // Draw Peace Hysteresis 0.95x threshold line at currentPeaceHysteresisThreshold (emerald)
+            const y95 = h - (currentPeaceHysteresisThreshold / maxScore) * (h - 4) - 2;
             ctx.strokeStyle = "rgba(0, 255, 136, 0.25)";
             ctx.beginPath();
             ctx.moveTo(0, y95);
@@ -2251,7 +2432,8 @@
             const rawScore = computeHawkesRawScore(now);
 
             // Sample into rollingSBuffer every 2 seconds (1800 samples = 1 hour)
-            if (now - lastHawkesSampleTime >= 2000) {
+            const isSampleTick = (now - lastHawkesSampleTime >= 2000);
+            if (isSampleTick) {
                 lastHawkesSampleTime = now;
                 rollingSBuffer.push(rawScore);
                 if (rollingSBuffer.length > 1800) {
@@ -2262,6 +2444,13 @@
             // Calculate rolling 1-hour median baseline
             const medianS = Math.max(0.2, computeMedian(rollingSBuffer));
             const normScore = Math.max(0, (rawScore / medianS) * 100);
+
+            if (isSampleTick) {
+                rollingNormBuffer.push(normScore);
+                if (rollingNormBuffer.length > 1800) {
+                    rollingNormBuffer.shift();
+                }
+            }
 
             // Record into history for sparkline
             hawkesHistory.push({ t: now, score: normScore });
@@ -2277,11 +2466,14 @@
             currentBPM = computeRegimeBPM();
 
             // STEP 2 — REGIME (Two separate triggers with hysteresis)
-            // Multipliers of rolling 1-hour baseline (baseline = 100 in normalized units)
-            const baseline = 100.0;
-            const antiPeaceTensionThreshold = 1.1 * baseline; // 110.0
-            const peaceHysteresisThreshold = 0.95 * baseline;  // 95.0
+            // Multipliers of rolling 1-hour baseline, never hardcoded absolutes
+            currentBaseline = rollingNormBuffer.length >= 5 ? computeMedian(rollingNormBuffer) : 100.0;
+            const baseline = currentBaseline;
+            const antiPeaceTensionThreshold = 1.1 * baseline;
+            const peaceHysteresisThreshold = 0.95 * baseline;
             const imbalanceThreshold = 0.75;                  // 75%
+            currentAntiPeaceThreshold = antiPeaceTensionThreshold;
+            currentPeaceHysteresisThreshold = peaceHysteresisThreshold;
 
             // Calculate rolling window liquidation side imbalance over last 20 events
             const last20 = liqEvents.slice(-20);
@@ -2318,6 +2510,9 @@
                     : (normScore < antiPeaceTensionThreshold);
                 const imbalanceCleared = (imbalanceRatio < imbalanceThreshold);
 
+                if (tensionCleared) antiPeaceByTension = false;
+                if (imbalanceCleared) antiPeaceByImbalance = false;
+
                 if (tensionCleared && imbalanceCleared) {
                     currentRegime = "BUSCANDO PEACE";
                     antiPeaceByTension = false;
@@ -2353,6 +2548,8 @@
                 if (imbalanceRatio >= imbalanceThreshold) {
                     // Distance of imbalance decaying toward 75% line
                     imbalanceBrink = Math.round(((1.0 - imbalanceRatio) / (1.0 - imbalanceThreshold)) * 100);
+                } else {
+                    imbalanceBrink = 100;
                 }
 
                 // Brink follows whichever trigger is closer to flipping
@@ -2562,8 +2759,8 @@
 
         let lastRawLiqResponse = null;
 
-        function recordLiquidation(sym, side, usd, rawData) {
-            const now = Date.now();
+        function recordLiquidation(sym, side, usd, rawData, eventTime) {
+            const now = eventTime || Date.now();
             lastLiquidationEvent = now;
             recordHawkesEvent(now, side, usd);
             const liqEl = document.getElementById("liq-banner");
@@ -2604,6 +2801,12 @@
                 liqEl.style.animation = "none";
                 void liqEl.offsetWidth; // reflow to trigger blink animation
                 liqEl.style.animation = "blink 1s 3";
+            }
+
+            // If attention training countdown is currently running, liquidation stops timer for game challenge!
+            if (isAttentionTimerActive) {
+                handleAttentionGameLiquidation(rawStr);
+                return;
             }
 
             // Throttle audio interruptions to once every 6 seconds, and never interrupt the sacred Word
@@ -3094,7 +3297,8 @@
                             const sym = o.s || "BTCUSDT";
                             const side = o.S === "SELL" ? "LONG" : "SHORT";
                             const usd = Math.round(parseFloat(o.q) * parseFloat(o.p));
-                            recordLiquidation(sym, side, usd, e.data);
+                            const eventTime = (o && o.T) ? o.T : ((data && data.E) ? data.E : Date.now());
+                            recordLiquidation(sym, side, usd, e.data, eventTime);
                         } catch(err) {}
                     };
 
@@ -3147,7 +3351,7 @@
                             T: now
                         }
                     });
-                    recordLiquidation(randomPair, randomSide, randomAmount, simRaw);
+                    recordLiquidation(randomPair, randomSide, randomAmount, simRaw, now);
                 }
             }, 8000);
         }

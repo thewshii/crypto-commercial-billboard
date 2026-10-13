@@ -245,6 +245,17 @@ class RugFilterML:
             if dev_buy >= max_dev_buy and (txns_lt_10 or txns_10_50):
                 return True, f"DEV DUMP RISK: Dev bought {dev_buy:.2f} SOL on low-txn wallet (<50 txns)"
 
+            # Block Incubated Farmed Wallets (feature fallback: 7-30d age & 0.30-2.0 SOL dev buy)
+            age_7_30d = bool(features[7] == 1.0)
+            if getattr(config, "BLOCK_INCUBATED_WALLETS", True):
+                inc_min_buy = float(getattr(config, "INCUBATED_BUY_MIN_SOL", 0.30))
+                inc_max_buy = float(getattr(config, "INCUBATED_BUY_MAX_SOL", 2.00))
+                if inc_min_buy <= dev_buy <= inc_max_buy and age_7_30d:
+                    if getattr(config, "INCUBATED_BLOCK_OUTRIGHT", True):
+                        return True, f"INCUBATED FARMED WALLET: Dev bought {dev_buy:.2f} SOL on 7-30d account (matches rug pattern)"
+                    elif txns_lt_10 or txns_10_50:
+                        return True, f"INCUBATED FARMED WALLET: Dev bought {dev_buy:.2f} SOL on 7-30d account with < 50 txns"
+
             # Block Zero Socials
             if getattr(config, "REQUIRE_SOCIALS", True) and social_missing:
                 return True, "ZERO SOCIALS: Token has no verified community links"

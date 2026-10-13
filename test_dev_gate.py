@@ -173,6 +173,70 @@ class TestDevBuyGate(unittest.TestCase):
         passed, reason = evaluate_dev_gate(tok_high, meta_valid, {}, stats_high)
         self.assertTrue(passed, f"High-capital token should pass: {reason}")
 
+    def test_incubated_farmed_wallet_guardrail(self):
+        meta_valid = {
+            "twitter": "https://x.com/ValidToken",
+            "telegram": "https://t.me/ValidPortal",
+            "website": "https://validtoken.io",
+            "description": "Legitimate protocol launch on Solana"
+        }
+
+        # Case 1: 0.50 SOL dev buy on 15d old account (matches 0.30-2.0 SOL / 7-30d pattern)
+        tok_05 = {"symbol": "INCUB", "name": "Incubated Rug", "solAmount": 0.50}
+        stats_15d = {"has_data": True, "age_days": 15.0, "txns": 20}
+        passed, reason = evaluate_dev_gate(tok_05, meta_valid, {}, stats_15d)
+        self.assertFalse(passed)
+        self.assertIn("INCUBATED FARMED WALLET", reason)
+        self.assertIn("0.30-2.0 SOL / 7-30d", reason)
+
+        # Case 2: 1.80 SOL dev buy on 28d old account
+        tok_18 = {"symbol": "INCUB2", "name": "Incubated Whale", "solAmount": 1.80}
+        stats_28d = {"has_data": True, "age_days": 28.0, "txns": 40}
+        passed, reason = evaluate_dev_gate(tok_18, meta_valid, {}, stats_28d)
+        self.assertFalse(passed)
+        self.assertIn("INCUBATED FARMED WALLET", reason)
+
+        # Case 3: Boundaries (0.30 SOL and 7.0 days)
+        tok_boundary = {"symbol": "BOUND", "name": "Boundary Token", "solAmount": 0.30}
+        stats_7d = {"has_data": True, "age_days": 7.0, "txns": 30}
+        passed, reason = evaluate_dev_gate(tok_boundary, meta_valid, {}, stats_7d)
+        self.assertFalse(passed)
+        self.assertIn("INCUBATED FARMED WALLET", reason)
+
+        # Case 4: Boundaries (2.00 SOL and 30.0 days)
+        tok_boundary2 = {"symbol": "BOUND2", "name": "Boundary Token 2", "solAmount": 2.00}
+        stats_30d = {"has_data": True, "age_days": 30.0, "txns": 55}
+        passed, reason = evaluate_dev_gate(tok_boundary2, meta_valid, {}, stats_30d)
+        self.assertFalse(passed)
+        self.assertIn("INCUBATED FARMED WALLET", reason)
+
+    def test_incubated_scrutiny_mode(self):
+        meta_valid = {
+            "twitter": "https://x.com/ValidToken",
+            "telegram": "https://t.me/ValidPortal",
+            "website": "https://validtoken.io",
+            "description": "Legitimate protocol launch on Solana"
+        }
+        tok = {"symbol": "SCRUT", "name": "Scrutiny Token", "solAmount": 0.80, "top_holder_pct": 0.05}
+
+        # Temporarily disable outright blocking to test scrutiny requirements
+        orig_outright = getattr(config, "INCUBATED_BLOCK_OUTRIGHT", True)
+        try:
+            config.INCUBATED_BLOCK_OUTRIGHT = False
+
+            # Low txns (< 60) -> must fail
+            stats_low_txns = {"has_data": True, "age_days": 14.0, "txns": 25}
+            passed, reason = evaluate_dev_gate(tok, meta_valid, {}, stats_low_txns)
+            self.assertFalse(passed)
+            self.assertIn("< 60 required", reason)
+
+            # High txns (>= 60), valid socials, normal supply -> passes scrutiny!
+            stats_high_txns = {"has_data": True, "age_days": 14.0, "txns": 75}
+            passed, reason = evaluate_dev_gate(tok, meta_valid, {}, stats_high_txns)
+            self.assertTrue(passed, f"High activity wallet should pass scrutiny: {reason}")
+        finally:
+            config.INCUBATED_BLOCK_OUTRIGHT = orig_outright
+
 
 if __name__ == "__main__":
     unittest.main()

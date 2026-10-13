@@ -78,6 +78,17 @@ BLOCK_FARMED_WALLETS = True             # Veto aged wallets (> 30 days) with < 1
 MAX_DEV_BUY_SOL = 0.40                  # Veto dev buy >= 0.40 SOL on low-activity wallets (< 50 txns)
 REQUIRE_SOCIALS = True                  # Veto tokens with zero verified social links
 
+# Incubated Farmed Wallet Guardrail (0.30 - 2.00 SOL Dev Buy on 7 - 30 Day Old Accounts)
+BLOCK_INCUBATED_WALLETS = os.getenv("BLOCK_INCUBATED_WALLETS", "true").lower() in ("true", "1", "yes")
+INCUBATED_BUY_MIN_SOL = float(os.getenv("INCUBATED_BUY_MIN_SOL", "0.30"))
+INCUBATED_BUY_MAX_SOL = float(os.getenv("INCUBATED_BUY_MAX_SOL", "2.00"))
+INCUBATED_AGE_MIN_DAYS = float(os.getenv("INCUBATED_AGE_MIN_DAYS", "7.0"))
+INCUBATED_AGE_MAX_DAYS = float(os.getenv("INCUBATED_AGE_MAX_DAYS", "30.0"))
+INCUBATED_BLOCK_OUTRIGHT = os.getenv("INCUBATED_BLOCK_OUTRIGHT", "true").lower() in ("true", "1", "yes")
+INCUBATED_MIN_TXNS = int(os.getenv("INCUBATED_MIN_TXNS", "60"))
+INCUBATED_REQUIRE_MULTI_SOCIALS = os.getenv("INCUBATED_REQUIRE_MULTI_SOCIALS", "true").lower() in ("true", "1", "yes")
+INCUBATED_MAX_SUPPLY_PCT = float(os.getenv("INCUBATED_MAX_SUPPLY_PCT", "0.10"))
+
 # On-Chain Confirmation & Liquidity Sanity
 CONFIRM_TIMEOUT_SEC = 12.0        # Seconds to wait for Helius RPC confirmation
 MIN_DEX_LIQUIDITY_USD = 1000.0    # Min DexScreener liquidity required to trust fallback price

@@ -1,12 +1,13 @@
 """
 Multi-Factor Dev Buy Security Gate for Solana Pump.fun.
-Tightens entry validation against sneaky micro-buy rugs (< 0.25 SOL) across multiple dimensions:
+Tightens entry validation against sneaky micro-buy rugs (< 0.25 SOL) and incubated burner rugs:
 1. Baseline Floor: Enforces strict minimum dev buy (MIN_DEV_BUY_SOL = 0.08).
 2. Dev Wallet History: Minimum on-chain age (>= 1.0 day) and transaction count (>= 15 txns).
 3. Social Authenticity: Validates real handle/channel slugs, blocks dummy root domains (x.com, t.me),
    and requires multi-social presence (>= 2 channels) for micro-buys.
 4. Supply Concentration: Caps dev supply holding (<= 6.0%) on micro-buys to prevent dump leverage.
 5. Spam/Phishing Blacklist: Filters test tokens, airdrops, claims, and copycat scams.
+6. Incubated Farmed Wallets: Blocks 7-30 day accounts committing 0.30 - 2.0 SOL dev buys.
 """
 
 import re
@@ -230,7 +231,54 @@ def evaluate_dev_gate(
             return False, f"FARMED WALLET: Aged ({age_days:.0f}d) with < 10 txns ({txns} txns)"
 
     # -----------------------------------------------------------------
-    # 6. Dev Dump Pattern Guardrail (All Buy Sizes)
+    # 6. Incubated Farmed Wallet Guardrail (0.30 - 2.00 SOL & 7 - 30 Days Old)
+    # Mitigates the syndicate attack vector where wallets are aged 1-4 weeks
+    # and funded with 0.30 - 2.0 SOL to bypass fresh-burner and micro-buy gates.
+    # -----------------------------------------------------------------
+    if getattr(config, "BLOCK_INCUBATED_WALLETS", True) and dev_stats.get("has_data"):
+        age_days = float(dev_stats.get("age_days", 0.0))
+        txns = int(dev_stats.get("txns", 0))
+
+        inc_min_buy = float(getattr(config, "INCUBATED_BUY_MIN_SOL", 0.30))
+        inc_max_buy = float(getattr(config, "INCUBATED_BUY_MAX_SOL", 2.00))
+        inc_min_age = float(getattr(config, "INCUBATED_AGE_MIN_DAYS", 7.0))
+        inc_max_age = float(getattr(config, "INCUBATED_AGE_MAX_DAYS", 30.0))
+        inc_block_outright = getattr(config, "INCUBATED_BLOCK_OUTRIGHT", True)
+        inc_min_txns = int(getattr(config, "INCUBATED_MIN_TXNS", 60))
+        inc_require_multi_socials = getattr(config, "INCUBATED_REQUIRE_MULTI_SOCIALS", True)
+        inc_max_supply_pct = float(getattr(config, "INCUBATED_MAX_SUPPLY_PCT", 0.10))
+
+        if inc_min_buy <= dev_buy <= inc_max_buy and inc_min_age <= age_days <= inc_max_age:
+            if inc_block_outright:
+                return False, (
+                    f"INCUBATED FARMED WALLET: Dev bought {dev_buy:.2f} SOL on {age_days:.1f}d account "
+                    f"({txns} txns) — matches 0.30-2.0 SOL / 7-30d rug vulnerability"
+                )
+
+            # Scrutiny mode (if outright blocking is disabled via config)
+            if txns < inc_min_txns:
+                return False, (
+                    f"INCUBATED FARMED WALLET: Dev bought {dev_buy:.2f} SOL on {age_days:.1f}d account "
+                    f"with only {txns} txns (< {inc_min_txns} required)"
+                )
+
+            if inc_require_multi_socials and valid_socials_count < 2:
+                return False, (
+                    f"INCUBATED FARMED WALLET: Dev bought {dev_buy:.2f} SOL on {age_days:.1f}d account "
+                    f"with weak socials ({valid_socials_count} < 2 channels)"
+                )
+
+            init_buy_tokens = float(token_data.get("initialBuy") or 0.0)
+            v_tokens = float(token_data.get("vTokensInBondingCurve") or 1_000_000_000.0)
+            top_holder_pct = float(token_data.get("top_holder_pct") or (init_buy_tokens / v_tokens if v_tokens > 0 else 0.0))
+            if top_holder_pct > inc_max_supply_pct:
+                return False, (
+                    f"INCUBATED FARMED WALLET: Dev holds {top_holder_pct*100:.1f}% supply with {dev_buy:.2f} SOL buy "
+                    f"(> {inc_max_supply_pct*100:.0f}% cap)"
+                )
+
+    # -----------------------------------------------------------------
+    # 7. Dev Dump Pattern Guardrail (All Buy Sizes)
     # -----------------------------------------------------------------
     max_dev_buy = float(getattr(config, "MAX_DEV_BUY_SOL", 0.40))
     if dev_buy >= max_dev_buy and dev_stats.get("has_data"):

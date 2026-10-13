@@ -1044,6 +1044,21 @@
     <div class="animation-container ascii-anim-target">
     </div>
 
+    <!-- Prominent New Solana Token Feed from PumpPortal WebSocket (Single Token Spotlight, Font >= 30px) -->
+    <div id="pumpportal-strip" class="pumpportal-strip">
+        <div class="pumpportal-header">
+            <span id="pump-status-dot" class="pumpportal-live-dot"></span>
+            <span id="pump-status-txt">PUMPPORTAL WS • REAL-TIME NEW TOKEN LAUNCH 🟢 LIVE</span>
+            <span style="color:#888; font-size:0.85em;">(STREAMING BLOCKCHAIN MINT)</span>
+        </div>
+        <div id="pump-token-card" class="pumpportal-hero-card">
+            <span id="pump-token-symbol" class="pumpportal-symbol">🪙 $PEPE</span>
+            <span id="pump-token-name" class="pumpportal-name">CONNECTING TO PUMPPORTAL...</span>
+            <span id="pump-token-mcap" class="pumpportal-meta-badge">MCAP: 27.96 SOL</span>
+            <span id="pump-token-ca" class="pumpportal-ca-badge" onclick="copyPumpContract()" title="Click to copy Contract Address">CA: CONNECTING...</span>
+        </div>
+    </div>
+
     <div class="main-content">
         <div class="tv-wrapper">
             <!-- Rabbit Ear Antennas -->
@@ -1138,21 +1153,6 @@
 
     <!-- Glowing Yellow Horizontal Line Below TV Box -->
     <div class="tv-yellow-divider"></div>
-
-    <!-- Prominent New Solana Token Feed from PumpPortal WebSocket (Single Token Spotlight, Font >= 30px) -->
-    <div id="pumpportal-strip" class="pumpportal-strip">
-        <div class="pumpportal-header">
-            <span id="pump-status-dot" class="pumpportal-live-dot"></span>
-            <span id="pump-status-txt">PUMPPORTAL WS • REAL-TIME NEW TOKEN LAUNCH 🟢 LIVE</span>
-            <span style="color:#888; font-size:0.85em;">(STREAMING BLOCKCHAIN MINT)</span>
-        </div>
-        <div id="pump-token-card" class="pumpportal-hero-card">
-            <span id="pump-token-symbol" class="pumpportal-symbol">🪙 $PEPE</span>
-            <span id="pump-token-name" class="pumpportal-name">CONNECTING TO PUMPPORTAL...</span>
-            <span id="pump-token-mcap" class="pumpportal-meta-badge">MCAP: 27.96 SOL</span>
-            <span id="pump-token-ca" class="pumpportal-ca-badge" onclick="copyPumpContract()" title="Click to copy Contract Address">CA: CONNECTING...</span>
-        </div>
-    </div>
 
     <div class="marquee-container">
         <div class="marquee-text">
@@ -2663,7 +2663,8 @@
 
             // State Machine with Hysteresis
             if (currentRegime === "BUSCANDO PEACE") {
-                if (tensionTriggered || imbalanceTriggered) {
+                const brinkSyncTriggered = (normScore < 50 && currentBrink >= 40 && currentBrink <= 60);
+                if (tensionTriggered || imbalanceTriggered || brinkSyncTriggered) {
                     currentRegime = "ANTI-PEACE";
                     antiPeaceByTension = tensionTriggered;
                     antiPeaceByImbalance = imbalanceTriggered;
@@ -3003,6 +3004,26 @@
             // If attention training countdown is currently running, liquidation stops timer for game challenge!
             if (isAttentionTimerActive) {
                 handleAttentionGameLiquidation(rawStr);
+                return;
+            }
+
+            // FLOOD GUARD: too many regime flips + high brink => skip raw readout, say "game over", leave the sequence untouched
+            const floodFlips = regimeFlipHistory.filter(t => now - t <= 600000).length;
+            if (floodFlips >= 30 && currentBrink > 35) {
+                if (!isWordActive && !window.gameOverSpeaking && (now - (window.lastGameOverTime || 0) > 8000)) {
+                    window.lastGameOverTime = now;
+                    window.gameOverSpeaking = true;
+                    if ('speechSynthesis' in window) {
+                        // No cancel(): queues after whatever slide speech is already playing, so the sequence continues as normal
+                        const go = new SpeechSynthesisUtterance("Game over.");
+                        go.rate = 0.9;
+                        go.pitch = 0.4;
+                        go.onend = go.onerror = () => { window.gameOverSpeaking = false; };
+                        window.speechSynthesis.speak(go);
+                    } else {
+                        window.gameOverSpeaking = false;
+                    }
+                }
                 return;
             }
 

@@ -4378,7 +4378,7 @@ startStream();
   function caller() {
     const lines = (new Error().stack || '').split('\n').slice(1);
     const useful = lines.filter(l => !/audioTrace|index\.html:\d+:\d+\)?$/.test('') && l.indexOf('__aT') === -1);
-    return useful.slice(1, 5).map(l => l.trim().replace(/^at /, '').replace(/https?:\/\/[^/]+/, '')).join(' <- ');
+    return useful.slice(3, 7).map(l => l.trim().replace(/^at /, '').replace(/https?:\/\/[^/]+/, '')).join(' <- ');
   }
   function trace(kind, detail) {
     const who = caller();

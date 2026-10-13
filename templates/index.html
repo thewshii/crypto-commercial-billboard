@@ -2450,6 +2450,7 @@
         let antiPeaceByTension = false;
         let antiPeaceByImbalance = false;
         let hasSpokenBrinkInEpisode = false;
+        let antiPeaceByEta = false;   // ANTI-PEACE entered via eta band: held until eta leaves 0.40-0.60 (prevents 1s flip-flop)
         let regimeFlipHistory = [];   // timestamps of regime flips in trailing 10 minutes
         let currentBPM = 14;
         let currentBrink = 0;
@@ -2783,6 +2784,7 @@
             // State Machine with Hysteresis
             if (currentRegime === "BUSCANDO PEACE") {
                 const brinkSyncTriggered = (eta >= 0.40 && eta <= 0.60);
+                antiPeaceByEta = brinkSyncTriggered;
                 if (tensionTriggered || imbalanceTriggered || brinkSyncTriggered) {
                     currentRegime = "ANTI-PEACE";
                     antiPeaceByTension = tensionTriggered;
@@ -2812,7 +2814,9 @@
                 if (tensionCleared) antiPeaceByTension = false;
                 if (imbalanceCleared) antiPeaceByImbalance = false;
 
-                if (tensionCleared && imbalanceCleared) {
+                const etaHold = antiPeaceByEta && (eta >= 0.40 && eta <= 0.60);
+                if (tensionCleared && imbalanceCleared && !etaHold) {
+                    antiPeaceByEta = false;
                     currentRegime = "BUSCANDO PEACE";
                     antiPeaceByTension = false;
                     antiPeaceByImbalance = false;
@@ -4389,7 +4393,7 @@ startStream();
     { name: 'war-sfx-not-over-tts', enabled: false, kinds: ['WEBAUDIO.start'], caller: /playWarSound|WAR_SOUNDS/,
       when: () => window.speechSynthesis && window.speechSynthesis.speaking, action: 'deny' },
     { name: 'beep-cooldown', enabled: false, kinds: ['WEBAUDIO.start'], caller: /triggerBeep/, cooldownMs: 3000 },
-    { name: 'brink-tts-cooldown', enabled: false, kinds: ['TTS.speak'], caller: /triggerRegimeBrinkTTS/, cooldownMs: 60000 }
+    { name: 'brink-tts-cooldown', enabled: true, kinds: ['TTS.speak'], caller: /triggerRegimeBrinkTTS/, cooldownMs: 60000 }
   ];
 
   function caller() {

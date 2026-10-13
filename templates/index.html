@@ -631,6 +631,31 @@
             100% { box-shadow: 0 0 10px rgba(255, 0, 60, 0.4); border-bottom-color: #ff003c; }
         }
 
+        @keyframes antiPeacePulse {
+            0% { box-shadow: 0 0 10px rgba(255, 0, 60, 0.4); border-bottom-color: #ff003c; }
+            50% { box-shadow: 0 0 35px rgba(255, 0, 60, 0.95), inset 0 0 15px rgba(255, 0, 60, 0.5); border-bottom-color: #ffdd00; }
+            100% { box-shadow: 0 0 10px rgba(255, 0, 60, 0.4); border-bottom-color: #ff003c; }
+        }
+
+        @keyframes buscandoPeaceGlow {
+            0% { box-shadow: 0 0 8px rgba(0, 255, 136, 0.25); border-bottom-color: #00ff88; }
+            50% { box-shadow: 0 0 18px rgba(0, 255, 136, 0.55), inset 0 0 6px rgba(0, 255, 136, 0.2); border-bottom-color: #00e5ff; }
+            100% { box-shadow: 0 0 8px rgba(0, 255, 136, 0.25); border-bottom-color: #00ff88; }
+        }
+
+        @keyframes bpmHeartbeat {
+            0% { transform: scale(1); }
+            15% { transform: scale(1.22); }
+            30% { transform: scale(1); }
+            45% { transform: scale(1.14); }
+            60% { transform: scale(1); }
+        }
+
+        .bpm-heart-icon {
+            display: inline-block;
+            animation: bpmHeartbeat 1.1s infinite ease-in-out;
+        }
+
         /* Heikin-Ashi Live Chart */
         .chart-section {
             width: 100%;
@@ -992,31 +1017,62 @@
         </div>
     </div>
 
-    <!-- Real-Time Hawkes Self-Exciting Point Process Telemetry Strip -->
-    <div id="hawkes-bar" style="width: 100%; background: #04060a; border-top: 1px solid #111827; border-bottom: 2px solid #00e5ff; padding: 4px 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-family: 'Roboto Mono', monospace; box-shadow: 0 0 15px rgba(0,229,255,0.15); z-index: 50;">
-        <div style="display:flex; align-items:center; gap:8px;">
-            <span style="background: #00e5ff; color: #000; font-weight: 900; font-size: clamp(0.6rem, 1vw, 0.78rem); padding: 2px 6px; border-radius: 4px; letter-spacing: 1px;">HAWKES λ(t)</span>
-            <span style="color: #888; font-size: clamp(0.55rem, 0.9vw, 0.72rem); font-weight: bold;">SELF-EXCITING CASCADE PROCESS (τ=45s)</span>
-        </div>
-        
-        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-            <div style="display:flex; align-items:center; gap:5px;">
-                <span style="color:#aaa; font-size:clamp(0.6rem, 0.9vw, 0.75rem);">TENSION:</span>
-                <span id="hawkes-score" style="color:#00ff88; font-size:clamp(0.85rem, 1.4vw, 1.25rem); font-weight:900; text-shadow:0 0 10px #00ff88;">100.0</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:5px;">
-                <span style="color:#aaa; font-size:clamp(0.6rem, 0.9vw, 0.75rem);">BRANCHING η:</span>
-                <span id="hawkes-eta" style="color:#00ffff; font-size:clamp(0.75rem, 1.2vw, 1.05rem); font-weight:bold;">0.67</span>
-            </div>
-            <span id="hawkes-regime" style="background:#0e1726; color:#00ff88; border:1px solid #00ff88; padding:2px 8px; border-radius:4px; font-size:clamp(0.58rem, 0.9vw, 0.75rem); font-weight:900; letter-spacing:1px; text-shadow:0 0 6px #00ff88;">
-                EQUILIBRIUM
+    <!-- Real-Time Regime Meter & Hawkes Tension Overlay Strip -->
+    <div id="hawkes-bar" style="width: 100%; background: #04060a; border-top: 1px solid #111827; border-bottom: 2px solid #00ff88; padding: 4px 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-family: 'Roboto Mono', monospace; box-shadow: 0 0 15px rgba(0,255,136,0.15); z-index: 50; transition: border-bottom-color 0.4s ease, box-shadow 0.4s ease;">
+        <!-- Regime State & Title -->
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span id="regime-status-badge" style="background: #031a0e; color: #00ff88; border: 1px solid #00ff88; font-weight: 900; font-size: clamp(0.6rem, 1.0vw, 0.82rem); padding: 2px 8px; border-radius: 4px; letter-spacing: 1px; text-shadow: 0 0 8px #00ff88; box-shadow: 0 0 10px rgba(0,255,136,0.3); transition: all 0.3s;">
+                🕊️ BUSCANDO PEACE
+            </span>
+            <span id="regime-flavor-text" style="color: #8899aa; font-size: clamp(0.48rem, 0.78vw, 0.68rem); font-style: italic; font-weight: bold; letter-spacing: 0.5px;">
+                peace at its peak — the snap is near
             </span>
         </div>
         
-        <!-- Live Sparkline of Hawkes Tension λ(t) over time -->
+        <!-- Live Metrics: Tempo BPM, Tension Score, Brink % Bleed Meter, Flip Speed -->
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <!-- BPM (The Tempo) -->
+            <div style="display:flex; align-items:center; gap:4px;" title="Tempo: 60 / (median gap in seconds between last 20 liquidations)">
+                <span style="color:#888; font-size:clamp(0.52rem, 0.8vw, 0.68rem); font-weight:bold;">TEMPO:</span>
+                <span id="regime-bpm-badge" style="color:#ff00ff; font-weight:900; font-size:clamp(0.72rem, 1.1vw, 0.95rem); text-shadow:0 0 6px #ff00ff;">
+                    <span class="bpm-heart-icon">💓</span> <span id="regime-bpm-val">14</span> BPM
+                </span>
+            </div>
+
+            <!-- Hawkes Tension Score S(t) -->
+            <div style="display:flex; align-items:center; gap:4px;" title="Tension S(t) normalized to rolling 1-hour baseline (100 = normal)">
+                <span style="color:#888; font-size:clamp(0.52rem, 0.8vw, 0.68rem); font-weight:bold;">TENSION:</span>
+                <span id="hawkes-score" style="color:#00ff88; font-size:clamp(0.75rem, 1.2vw, 1.05rem); font-weight:900; text-shadow:0 0 8px #00ff88;">100.0</span>
+                <span style="color:#555; font-size:clamp(0.48rem, 0.75vw, 0.62rem);">(η <span id="hawkes-eta" style="color:#00ffff;">0.67</span>)</span>
+            </div>
+
+            <!-- BRINK % (The Bleed Meter) -->
+            <div style="display:flex; align-items:center; gap:5px;" title="Brink %: How close market is to flipping regime (0-100%)">
+                <span style="color:#888; font-size:clamp(0.52rem, 0.8vw, 0.68rem); font-weight:bold;">BRINK:</span>
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <div style="width:52px; height:8px; background:#111622; border-radius:3px; overflow:hidden; border:1px solid #223344;">
+                        <div id="regime-brink-fill" style="width:0%; height:100%; background:#00ff88; box-shadow:0 0 6px #00ff88; transition:width 0.4s ease, background 0.4s ease;"></div>
+                    </div>
+                    <span id="regime-brink-val" style="color:#00ff88; font-weight:900; font-size:clamp(0.72rem, 1.1vw, 0.95rem); text-shadow:0 0 6px #00ff88;">0%</span>
+                </div>
+            </div>
+
+            <!-- Flip Speed (Gamma) -->
+            <div style="display:flex; align-items:center; gap:4px;" title="Regime changes in trailing 10 minutes">
+                <span style="color:#888; font-size:clamp(0.52rem, 0.8vw, 0.68rem); font-weight:bold;">FLIPS:</span>
+                <span id="regime-flips-badge" style="color:#ffdd00; font-weight:bold; font-size:clamp(0.65rem, 0.95vw, 0.82rem); text-shadow:0 0 5px rgba(255,221,0,0.6);">
+                    <span id="regime-flips-val">0</span> / 10m
+                </span>
+            </div>
+            
+            <!-- Hidden backward-compatibility element for hawkes-regime id if ever queried -->
+            <span id="hawkes-regime" style="display:none;">EQUILIBRIUM</span>
+        </div>
+        
+        <!-- Live Sparkline of Hawkes Tension λ(t) over trailing minutes -->
         <div style="display:flex; align-items:center; gap:6px;">
-            <span style="color:#666; font-size:clamp(0.5rem, 0.8vw, 0.65rem);">SPARKLINE (3m):</span>
-            <canvas id="hawkes-sparkline" width="160" height="26" style="background:#0a0d14; border:1px solid #1e293b; border-radius:4px; box-shadow: inset 0 0 6px rgba(0,0,0,0.8);"></canvas>
+            <span style="color:#666; font-size:clamp(0.48rem, 0.75vw, 0.62rem);">TENSION (3m):</span>
+            <canvas id="hawkes-sparkline" width="140" height="26" style="background:#0a0d14; border:1px solid #1e293b; border-radius:4px; box-shadow: inset 0 0 6px rgba(0,0,0,0.8);"></canvas>
         </div>
     </div>
 
@@ -1974,18 +2030,32 @@
         }
 
         // ==========================================
-        // REAL-TIME HAWKES SELF-EXCITING POINT PROCESS
-        // Tension Score S(t) & Branching Ratio Model (τ=45s)
+        // REAL-TIME REGIME METER & HAWKES PROCESS
+        // State Machine: BUSCANDO PEACE vs ANTI-PEACE
+        // Tempo (BPM), Brink % (Bleed Meter), Flip Speed
         // ==========================================
         let liqTimestamps = [];
+        let liqEvents = [];           // [{ t: ms, side: "LONG" | "SHORT", usd: number }] (last 50 events)
         let hawkesHistory = [];       // [{ t: ms, score: normScore }] (last 3 minutes for sparkline)
-        let rollingSBuffer = [1.0, 1.2, 0.9, 1.1, 1.0]; // Samples of raw S(t) for rolling median calculation
-        let lastHawkesBoomTTSTime = 0;
+        let rollingSBuffer = [1.0, 1.2, 0.9, 1.1, 1.0]; // Samples of raw S(t) for rolling median calculation (1-hour buffer)
         let lastHawkesSampleTime = 0;
 
-        function recordHawkesEvent(now) {
+        // Regime Meter State Machine Tracking
+        let currentRegime = "BUSCANDO PEACE"; // "BUSCANDO PEACE" | "ANTI-PEACE"
+        let antiPeaceByTension = false;
+        let antiPeaceByImbalance = false;
+        let hasSpokenBrinkInEpisode = false;
+        let regimeFlipHistory = [];   // timestamps of regime flips in trailing 10 minutes
+        let currentBPM = 14;
+        let currentBrink = 0;
+
+        function recordHawkesEvent(now, side, usd) {
             const t = now || Date.now();
             liqTimestamps.push(t);
+            const cleanSide = (side ? String(side) : (Math.random() > 0.5 ? "LONG" : "SHORT")).toUpperCase();
+            liqEvents.push({ t, side: cleanSide, usd: usd || 10000 });
+            if (liqEvents.length > 60) liqEvents.shift();
+            currentBPM = computeRegimeBPM();
             // Prune timestamps older than 5 minutes (300,000 ms)
             const cutoff = t - 300000;
             while (liqTimestamps.length > 0 && liqTimestamps[0] < cutoff) {
@@ -2033,37 +2103,40 @@
             return closest !== null ? closest : 100.0;
         }
 
-        function triggerHawkesBoomTTS(normScore, eta) {
-            if (isLiqInterrupting) return;
-            isLiqInterrupting = true;
-
-            // Pause slide speech & background audio for emergency announcement
-            if (slideTimer) clearTimeout(slideTimer);
-            if (memoryTimerInterval) { clearInterval(memoryTimerInterval); memoryTimerInterval = null; }
-            bgAudio.pause();
-            audioPlayer.pause();
-            window.speechSynthesis.cancel();
-
-            triggerBeep();
-
-            const phrase = `Hawkes cascade alert: Tension score crossing ${Math.round(normScore)}. Branching ratio at ${eta.toFixed(2)}. Acceleration gamma positive. Exponential liquidation cascade conditions detected. Step one: recharge diamonds. Step two: buy beans. Ring the bell before the cascade explodes.`;
-
-            const utterance = new SpeechSynthesisUtterance(phrase);
-            utterance.rate = 1.0;
-            utterance.pitch = 0.4;
-
-            function resumeProgramming() {
-                isLiqInterrupting = false;
-                if (isMusicEnabled) {
-                    bgAudio.play().catch(() => {});
-                }
-                const pauseTime = isMusicEnabled ? 3000 : 1500;
-                slideTimer = setTimeout(renderSlide, pauseTime);
+        // STEP 1 — BPM (The Tempo): 60 / (median gap in seconds between last 20 liquidations)
+        function computeRegimeBPM() {
+            if (liqEvents.length < 2) return 14;
+            const last20 = liqEvents.slice(-20);
+            const gaps = [];
+            for (let i = 1; i < last20.length; i++) {
+                const gapSec = (last20[i].t - last20[i - 1].t) / 1000;
+                if (gapSec >= 0) gaps.push(gapSec);
             }
+            if (gaps.length === 0) return 14;
+            const medianGap = computeMedian(gaps);
+            if (medianGap <= 0.05) return 240;
+            const bpm = Math.round(60 / medianGap);
+            return Math.max(1, Math.min(260, bpm));
+        }
 
-            utterance.onend = resumeProgramming;
-            utterance.onerror = resumeProgramming;
-            window.speechSynthesis.speak(utterance);
+        // STEP 6 — TTS Trigger: Speak when BRINK crosses 80% (at most once per episode)
+        function triggerRegimeBrinkTTS() {
+            if (isLiqInterrupting || isWordActive) return;
+            const phrase = "The raw jealousy in the room is about to cause a destruction — wait for it.";
+            try {
+                fetch("/api/speak", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: phrase })
+                }).catch(() => {});
+            } catch(e) {}
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance(phrase);
+                utter.rate = 0.92;
+                utter.pitch = 0.45;
+                window.speechSynthesis.speak(utter);
+            }
         }
 
         function drawHawkesSparkline() {
@@ -2091,7 +2164,7 @@
             }
             maxScore = Math.max(maxScore, 220);
 
-            // Draw baseline dashed line at 100
+            // Draw baseline dashed line at 100 (cyan/dim)
             const y100 = h - (100 / maxScore) * (h - 4) - 2;
             ctx.strokeStyle = "rgba(0, 229, 255, 0.25)";
             ctx.setLineDash([3, 3]);
@@ -2101,12 +2174,20 @@
             ctx.lineTo(w, y100);
             ctx.stroke();
 
-            // Draw critical threshold line at 150
-            const y150 = h - (150 / maxScore) * (h - 4) - 2;
-            ctx.strokeStyle = "rgba(255, 0, 60, 0.35)";
+            // Draw Anti-Peace 1.1x threshold line at 110 (amber/red)
+            const y110 = h - (110 / maxScore) * (h - 4) - 2;
+            ctx.strokeStyle = "rgba(255, 170, 0, 0.35)";
             ctx.beginPath();
-            ctx.moveTo(0, y150);
-            ctx.lineTo(w, y150);
+            ctx.moveTo(0, y110);
+            ctx.lineTo(w, y110);
+            ctx.stroke();
+
+            // Draw Peace Hysteresis 0.95x threshold line at 95 (emerald)
+            const y95 = h - (95 / maxScore) * (h - 4) - 2;
+            ctx.strokeStyle = "rgba(0, 255, 136, 0.25)";
+            ctx.beginPath();
+            ctx.moveTo(0, y95);
+            ctx.lineTo(w, y95);
             ctx.stroke();
             ctx.setLineDash([]); // reset line dash
 
@@ -2130,11 +2211,8 @@
                 lastY = y;
             }
 
-            const latestScore = hawkesHistory[hawkesHistory.length - 1].score;
-            let strokeColor = "#00ff88";
-            if (latestScore >= 180) strokeColor = "#ff003c";
-            else if (latestScore >= 140) strokeColor = "#ffdd00";
-            else if (latestScore >= 90) strokeColor = "#00e5ff";
+            let strokeColor = (currentRegime === "ANTI-PEACE") ? "#ff003c" : "#00ff88";
+            if (currentBrink >= 80) strokeColor = "#ffdd00";
 
             ctx.strokeStyle = strokeColor;
             ctx.lineWidth = 1.8;
@@ -2154,97 +2232,215 @@
             const now = Date.now();
             const rawScore = computeHawkesRawScore(now);
 
-            // Sample into rollingSBuffer every 2 seconds
+            // Sample into rollingSBuffer every 2 seconds (1800 samples = 1 hour)
             if (now - lastHawkesSampleTime >= 2000) {
                 lastHawkesSampleTime = now;
                 rollingSBuffer.push(rawScore);
-                if (rollingSBuffer.length > 900) { // keep 30 mins
+                if (rollingSBuffer.length > 1800) {
                     rollingSBuffer.shift();
                 }
             }
 
-            // Calculate rolling median
+            // Calculate rolling 1-hour median baseline
             const medianS = Math.max(0.2, computeMedian(rollingSBuffer));
             const normScore = Math.max(0, (rawScore / medianS) * 100);
 
-            // Record into history
+            // Record into history for sparkline
             hawkesHistory.push({ t: now, score: normScore });
-            // Prune history older than 3 minutes
             const cutoff3m = now - 180000;
             while (hawkesHistory.length > 0 && hawkesHistory[0].t < cutoff3m) {
                 hawkesHistory.shift();
             }
 
-            // Hawkes Branching Ratio eta (knife-edge at 1.00 when score = 150)
+            // Hawkes Branching Ratio eta
             const eta = Math.min(2.5, (normScore / 150) * 1.00);
 
-            // Update UI elements
-            const scoreEl = document.getElementById("hawkes-score");
-            const etaEl = document.getElementById("hawkes-eta");
-            const regimeEl = document.getElementById("hawkes-regime");
-            const hawkesBar = document.getElementById("hawkes-bar");
+            // STEP 1 — BPM (The Tempo)
+            currentBPM = computeRegimeBPM();
 
-            if (scoreEl) scoreEl.innerText = normScore.toFixed(1);
-            if (etaEl) etaEl.innerText = eta.toFixed(2);
+            // STEP 2 — REGIME (Two separate triggers with hysteresis)
+            // Multipliers of rolling 1-hour baseline (baseline = 100 in normalized units)
+            const baseline = 100.0;
+            const antiPeaceTensionThreshold = 1.1 * baseline; // 110.0
+            const peaceHysteresisThreshold = 0.95 * baseline;  // 95.0
+            const imbalanceThreshold = 0.75;                  // 75%
 
-            let regimeText = "EQUILIBRIUM";
-            let regimeColor = "#00e5ff";
-            let regimeBg = "#0e1726";
+            // Calculate rolling window liquidation side imbalance over last 20 events
+            const last20 = liqEvents.slice(-20);
+            let longCount = 0;
+            let shortCount = 0;
+            for (let i = 0; i < last20.length; i++) {
+                if (last20[i].side === "LONG") longCount++;
+                else if (last20[i].side === "SHORT") shortCount++;
+            }
+            const totalSide = longCount + shortCount;
+            const dominantSideCount = Math.max(longCount, shortCount);
+            const imbalanceRatio = totalSide >= 4 ? (dominantSideCount / totalSide) : 0.50;
 
-            if (normScore < 80) {
-                regimeText = "LULL (η < 0.55)";
-                regimeColor = "#00ff88";
-                regimeBg = "#031a0e";
-            } else if (normScore < 140) {
-                regimeText = "EQUILIBRIUM (η < 0.95)";
-                regimeColor = "#00e5ff";
-                regimeBg = "#0e1726";
-            } else if (normScore < 180) {
-                regimeText = "CRITICAL CASCADE (η ~ 1.0)";
-                regimeColor = "#ffdd00";
-                regimeBg = "#261f03";
+            const tensionTriggered = (normScore >= antiPeaceTensionThreshold);
+            const imbalanceTriggered = (totalSide >= 4 && imbalanceRatio >= imbalanceThreshold);
+
+            // State Machine with Hysteresis
+            if (currentRegime === "BUSCANDO PEACE") {
+                if (tensionTriggered || imbalanceTriggered) {
+                    currentRegime = "ANTI-PEACE";
+                    antiPeaceByTension = tensionTriggered;
+                    antiPeaceByImbalance = imbalanceTriggered;
+                    regimeFlipHistory.push(now);
+                    hasSpokenBrinkInEpisode = false; // Reset for new regime episode
+                }
             } else {
-                regimeText = "SUPER-CRITICAL MELTDOWN (η > 1.2)";
-                regimeColor = "#ff003c";
-                regimeBg = "#26030c";
-            }
+                // Currently in ANTI-PEACE
+                if (tensionTriggered) antiPeaceByTension = true;
+                if (imbalanceTriggered) antiPeaceByImbalance = true;
 
-            if (regimeEl) {
-                regimeEl.innerText = regimeText;
-                regimeEl.style.color = regimeColor;
-                regimeEl.style.borderColor = regimeColor;
-                regimeEl.style.background = regimeBg;
-                regimeEl.style.textShadow = `0 0 6px ${regimeColor}`;
-            }
+                // Hysteresis exit condition
+                const tensionCleared = antiPeaceByTension
+                    ? (normScore < peaceHysteresisThreshold)
+                    : (normScore < antiPeaceTensionThreshold);
+                const imbalanceCleared = (imbalanceRatio < imbalanceThreshold);
 
-            // Check "Time to Boom" (Gamma Condition): score >= 150 AND rising compared to 30s ago
-            const score30sAgo = getScore30sAgo(now);
-            const isRising = (normScore > score30sAgo + 5);
-
-            if (hawkesBar) {
-                if (normScore >= 150 && isRising) {
-                    hawkesBar.style.animation = "hawkesPulse 1.2s infinite";
-                } else if (normScore < 130) {
-                    hawkesBar.style.animation = "none";
+                if (tensionCleared && imbalanceCleared) {
+                    currentRegime = "BUSCANDO PEACE";
+                    antiPeaceByTension = false;
+                    antiPeaceByImbalance = false;
+                    regimeFlipHistory.push(now);
+                    hasSpokenBrinkInEpisode = false; // Reset for new regime episode
                 }
             }
 
-            if (normScore >= 150 && isRising && (now - lastHawkesBoomTTSTime > 60000) && !isLiqInterrupting) {
-                lastHawkesBoomTTSTime = now;
-                triggerHawkesBoomTTS(normScore, eta);
+            // STEP 3 — BRINK % (The Bleed Meter), 0-100 & Flavor Text
+            let brink = 0;
+            let flavorText = "";
+
+            if (currentRegime === "BUSCANDO PEACE") {
+                // Distance of tension climbing toward 1.1 line
+                const tensionBrink = Math.min(100, Math.max(0,
+                    ((normScore - peaceHysteresisThreshold) / (antiPeaceTensionThreshold - peaceHysteresisThreshold)) * 100
+                ));
+                // Distance to 75% imbalance line (from 50% neutral base)
+                const imbalanceBrink = Math.min(100, Math.max(0,
+                    ((imbalanceRatio - 0.50) / (imbalanceThreshold - 0.50)) * 100
+                ));
+                // Brink follows whichever trigger is closer
+                brink = Math.round(Math.max(tensionBrink, imbalanceBrink));
+                flavorText = "peace at its peak — the snap is near";
+            } else {
+                // In ANTI-PEACE: Distance of tension decaying toward 0.95 line
+                const tensionBrink = normScore <= peaceHysteresisThreshold ? 100 :
+                    (normScore >= antiPeaceTensionThreshold ? 0 :
+                    Math.round(((antiPeaceTensionThreshold - normScore) / (antiPeaceTensionThreshold - peaceHysteresisThreshold)) * 100));
+
+                let imbalanceBrink = 0;
+                if (imbalanceRatio >= imbalanceThreshold) {
+                    // Distance of imbalance decaying toward 75% line
+                    imbalanceBrink = Math.round(((1.0 - imbalanceRatio) / (1.0 - imbalanceThreshold)) * 100);
+                }
+
+                // Brink follows whichever trigger is closer to flipping
+                if (antiPeaceByTension && imbalanceRatio >= imbalanceThreshold) {
+                    brink = Math.max(tensionBrink, imbalanceBrink);
+                } else if (antiPeaceByTension) {
+                    brink = tensionBrink;
+                } else {
+                    brink = imbalanceBrink;
+                }
+                flavorText = "cascade exhausting — revelation near";
+            }
+            currentBrink = Math.min(100, Math.max(0, brink));
+
+            // STEP 4 — FLIP SPEED (Gamma): Count regime changes in trailing 10 minutes
+            const cutoff10m = now - 600000;
+            while (regimeFlipHistory.length > 0 && regimeFlipHistory[0] < cutoff10m) {
+                regimeFlipHistory.shift();
+            }
+            const flipsPer10m = regimeFlipHistory.length;
+
+            // STEP 6 — TTS TRIGGER when BRINK crosses 80%
+            if (currentBrink >= 80 && !hasSpokenBrinkInEpisode) {
+                hasSpokenBrinkInEpisode = true;
+                triggerRegimeBrinkTTS();
             }
 
-            // Draw sparkline
+            // STEP 5 — OVERLAY UI UPDATES
+            const scoreEl = document.getElementById("hawkes-score");
+            const etaEl = document.getElementById("hawkes-eta");
+            const statusBadge = document.getElementById("regime-status-badge");
+            const flavorEl = document.getElementById("regime-flavor-text");
+            const bpmValEl = document.getElementById("regime-bpm-val");
+            const brinkValEl = document.getElementById("regime-brink-val");
+            const brinkFillEl = document.getElementById("regime-brink-fill");
+            const flipsValEl = document.getElementById("regime-flips-val");
+            const hawkesBar = document.getElementById("hawkes-bar");
+            const legacyRegimeEl = document.getElementById("hawkes-regime");
+
+            if (scoreEl) scoreEl.innerText = normScore.toFixed(1);
+            if (etaEl) etaEl.innerText = eta.toFixed(2);
+            if (bpmValEl) bpmValEl.innerText = currentBPM;
+            if (brinkValEl) brinkValEl.innerText = `${currentBrink}%`;
+            if (flipsValEl) flipsValEl.innerText = flipsPer10m;
+            if (flavorEl) flavorEl.innerText = flavorText;
+            if (legacyRegimeEl) legacyRegimeEl.innerText = currentRegime;
+
+            // Update Brink Fill Color & Bar Width
+            if (brinkFillEl) {
+                brinkFillEl.style.width = `${currentBrink}%`;
+                if (currentBrink >= 80) {
+                    brinkFillEl.style.background = "#ff003c";
+                    brinkFillEl.style.boxShadow = "0 0 10px #ff003c";
+                } else if (currentBrink >= 50) {
+                    brinkFillEl.style.background = "#ffdd00";
+                    brinkFillEl.style.boxShadow = "0 0 8px rgba(255,221,0,0.7)";
+                } else {
+                    brinkFillEl.style.background = "#00ff88";
+                    brinkFillEl.style.boxShadow = "0 0 6px #00ff88";
+                }
+            }
+
+            // Update Regime Badge & Top Bar Border/Pulse
+            if (statusBadge) {
+                if (currentRegime === "ANTI-PEACE") {
+                    statusBadge.innerHTML = "⚠️ ANTI-PEACE";
+                    statusBadge.style.background = "#2a040b";
+                    statusBadge.style.color = "#ff003c";
+                    statusBadge.style.borderColor = "#ff003c";
+                    statusBadge.style.textShadow = "0 0 10px #ff003c";
+                    statusBadge.style.boxShadow = "0 0 12px rgba(255,0,60,0.6)";
+                } else {
+                    statusBadge.innerHTML = "🕊️ BUSCANDO PEACE";
+                    statusBadge.style.background = "#031a0e";
+                    statusBadge.style.color = "#00ff88";
+                    statusBadge.style.borderColor = "#00ff88";
+                    statusBadge.style.textShadow = "0 0 8px #00ff88";
+                    statusBadge.style.boxShadow = "0 0 10px rgba(0,255,136,0.3)";
+                }
+            }
+
+            if (hawkesBar) {
+                if (currentRegime === "ANTI-PEACE") {
+                    hawkesBar.style.borderBottomColor = "#ff003c";
+                    hawkesBar.style.animation = "antiPeacePulse 1.2s infinite alternate";
+                } else {
+                    hawkesBar.style.borderBottomColor = "#00ff88";
+                    hawkesBar.style.animation = (currentBrink >= 80) ? "buscandoPeaceGlow 0.8s infinite alternate" : "none";
+                }
+            }
+
+            // Draw sparkline of tension over the last few minutes
             drawHawkesSparkline();
         }
 
         function initHawkesProcess() {
-            // Seed a few initial events for realistic initialization if empty
             const now = Date.now();
-            liqTimestamps.push(now - 120000);
-            liqTimestamps.push(now - 60000);
-            liqTimestamps.push(now - 25000);
-            
+            // Seed 20 historical events for initial median gap & tempo
+            for (let i = 20; i >= 1; i--) {
+                const t = now - (i * 4500) + (Math.random() * 800 - 400);
+                const side = Math.random() > 0.45 ? "LONG" : "SHORT";
+                liqTimestamps.push(t);
+                liqEvents.push({ t, side, usd: 25000 });
+            }
+            currentBPM = computeRegimeBPM();
+
             // Seed 3 minutes of historical sparkline points
             for (let i = 90; i >= 0; i--) {
                 const t = now - (i * 2000);
@@ -2349,7 +2545,7 @@
         function recordLiquidation(sym, side, usd) {
             const now = Date.now();
             lastLiquidationEvent = now;
-            recordHawkesEvent(now);
+            recordHawkesEvent(now, side, usd);
             const cleanSym = (sym || "BTC").replace("USDT", "");
             const liqEl = document.getElementById("liq-banner");
 

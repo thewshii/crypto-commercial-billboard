@@ -1005,7 +1005,7 @@
             <span style="color:#00ffff;">BTC: <strong id="btc-price" style="color:#00ff88; text-shadow:0 0 6px #00ff88;">$...</strong></span>
             <span style="color:#bf55ec;">SOL: <strong id="sol-price" style="color:#00ff88; text-shadow:0 0 6px #00ff88;">$...</strong></span>
             <span style="color:#ffff00;">HYPE: <strong id="hype-price" style="color:#00ff88; text-shadow:0 0 6px #00ff88;">$...</strong></span>
-            <span id="liq-banner" onclick="testManualLiquidation()" title="Click to test liquidation alarm" style="color:#00ff88; font-weight:bold; letter-spacing:1px; background:#1b0005; padding: 3px 8px; border-radius: 6px; border: 1px solid #00ff88; cursor:pointer;">🕊️ EVERYBODY'S MONEY IS SAFE... FOR NOW</span>
+            <span id="liq-banner" onclick="testManualLiquidation()" title="Click to test liquidation alert (raw API response)" style="color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.55rem, 0.85vw, 0.75rem); letter-spacing:0.5px; background:#080d14; padding: 3px 8px; border-radius: 6px; border: 1px solid #00ff88; cursor:pointer; max-width:55vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block; vertical-align:middle;">{"stream":"!forceOrder@arr","status":"LISTENING"}</span>
             <span id="ws-status-badge" style="font-family:'Roboto Mono',monospace; font-size:clamp(0.55rem, 0.85vw, 0.72rem); color:#00ff88; border:1px solid #00ff88; padding:2px 6px; border-radius:4px; background:#0a0a0a; text-shadow:0 0 5px #00ff88;">FEED: 🟢 LIVE</span>
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
@@ -2026,7 +2026,25 @@
             const loss = testLosses[Math.floor(Math.random() * testLosses.length)];
             const sym = testSyms[Math.floor(Math.random() * testSyms.length)];
             const side = Math.random() > 0.5 ? "LONG" : "SHORT";
-            recordLiquidation(sym, side, loss);
+            const now = Date.now();
+            const mockRaw = JSON.stringify({
+                e: "forceOrder",
+                E: now,
+                o: {
+                    s: sym,
+                    S: side === "LONG" ? "SELL" : "BUY",
+                    o: "LIMIT",
+                    f: "IOC",
+                    q: (loss / 83000).toFixed(4),
+                    p: "83000.00",
+                    ap: "83000.00",
+                    X: "FILLED",
+                    l: (loss / 83000).toFixed(4),
+                    z: (loss / 83000).toFixed(4),
+                    T: now
+                }
+            });
+            recordLiquidation(sym, side, loss, mockRaw);
         }
 
         // ==========================================
@@ -2542,48 +2560,53 @@
             }
         }
 
-        function recordLiquidation(sym, side, usd) {
+        let lastRawLiqResponse = null;
+
+        function recordLiquidation(sym, side, usd, rawData) {
             const now = Date.now();
             lastLiquidationEvent = now;
             recordHawkesEvent(now, side, usd);
-            const cleanSym = (sym || "BTC").replace("USDT", "");
             const liqEl = document.getElementById("liq-banner");
 
-            // Format spoken loss into layman terms (e.g., "forty thousand dollars")
-            const spokenLoss = usd >= 1000 
-                ? (Math.round(usd / 1000)) + " thousand dollars" 
-                : usd + " dollars";
-
-            let bannerHtml = "";
-            let phrase = "";
-
-            if (usd >= 75000) {
-                // Tier 3: Massive wealth extracted — high-stakes volatility shockwave
-                bannerHtml = `🚨 -$${usd.toLocaleString()} CRUSHED ON ${cleanSym} • HUGE MARKET LIQUIDATION: PROTECT YOUR CAPITAL & STAY COMPOSED! 🚨`;
-                phrase = `Someone just had ${spokenLoss} ripped from their hands on ${cleanSym}. When high-stakes volatility hits, emotional traders panic and lose control. In this stream, we stay composed, disciplined, and ahead of the game.`;
-            } else if (usd >= 15000) {
-                // Tier 2: Large capital evaporated — volatility surge
-                bannerHtml = `🚨 -$${usd.toLocaleString()} WIPED OUT ON ${cleanSym} • VOLATILITY SURGE: DISCIPLINE OVER EMOTION! 🚨`;
-                phrase = `Another ${spokenLoss} wiped out on ${cleanSym}. When money is on the line, emotion is the enemy. Keep your mindset calm, protect your peace, and stay focused on the real play.`;
+            let rawStr = "";
+            if (typeof rawData === "string" && rawData.trim().length > 0) {
+                rawStr = rawData.trim();
+            } else if (rawData && typeof rawData === "object") {
+                rawStr = JSON.stringify(rawData);
             } else {
-                // Tier 1: Smaller trader wiped — clearing casino traps
-                bannerHtml = `🚨 -$${usd.toLocaleString()} CLEARED ON ${cleanSym} • CASINO TRAPS REVEALED: CLARITY OVER CHAOS! 🚨`;
-                phrase = `A loss of ${spokenLoss} on ${cleanSym}. Most people chase the noise and get caught in the trap. Step outside the confusion and trade with clarity.`;
+                rawStr = JSON.stringify({
+                    e: "forceOrder",
+                    E: now,
+                    o: {
+                        s: (sym || "BTCUSDT").toUpperCase(),
+                        S: (side === "LONG" ? "SELL" : "BUY"),
+                        o: "LIMIT",
+                        f: "IOC",
+                        q: (usd ? (usd / 83000).toFixed(4) : "0.5210"),
+                        p: "83000.00",
+                        ap: "83000.00",
+                        X: "FILLED",
+                        l: (usd ? (usd / 83000).toFixed(4) : "0.5210"),
+                        z: (usd ? (usd / 83000).toFixed(4) : "0.5210"),
+                        T: now
+                    }
+                });
             }
-
-            bannerHtml += `<div style="font-size:0.75em; color:#ffd700; margin-top:3px; font-weight:bold; letter-spacing:1px; text-shadow:0 0 8px rgba(255,215,0,0.7);">👉 STEP 1: RECHARGE DIAMONDS 💎 • STEP 2: BUY BEANS • STEP 3: RING THE BELL TO WAKE UP THE ROOM & SHOW LOVE! 🔔</div>`;
-            phrase += " Step one: Recharge your diamonds right now. Step two: Buy your beans. Step three: Ring the Bell to wake up the whole room, bring the energy, and show love to the host.";
+            lastRawLiqResponse = rawStr;
 
             if (liqEl) {
                 liqEl.style.color = "#ff003c";
-                liqEl.style.textShadow = "0 0 12px #ff003c";
-                liqEl.innerHTML = bannerHtml;
+                liqEl.style.textShadow = "0 0 10px #ff003c";
+                liqEl.style.borderColor = "#ff003c";
+                liqEl.style.background = "#20040a";
+                liqEl.title = `Raw Binance forceOrder API response:\n${rawStr}`;
+                liqEl.innerText = rawStr;
                 liqEl.style.animation = "none";
                 void liqEl.offsetWidth; // reflow to trigger blink animation
-                liqEl.style.animation = "blink 1s infinite";
+                liqEl.style.animation = "blink 1s 3";
             }
 
-            // Throttle full audio interruptions to once every 6 seconds so it doesn't get jammed, and never interrupt the sacred Word
+            // Throttle audio interruptions to once every 6 seconds, and never interrupt the sacred Word
             if (isLiqInterrupting || isWordActive || (now - lastLiqBreakTime < 6000)) {
                 triggerBeep();
                 return;
@@ -2603,10 +2626,10 @@
             // 2. Play high-intensity emergency alert alarm
             triggerBeep();
 
-            // 3. Deliver the visceral announcement in SOLO DEAD SILENCE
-            const utterance = new SpeechSynthesisUtterance(phrase);
-            utterance.rate = 0.95;
-            utterance.pitch = 0.35; // deep robotic ominous tone
+            // 3. Deliver the raw API response announcement in robotic tone
+            const utterance = new SpeechSynthesisUtterance(rawStr);
+            utterance.rate = 1.05;
+            utterance.pitch = 0.40; // deep robotic data telemetry tone
 
             function resumeProgramming() {
                 isLiqInterrupting = false;
@@ -2614,7 +2637,7 @@
                 if (isMusicEnabled) {
                     bgAudio.play().catch(() => {});
                 }
-                const pauseTime = isMusicEnabled ? 3500 : 1800;
+                const pauseTime = isMusicEnabled ? 2500 : 1200;
                 slideTimer = setTimeout(renderSlide, pauseTime);
             }
 
@@ -2625,36 +2648,19 @@
             window.speechSynthesis.speak(window.liqUtterance);
         }
 
-        // Fawn a false sense of security while waiting for liquidations
-        const calmPhrases = [
-            "👉 STEP 1: TAP RECHARGE 💎 • STEP 2: BUY DIAMONDS 💎 • STEP 3: SEND GIFTS 🎁",
-            "💎 CELEBRATE THE WIN: RECHARGE DIAMONDS & SUPPORT THE STREAM 💎",
-            "👉 RECHARGE YOUR DIAMONDS NOW: JOIN THE WINNING CIRCLE 👈",
-            "🔔 SEND THE BELL: WAKE UP THE ROOM & BRING THE ENERGY 🔔",
-            "✨ REAL RECOGNIZES REAL: LIFT THE VIBE AND RING THE BELL ✨",
-            "🌹 TAP COMBO BUTTON FAST: RECHARGE & SEND ROSES 🌹",
-            "💎 RECHARGE YOUR DIAMONDS NOW: LEVEL UP THE ROOM & DROP GIFTS 💎",
-            "🛡️ ALL FUNDS TEMPORARILY SECURE. RECHARGE AND PREPARE FOR BATTLE",
-            "👑 QUEEN & KING ENERGY: SUPPORT SUCCESS AND ELEVATE THE CHAT",
-            "🕊️ FALSE SENSE OF SECURITY: NO ACCOUNTS DESTROYED IN SECONDS"
-        ];
-        let calmIdx = 0;
-
+        // Maintain persistent raw API response on banner after liquidation
         setInterval(() => {
             const liqEl = document.getElementById("liq-banner");
             const now = Date.now();
-            const elapsed = Math.floor((now - lastLiquidationEvent) / 1000);
-            // Only cycle false security if no liquidation in last 7s and not currently interrupting
             if (liqEl && !isLiqInterrupting && (now - lastLiquidationEvent > 7000)) {
-                liqEl.style.color = "#00ff88";
-                liqEl.style.textShadow = "0 0 8px #00ff88";
-                liqEl.style.animation = "none";
-                let text = calmPhrases[calmIdx];
-                if (elapsed > 20) {
-                    text += ` [${elapsed}s CASINO LULL]`;
+                if (lastRawLiqResponse) {
+                    liqEl.style.color = "#00ff88";
+                    liqEl.style.borderColor = "#00ff88";
+                    liqEl.style.textShadow = "0 0 6px rgba(0,255,136,0.6)";
+                    liqEl.style.background = "#050f14";
+                    liqEl.style.animation = "none";
+                    liqEl.innerText = lastRawLiqResponse;
                 }
-                liqEl.innerHTML = text;
-                calmIdx = (calmIdx + 1) % calmPhrases.length;
             }
         }, 4000);
 
@@ -3067,10 +3073,10 @@
                     
                     ws.onopen = () => {
                         setBadge("FEED: 🟢 LIVE", "#00ff88");
-                        if (liqEl && Date.now() - lastLiquidationEvent > 5000) {
+                        if (liqEl && !lastRawLiqResponse) {
                             liqEl.style.color = "#00ff88";
                             liqEl.style.textShadow = "0 0 8px #00ff88";
-                            liqEl.innerHTML = `🕊️ EVERYBODY'S MONEY IS SAFE... FOR NOW`;
+                            liqEl.innerText = `{"stream":"!forceOrder@arr","status":"LIVE"}`;
                         }
                         if (pingInterval) clearInterval(pingInterval);
                         pingInterval = setInterval(() => {
@@ -3088,24 +3094,24 @@
                             const sym = o.s || "BTCUSDT";
                             const side = o.S === "SELL" ? "LONG" : "SHORT";
                             const usd = Math.round(parseFloat(o.q) * parseFloat(o.p));
-                            recordLiquidation(sym, side, usd);
+                            recordLiquidation(sym, side, usd, e.data);
                         } catch(err) {}
                     };
 
                     ws.onerror = () => {
                         setBadge("FEED: 🔴 RETRY", "#ff003c");
-                        if (liqEl && Date.now() - lastLiquidationEvent > 5000) {
+                        if (liqEl && !lastRawLiqResponse) {
                             liqEl.style.color = "#ffff00";
-                            liqEl.innerHTML = `⚡ LIQS: RETRYING CONNECTION...`;
+                            liqEl.innerText = `{"stream":"!forceOrder@arr","status":"RETRYING"}`;
                         }
                     };
 
                     ws.onclose = () => {
                         setBadge("FEED: 🟡 RECONNECT", "#ffff00");
                         if (pingInterval) clearInterval(pingInterval);
-                        if (liqEl && Date.now() - lastLiquidationEvent > 5000) {
+                        if (liqEl && !lastRawLiqResponse) {
                             liqEl.style.color = "#ffff00";
-                            liqEl.innerHTML = `⚡ LIQS: RECONNECTING...`;
+                            liqEl.innerText = `{"stream":"!forceOrder@arr","status":"RECONNECTING"}`;
                         }
                         setTimeout(connect, 3000);
                     };
@@ -3124,7 +3130,24 @@
                     const randomPair = activePairs[Math.floor(Math.random() * activePairs.length)];
                     const randomSide = Math.random() > 0.5 ? "LONG" : "SHORT";
                     const randomAmount = Math.floor(Math.random() * 85000) + 7500;
-                    recordLiquidation(randomPair, randomSide, randomAmount);
+                    const simRaw = JSON.stringify({
+                        e: "forceOrder",
+                        E: now,
+                        o: {
+                            s: randomPair,
+                            S: randomSide === "LONG" ? "SELL" : "BUY",
+                            o: "LIMIT",
+                            f: "IOC",
+                            q: (randomAmount / 83000).toFixed(4),
+                            p: "83000.00",
+                            ap: "83000.00",
+                            X: "FILLED",
+                            l: (randomAmount / 83000).toFixed(4),
+                            z: (randomAmount / 83000).toFixed(4),
+                            T: now
+                        }
+                    });
+                    recordLiquidation(randomPair, randomSide, randomAmount, simRaw);
                 }
             }, 8000);
         }

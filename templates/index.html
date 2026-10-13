@@ -4138,3 +4138,89 @@ startStream();
   }
 }
 </style>
+
+<!-- Debug logger injected by Antigravity -->
+<script>
+(function () {
+  const debugLogs = [];
+  // render logs into a fixed pre element
+  function renderLogs() {
+    let pre = document.getElementById('debug-log');
+    if (!pre) {
+      pre = document.createElement('pre');
+      pre.id = 'debug-log';
+      pre.style.cssText = `
+        position: fixed;
+        bottom: 40px; left: 0; right: 0;
+        max-height: 30vh;
+        overflow-y: auto;
+        background: rgba(0,0,0,0.85);
+        color: #0f0;
+        font-size: 0.8rem;
+        padding: 0.5rem;
+        z-index: 9999;
+        pointer-events: none;
+      `;
+      document.body.appendChild(pre);
+    }
+    pre.textContent = debugLogs.map(l => `[${l.type}] ${l.msg}`).join('\n');
+  }
+
+  // copy button
+  function addCopyButton() {
+    let btn = document.getElementById('copy-debug');
+    if (btn) return;
+    btn = document.createElement('button');
+    btn.id = 'copy-debug';
+    btn.textContent = 'Copy logs';
+    btn.style.cssText = `
+      position: fixed;
+      bottom: 5px; right: 5px;
+      z-index: 10000;
+      padding: 4px 8px;
+      font-size: 0.8rem;
+      background: #222;
+      color: #fff;
+      border: 1px solid #555;
+      border-radius: 3px;
+      cursor: pointer;
+    `;
+    btn.onclick = () => {
+      const txt = debugLogs.map(l => `[${l.type}] ${l.msg}`).join('\n');
+      navigator.clipboard.writeText(txt).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy logs', 1500);
+      }).catch(err => {
+        console.error('Copy failed', err);
+        btn.textContent = 'Fail';
+        setTimeout(() => btn.textContent = 'Copy logs', 1500);
+      });
+    };
+    document.body.appendChild(btn);
+  }
+
+  // wrap console methods
+  const origLog = console.log;
+  const origErr = console.error;
+  console.log = function (...args) {
+    debugLogs.push({type:'log', msg: args.join(' ')});
+    origLog.apply(console, args);
+    renderLogs();
+  };
+  console.error = function (...args) {
+    debugLogs.push({type:'error', msg: args.join(' ')});
+    origErr.apply(console, args);
+    renderLogs();
+  };
+  window.addEventListener('error', e => {
+    const msg = e.message + (e.error ? `\n${e.error.stack}` : '');
+    debugLogs.push({type:'exception', msg});
+    renderLogs();
+  });
+
+  // expose helper & init UI
+  window.getDebugLogs = () => debugLogs.slice();
+  addCopyButton();
+})();
+</script>
+<!-- End of injected debug logger -->

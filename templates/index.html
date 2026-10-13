@@ -3028,8 +3028,8 @@
                 return;
             }
 
-            // Throttle audio interruptions to once every 6 seconds, and never interrupt the sacred Word
-            if (isLiqInterrupting || isWordActive || (now - lastLiqBreakTime < 6000)) {
+            // Throttle audio interruptions to once every 39 seconds, and never interrupt the sacred Word
+            if (isLiqInterrupting || isWordActive || (now - lastLiqBreakTime < 39000)) {
                 triggerBeep();
                 return;
             }
@@ -3049,7 +3049,12 @@
             triggerBeep();
 
             // 3. Deliver the raw API response announcement in robotic tone
-            const utterance = new SpeechSynthesisUtterance(rawStr);
+            let liqSpeech = rawStr;
+            try {
+                const ord = JSON.parse(rawStr).o || {};
+                liqSpeech = [ord.s, ord.o, ord.f, ord.q].filter(v => v !== undefined && v !== null).join(", ");
+            } catch (e) {}
+            const utterance = new SpeechSynthesisUtterance(liqSpeech);
             utterance.rate = 1.05;
             utterance.pitch = 0.40; // deep robotic data telemetry tone
 

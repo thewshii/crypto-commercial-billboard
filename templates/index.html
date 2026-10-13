@@ -997,7 +997,7 @@
     </style>
 </head>
 <body>
-    <div id="overlay" onclick="startStream()">CLICK TO START COMMERCIAL STREAM</div>
+    <div id="overlay" onclick="startStream()">CLICK FOR COMMERCIAL • BIGO VIRTUAL VIDEO CENTER</div>
     
     <div class="header">
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
@@ -1250,17 +1250,17 @@
                 type: "consciousness",
                 hasMemoryTimer: true,
                 timerSeconds: 30,
-                banner: "ATTENTION TRAINING: 3-STEP DRILL", color: "bg-cyan", border: "c-cyan",
-                subtitle: "STEP 1: 30-SEC FOCUS • STEP 2: THE RIVER • STEP 3: THE MIRROR",
-                hook: "👉 PAY ATTENTION TO EVERY THOUGHT FOR 30 SECONDS 👈",
-                quote: "Imagine thoughts as a river—every rock, grass, and creature. Focus on the stream as a unit. See through the mirror.",
-                punchline: "RECHARGE DIAMONDS 💎 • TOP UP BEANS 🫘 • MICRO GIFTS WARMLY WELCOME 🎁",
+                banner: "WATER FOCUS DRILL: BE LIKE WATER", color: "bg-cyan", border: "c-cyan",
+                subtitle: "THE 30-SECOND DISCIPLINE: REMAIN FLUID",
+                hook: "🌊 BE LIKE WATER • 30-SECOND SURVIVAL DRILL 🌊",
+                quote: "Once you are water, the timer will keep running. The minute you become something else, you lose. Purchase beans to increase your chances of getting top score.",
+                punchline: "TOP SCORE: 30 SECONDS ⏱️ • PURCHASE BEANS TO INCREASE CHANCES 🫘",
                 image: "/static/images/mind_consciousness.jpg",
                 angelCode: "999 369 999",
                 audio: "/sounds/alien_ad.wav",
-                introSpeech: "Pay attention to every thought for the next thirty seconds.",
-                postSpeech: "Now, step two: Imagine your thoughts were a river, and every rock, every grass growing underneath, and any creature inside is a different type of thought. Focus on the stream as a unit, not individual pieces. Decide to stick your hand in and try to touch a moving thought if you want. Step three: Now think of yourself as being in front of a mirror that you can see through at the same time as your reflection. Support this stream: Recharge your diamonds, top up your beans. Micro gifts are warmly welcome. Tap the screen, send a diamond or a rose, and ring the bell!",
-                speech: "Pay attention to every thought for the next thirty seconds. Now, step two: Imagine your thoughts were a river, and every rock, every grass growing underneath, and any creature inside is a different type of thought. Focus on the stream as a unit, not individual pieces. Decide to stick your hand in and try to touch a moving thought if you want. Step three: Now think of yourself as being in front of a mirror that you can see through at the same time as your reflection. Support this stream: Recharge your diamonds, top up your beans. Micro gifts are warmly welcome. Tap the screen, send a diamond or a rose, and ring the bell!"
+                introSpeech: "Be like water. Once you are, the timer will keep running. The minute you become something else, you lose. Purchase beans to increase your chances of getting top score, which is thirty seconds.",
+                postSpeech: "Congratulations, you reached the top score of thirty seconds with zero interruptions. You remained like water. Step two: Imagine your thoughts were a river, and every rock, every grass growing underneath, and any creature inside is a different type of thought. Focus on the stream as a unit, not individual pieces. Step three: Think of yourself in front of a two-way mirror. Support the stream: Recharge your diamonds, top up your beans. Micro gifts are warmly welcome. Send a gift and ring the bell!",
+                speech: "Be like water. Once you are, the timer will keep running. The minute you become something else, you lose. Purchase beans to increase your chances of getting top score, which is thirty seconds."
             },
             {
                 type: "consciousness",
@@ -1854,6 +1854,76 @@
         }
 
         // ==========================================
+        // RETRO 8-BIT ARCADE GAME OVER / DEFEAT SOUND
+        // Descending Minor Arpeggio Buzz Sequence
+        // ==========================================
+        function playGameDefeatSound() {
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const now = ctx.currentTime;
+                // Descending 8-bit defeat tones (G4, E4, Eb4, C4, A3, F#3)
+                const notes = [
+                    { f: 392.00, t: 0.00, d: 0.12 },
+                    { f: 329.63, t: 0.12, d: 0.12 },
+                    { f: 311.13, t: 0.24, d: 0.14 },
+                    { f: 261.63, t: 0.38, d: 0.16 },
+                    { f: 220.00, t: 0.54, d: 0.18 },
+                    { f: 185.00, t: 0.72, d: 0.50 }  // low buzzing defeat terminal
+                ];
+                notes.forEach(n => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = "sawtooth";
+                    osc.frequency.setValueAtTime(n.f, now + n.t);
+                    gain.gain.setValueAtTime(0.24, now + n.t);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + n.t);
+                    osc.stop(now + n.t + n.d);
+                });
+            } catch(e) {
+                console.log("[AUDIO] Defeat sound error:", e);
+            }
+        }
+
+        // ==========================================
+        // RETRO 8-BIT ARCADE GAME VICTORY SOUND
+        // Triumphant Fanfare (30s Natural Zero Top Score)
+        // ==========================================
+        function playGameVictorySound() {
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const now = ctx.currentTime;
+                const notes = [
+                    { f: 261.63, t: 0.00, d: 0.10 },
+                    { f: 329.63, t: 0.10, d: 0.10 },
+                    { f: 392.00, t: 0.20, d: 0.10 },
+                    { f: 523.25, t: 0.30, d: 0.12 },
+                    { f: 659.25, t: 0.42, d: 0.12 },
+                    { f: 783.99, t: 0.54, d: 0.14 },
+                    { f: 1046.50, t: 0.68, d: 0.65 }
+                ];
+                notes.forEach(n => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = "square";
+                    osc.frequency.setValueAtTime(n.f, now + n.t);
+                    gain.gain.setValueAtTime(0.22, now + n.t);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + n.t);
+                    osc.stop(now + n.t + n.d);
+                });
+            } catch(e) {
+                console.log("[AUDIO] Victory sound error:", e);
+            }
+        }
+
+        // ==========================================
         // ATTENTION TRAINING LIQUIDATION GAME STATE
         // High Score = Average seconds survived before a liquidation
         // ==========================================
@@ -1861,6 +1931,7 @@
         let attentionTimerSecondsLeft = 30;
         let attentionTimerTotalSec = 30;
         let attentionTimerStartTime = 0;
+        let timerWatchdogInterval = null;
 
         function getAttentionScores() {
             try {
@@ -1898,6 +1969,11 @@
         }
 
         function handleAttentionGameLiquidation(rawStr) {
+            handleAttentionGameDefeat("liquidation: " + (rawStr || ""));
+        }
+
+        function handleAttentionGameDefeat(reason) {
+            if (!isAttentionTimerActive && !memoryTimerInterval) return;
             isAttentionTimerActive = false;
             if (memoryTimerInterval) {
                 clearInterval(memoryTimerInterval);
@@ -1906,7 +1982,7 @@
 
             // Seconds lasted = 30s minus seconds remaining on timer
             const secondsLeft = Math.max(0, attentionTimerSecondsLeft);
-            const secondsLasted = Math.max(1, Math.min(30, 30 - secondsLeft));
+            const secondsLasted = Math.max(1, Math.min(29, 30 - secondsLeft));
 
             // High score is set by the running average of seconds survived before a liquidation
             const avgScore = recordAttentionScore(secondsLasted);
@@ -1919,7 +1995,7 @@
             const gameBanner = document.getElementById("attention-game-banner");
 
             if (clockEl) {
-                clockEl.innerText = `STOPPED: 00:${secondsLeft < 10 ? '0' : ''}${secondsLeft}`;
+                clockEl.innerText = `YOU LOSE: 00:${secondsLeft < 10 ? '0' : ''}${secondsLeft}`;
                 clockEl.style.color = "#ff003c";
                 clockEl.style.textShadow = "0 0 18px #ff003c";
                 clockEl.style.animation = "blink 0.5s infinite";
@@ -1931,22 +2007,32 @@
             if (scoreValEl) scoreValEl.innerText = avgScore.toFixed(1);
             if (lastRunEl) lastRunEl.innerText = `LASTED: ${secondsLasted}s`;
             if (gameBanner) {
-                gameBanner.innerHTML = `🚨 LIQUIDATION STOPPED DRILL • LASTED ${secondsLasted}s • SEND GIFT FOR ANOTHER PLAY 🎁`;
-                gameBanner.style.color = "#ffdd00";
+                gameBanner.innerHTML = `❌ YOU LOSE • LASTED ${secondsLasted}s • PURCHASE BEANS TO INCREASE CHANCES OF TOP SCORE (30s) 🫘`;
+                gameBanner.style.color = "#ff003c";
             }
 
             // 1. STOP EVERY SOUND
             if (slideTimer) clearTimeout(slideTimer);
-            bgAudio.pause();
-            audioPlayer.pause();
+            if (bgAudio) bgAudio.pause();
+            if (audioPlayer) audioPlayer.pause();
             window.speechSynthesis.cancel();
 
-            // 2. Play game start sound
-            playGameStartSound();
+            // 2. Play game sound sequence (8-bit defeat sound)
+            playGameDefeatSound();
 
-            // 3. TTS Delivery: "congratulations you lasted n seconds send a gift and see if it gives u another play"
-            const phrase = `Congratulations, you lasted ${secondsLasted} seconds. Send a gift and see if it gives you another play.`;
+            // 3. TTS Delivery: "You lose. You lasted N seconds. The minute you became something else, you lost. Purchase beans to increase your chances of getting top score, which is thirty seconds. Send a gift to try again."
+            const phrase = `You lose. You lasted ${secondsLasted} seconds. The minute you became something else, you lost. Purchase beans to increase your chances of getting top score, which is thirty seconds. Send a gift to try again.`;
 
+            // Deliver via Backend TTS path
+            try {
+                fetch("/api/speak", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: phrase })
+                }).catch(() => {});
+            } catch(e) {}
+
+            // Deliver via Browser SpeechSynthesis
             setTimeout(() => {
                 if ('speechSynthesis' in window) {
                     window.speechSynthesis.cancel();
@@ -1955,7 +2041,7 @@
                     utter.pitch = 0.45;
 
                     function resumeAfterGame() {
-                        if (isMusicEnabled) {
+                        if (isMusicEnabled && bgAudio) {
                             bgAudio.play().catch(() => {});
                         }
                         currentSlide = (currentSlide + 1) % slides.length;
@@ -1969,7 +2055,63 @@
                     currentSlide = (currentSlide + 1) % slides.length;
                     slideTimer = setTimeout(renderSlide, 3500);
                 }
-            }, 750);
+            }, 600);
+        }
+
+        async function handleAttentionGameSuccess() {
+            isAttentionTimerActive = false;
+            if (memoryTimerInterval) {
+                clearInterval(memoryTimerInterval);
+                memoryTimerInterval = null;
+            }
+
+            // Top score is 30 seconds
+            const topScore = recordAttentionScore(30);
+
+            const clockEl = document.getElementById("memory-timer-clock");
+            const barEl = document.getElementById("memory-timer-bar");
+            const scoreValEl = document.getElementById("attention-highscore-val");
+            const lastRunEl = document.getElementById("attention-last-run");
+            const gameBanner = document.getElementById("attention-game-banner");
+
+            if (clockEl) {
+                clockEl.innerText = "TOP SCORE: 00:00";
+                clockEl.style.color = "#ffdd00";
+                clockEl.style.textShadow = "0 0 25px #ffdd00";
+                clockEl.style.animation = "blink 0.8s 3";
+            }
+            if (barEl) {
+                barEl.style.width = "0%";
+                barEl.style.background = "#ffdd00";
+                barEl.style.boxShadow = "0 0 12px #ffdd00";
+            }
+            if (scoreValEl) scoreValEl.innerText = "30.0";
+            if (lastRunEl) lastRunEl.innerText = "LASTED: 30s (MAX)";
+            if (gameBanner) {
+                gameBanner.innerHTML = "🏆 TOP SCORE: 30 SECONDS SURVIVED • WATER DISCIPLINE ACHIEVED • PURCHASE BEANS TO RETAIN CROWN 🫘";
+                gameBanner.style.color = "#00ff88";
+            }
+
+            // 1. Play triumphant victory sound
+            playGameVictorySound();
+
+            // 2. Deliver victory speech via TTS path:
+            const winSpeech = "Congratulations, you reached the top score of thirty seconds with zero interruptions. You remained like water. Step two: Imagine your thoughts were a river, and every rock, every grass growing underneath, and any creature inside is a different type of thought. Focus on the stream as a unit. Purchase beans, recharge diamonds, and send micro gifts to support the stream!";
+
+            try {
+                fetch("/api/speak", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: winSpeech })
+                }).catch(() => {});
+            } catch(e) {}
+
+            await speakPhrase(winSpeech);
+
+            if (!isLiqInterrupting && !isWordActive) {
+                currentSlide = (currentSlide + 1) % slides.length;
+                slideTimer = setTimeout(renderSlide, 3500);
+            }
         }
 
         function triggerAttentionRetry() {
@@ -3591,14 +3733,18 @@
         setInterval(checkWordSchedule, 30000);
 
         function startStream() {
-            document.getElementById("overlay").style.display = "none";
-            getAudioContext();
-            bgAudio.volume = 0.3;
-            checkWordSchedule();
-            if (!isWordActive) {
-                renderSlide();
-            }
-        }
+    document.getElementById("overlay").style.display = "none";
+    getAudioContext();
+    bgAudio.volume = 0.3;
+    checkWordSchedule();
+    if (!isWordActive) {
+        renderSlide();
+        // Immediate welcome
+        triggerBigoWelcome();
+        // Repeat every 5 minutes
+        setInterval(triggerBigoWelcome, 300000);
+    }
+}
 
         function nextSlideManual() {
             triggerBeep();

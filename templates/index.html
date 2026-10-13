@@ -472,50 +472,7 @@
             100% { transform: translateX(-100%); }
         }
 
-        /* Glowing Yellow Horizontal Divider Below TV Box */
-        .tv-yellow-divider {
-            width: 100%;
-            height: 4px;
-            background: #ffff00;
-            box-shadow: 0 0 12px #ffff00, 0 0 25px rgba(255, 255, 0, 0.7);
-            flex-shrink: 0;
-            z-index: 40;
-        }
 
-        /* Prominent PumpPortal Real-Time Token Spotlight Strip (Single Token, Font >= 30px) */
-        .pumpportal-strip {
-            width: 100%;
-            background: linear-gradient(90deg, #07090e 0%, #171302 50%, #07090e 100%);
-            border-bottom: 2px solid #332b00;
-            padding: 5px 14px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            margin: 0 auto;
-            flex-shrink: 0;
-            z-index: 35;
-            box-sizing: border-box;
-            overflow: hidden;
-            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.9);
-        }
-
-        .pumpportal-header {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-size: clamp(0.5rem, 0.8vw, 0.7rem);
-            color: #ffdd00;
-            font-family: 'Roboto Mono', monospace;
-            font-weight: 900;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            margin: 0 auto 3px auto;
-            text-align: center;
-            text-shadow: 0 0 6px rgba(255, 221, 0, 0.7);
-        }
 
         .pumpportal-live-dot {
             width: 8px;
@@ -4126,7 +4083,29 @@ startStream();
         setInterval(() => {
             animEls.forEach(el => el.innerText = animFrames[animIdx]);
             animIdx = (animIdx + 1) % animFrames.length;
+
+            // Auto-start the game on page load
+            window.addEventListener('load', () => {
+                if (typeof playGameStartSound === 'function') {
+                    playGameStartSound();
+                }
+                if (typeof playSacredChime === 'function') {
+                    playSacredChime();
+                }
+            });
+
+
         }, 500);
+
+        // Auto-start the game on page load
+        window.addEventListener('load', () => {
+            if (typeof playGameStartSound === 'function') {
+                playGameStartSound();
+            }
+            if (typeof playSacredChime === 'function') {
+                playSacredChime();
+            }
+        });
     </script>
     <style>
         @keyframes blink {
@@ -4136,3 +4115,25 @@ startStream();
     </style>
 </body>
 </html>
+
+<style>
+@media (max-width: 768px) {
+  .marquee-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 60;
+    background-color: #ffff00; /* keep visibility */
+    color: #000;
+    font-size: clamp(1rem, 4vw, 2rem);
+    padding: 1vh 0;
+    overflow: hidden;
+    white-space: nowrap;
+    box-shadow: 0 0 5px rgba(0,0,0,0.5);
+  }
+  .marquee-text {
+    animation-duration: 15s; /* faster if needed */
+  }
+}
+</style>

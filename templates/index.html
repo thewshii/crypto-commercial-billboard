@@ -4370,3 +4370,74 @@ startStream();
 })();
 </script>
 <!-- End of injected debug logger -->
+<!-- Audio tracer: logs every audio action with the caller stack (copy via "Copy logs") -->
+<script>
+(function () {
+  const t0 = performance.now();
+  const lastSeen = {};
+  function caller() {
+    const lines = (new Error().stack || '').split('\n').slice(1);
+    const useful = lines.filter(l => !/audioTrace|index\.html:\d+:\d+\)?$/.test('') && l.indexOf('__aT') === -1);
+    return useful.slice(1, 5).map(l => l.trim().replace(/^at /, '').replace(/https?:\/\/[^/]+/, '')).join(' <- ');
+  }
+  function trace(kind, detail) {
+    const who = caller();
+    const key = kind + who;
+    const now = performance.now();
+    if (lastSeen[key] && now - lastSeen[key] < 150) return; // coalesce bursts (machine-gun, rotors)
+    lastSeen[key] = now;
+    console.log('AUDIO +' + ((now - t0) / 1000).toFixed(2) + 's ' + kind + (detail ? ' [' + detail + ']' : '') + ' :: ' + who);
+  }
+  window.__aT = trace;
+
+  // <audio>/<video> play, pause, and autoplay rejections
+  const origPlay = HTMLMediaElement.prototype.play;
+  HTMLMediaElement.prototype.play = function () {
+    const id = this.id || this.src.split('/').pop() || 'media';
+    trace('MEDIA.play', id);
+    const p = origPlay.apply(this, arguments);
+    if (p && p.catch) p.catch(e => trace('MEDIA.play BLOCKED/FAILED', id + ' ' + e.name + ': ' + e.message));
+    return p;
+  };
+  const origPause = HTMLMediaElement.prototype.pause;
+  HTMLMediaElement.prototype.pause = function () {
+    trace('MEDIA.pause', this.id || this.src.split('/').pop() || 'media');
+    return origPause.apply(this, arguments);
+  };
+
+  // Speech synthesis
+  if (window.speechSynthesis) {
+    const ss = window.speechSynthesis;
+    const proto = Object.getPrototypeOf(ss);
+    const oSpeak = proto.speak, oCancel = proto.cancel;
+    proto.speak = function (u) {
+      trace('TTS.speak', '"' + String(u && u.text).slice(0, 50) + '"');
+      return oSpeak.apply(this, arguments);
+    };
+    proto.cancel = function () {
+      trace('TTS.cancel', 'speaking=' + this.speaking + ' pending=' + this.pending);
+      return oCancel.apply(this, arguments);
+    };
+  }
+
+  // Web Audio: every synthesized sound (beeps, chimes, war SFX)
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (AC) {
+    const oStart = AudioScheduledSourceNode.prototype.start;
+    AudioScheduledSourceNode.prototype.start = function () {
+      trace('WEBAUDIO.start', this.constructor.name);
+      return oStart.apply(this, arguments);
+    };
+    const oResume = AC.prototype.resume;
+    AC.prototype.resume = function () {
+      trace('WEBAUDIO.resume', 'state=' + this.state);
+      return oResume.apply(this, arguments);
+    };
+  }
+
+  // Autoplay-policy hint when the audio context stays suspended
+  setInterval(() => {
+    if (window.audioCtx && window.audioCtx.state === 'suspended') trace('WEBAUDIO.SUSPENDED', 'no user gesture yet');
+  }, 5000);
+})();
+</script>

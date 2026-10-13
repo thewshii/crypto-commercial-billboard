@@ -2663,7 +2663,7 @@
 
             // State Machine with Hysteresis
             if (currentRegime === "BUSCANDO PEACE") {
-                const brinkSyncTriggered = (normScore < 50 && currentBrink >= 40 && currentBrink <= 60);
+                const brinkSyncTriggered = (eta >= 0.40 && eta <= 0.60);
                 if (tensionTriggered || imbalanceTriggered || brinkSyncTriggered) {
                     currentRegime = "ANTI-PEACE";
                     antiPeaceByTension = tensionTriggered;
@@ -3009,7 +3009,8 @@
 
             // FLOOD GUARD: too many regime flips + high brink => skip raw readout, say "game over", leave the sequence untouched
             const floodFlips = regimeFlipHistory.filter(t => now - t <= 600000).length;
-            if (floodFlips >= 30 && currentBrink > 35) {
+            const lastTension = hawkesHistory.length ? hawkesHistory[hawkesHistory.length - 1].score : 0;
+            if (floodFlips >= 30 && currentBrink > 35 && lastTension <= 75) {
                 if (!isWordActive && !window.gameOverSpeaking && (now - (window.lastGameOverTime || 0) > 8000)) {
                     window.lastGameOverTime = now;
                     window.gameOverSpeaking = true;

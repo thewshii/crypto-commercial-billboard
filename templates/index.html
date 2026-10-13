@@ -2247,6 +2247,10 @@
         let regimeFlipHistory = [];   // timestamps of regime flips in trailing 10 minutes
         let currentBPM = 14;
         let currentBrink = 0;
+        let activeRegimeNewsBanner = null;
+        let activeRegimeNewsExpires = 0;
+        let isRegimeNewsSpeaking = false;
+        let lastRegimeNewsShiftTime = 0;
 
         function recordHawkesEvent(now, side, usd) {
             const t = now || Date.now();
@@ -2335,6 +2339,86 @@
                 utter.rate = 0.92;
                 utter.pitch = 0.45;
                 window.speechSynthesis.speak(utter);
+            }
+        }
+
+        // Broadcast Regime Shift News Announcements via the TTS Path & News SFX
+        function triggerRegimeShiftNewsAnnouncement(targetRegime, details) {
+            if (isWordActive || isLiqInterrupting) return;
+            const now = Date.now();
+            if (now - lastRegimeNewsShiftTime < 5000) return;
+            lastRegimeNewsShiftTime = now;
+
+            const dominant = (details && details.dominantSide) ? details.dominantSide : "LONG";
+            const bpm = (details && details.bpm) ? details.bpm : currentBPM;
+            const score = (details && details.score) ? details.score.toFixed(1) : "110.0";
+            const imbPct = Math.round(((details && details.imbalanceRatio) || 0.75) * 100);
+
+            let script = "";
+            if (targetRegime === "ANTI-PEACE") {
+                activeRegimeNewsBanner = `🚨 BREAKING NEWS: MARKET FLIPPED TO ANTI-PEACE (${bpm} BPM)`;
+                activeRegimeNewsExpires = now + 14000;
+                if (details && details.byTension && details.byImbalance) {
+                    script = `Breaking news bulletin. Regime shift confirmed. The trading floor has officially entered Anti-Peace. Hawkes cascade tension has surged to ${score}, accompanied by ${imbPct} percent one-sided ${dominant} liquidation hunting. Market tempo is pacing at ${bpm} beats per minute. Brace for immediate cascade destruction.`;
+                } else if (details && details.byImbalance) {
+                    script = `Breaking news update. Market regime shift detected. The room has flipped into Anti-Peace. Predatory liquidation hunting is underway, with ${imbPct} percent of order flow targeting ${dominant} positions. Market tempo is running at ${bpm} beats per minute.`;
+                } else {
+                    script = `Breaking news bulletin. Regime shift confirmed. The market has broken into Anti-Peace. Hawkes cascade tension has crossed ${score}, shattering baseline equilibrium. Tempo is clocking ${bpm} beats per minute. Watch for cascading liquidations.`;
+                }
+            } else {
+                activeRegimeNewsBanner = `🕊️ NEWS UPDATE: BUSCANDO PEACE RESTORED (${score} TENSION)`;
+                activeRegimeNewsExpires = now + 14000;
+                script = `Market news update. Regime shift confirmed. Anti-Peace has collapsed. Buscando Peace has been restored to the room. Liquidation cascades have exhausted, tension has cooled to ${score}, and baseline equilibrium has returned.`;
+            }
+
+            // Play news ticker intro stinger audio
+            try {
+                const sfx = new Audio("/sounds/news_ticker.wav");
+                sfx.volume = 0.40;
+                sfx.play().catch(() => {});
+            } catch(e) {}
+
+            // Duck background music for broadcast clarity
+            const wasMusicPlaying = (bgAudio && !bgAudio.paused);
+            if (bgAudio) {
+                bgAudio.pause();
+            }
+
+            isRegimeNewsSpeaking = true;
+
+            // 1. Deliver to Backend TTS path (/api/speak)
+            try {
+                fetch("/api/speak", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: script })
+                }).catch(() => {});
+            } catch(e) {}
+
+            // 2. Deliver to Browser SpeechSynthesis (Web Stream & Local playback)
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance(script);
+                utter.rate = 1.02;  // authoritative rapid anchor pace
+                utter.pitch = 0.50; // crisp TV news anchor tone
+
+                function resumeMusic() {
+                    isRegimeNewsSpeaking = false;
+                    if (wasMusicPlaying && isMusicEnabled && bgAudio && !isLiqInterrupting && !isWordActive) {
+                        bgAudio.play().catch(() => {});
+                    }
+                }
+
+                utter.onend = resumeMusic;
+                utter.onerror = resumeMusic;
+                window.speechSynthesis.speak(utter);
+            } else {
+                setTimeout(() => {
+                    isRegimeNewsSpeaking = false;
+                    if (wasMusicPlaying && isMusicEnabled && bgAudio && !isLiqInterrupting && !isWordActive) {
+                        bgAudio.play().catch(() => {});
+                    }
+                }, 8000);
             }
         }
 
@@ -2498,6 +2582,14 @@
                     antiPeaceByImbalance = imbalanceTriggered;
                     regimeFlipHistory.push(now);
                     hasSpokenBrinkInEpisode = false; // Reset for new regime episode
+                    triggerRegimeShiftNewsAnnouncement("ANTI-PEACE", {
+                        byTension: tensionTriggered,
+                        byImbalance: imbalanceTriggered,
+                        score: normScore,
+                        bpm: currentBPM,
+                        imbalanceRatio: imbalanceRatio,
+                        dominantSide: (dominantSideCount === longCount ? "LONG" : "SHORT")
+                    });
                 }
             } else {
                 // Currently in ANTI-PEACE
@@ -2519,6 +2611,10 @@
                     antiPeaceByImbalance = false;
                     regimeFlipHistory.push(now);
                     hasSpokenBrinkInEpisode = false; // Reset for new regime episode
+                    triggerRegimeShiftNewsAnnouncement("BUSCANDO PEACE", {
+                        score: normScore,
+                        bpm: currentBPM
+                    });
                 }
             }
 
@@ -2564,6 +2660,11 @@
             }
             currentBrink = Math.min(100, Math.max(0, brink));
 
+            // Override flavor text with breaking news banner when active
+            if (activeRegimeNewsBanner && now < activeRegimeNewsExpires) {
+                flavorText = activeRegimeNewsBanner;
+            }
+
             // STEP 4 — FLIP SPEED (Gamma): Count regime changes in trailing 10 minutes
             const cutoff10m = now - 600000;
             while (regimeFlipHistory.length > 0 && regimeFlipHistory[0] < cutoff10m) {
@@ -2594,7 +2695,16 @@
             if (bpmValEl) bpmValEl.innerText = currentBPM;
             if (brinkValEl) brinkValEl.innerText = `${currentBrink}%`;
             if (flipsValEl) flipsValEl.innerText = flipsPer10m;
-            if (flavorEl) flavorEl.innerText = flavorText;
+            if (flavorEl) {
+                flavorEl.innerText = flavorText;
+                if (activeRegimeNewsBanner && now < activeRegimeNewsExpires) {
+                    flavorEl.style.color = (currentRegime === "ANTI-PEACE") ? "#ff003c" : "#00ff88";
+                    flavorEl.style.textShadow = (currentRegime === "ANTI-PEACE") ? "0 0 10px rgba(255,0,60,0.8)" : "0 0 10px rgba(0,255,136,0.8)";
+                } else {
+                    flavorEl.style.color = "#8899aa";
+                    flavorEl.style.textShadow = "none";
+                }
+            }
             if (legacyRegimeEl) legacyRegimeEl.innerText = currentRegime;
 
             // Update Brink Fill Color & Bar Width

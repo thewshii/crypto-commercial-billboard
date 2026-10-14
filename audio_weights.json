@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "use_weighted_pct": 95,
+  "event_count": 7,
+  "kind_counts": {
+    "media_play": 2,
+    "tts_speak": 2,
+    "spike": 1,
+    "guard_combo": 1,
+    "silence": 1
+  },
+  "action_weights": {
+    "media_play": 0.333333,
+    "tts_speak": 0.333333,
+    "guard_combo": 0.166667,
+    "silence": 0.166667
+  },
+  "combo_counts": {
+    "74Hz": 1
+  },
+  "transition_probabilities": {
+    "media_play::news_ticker.wav": {
+      "tts_speak::Breaking news bulletin.\"": 1.0
+    },
+    "tts_speak::Breaking news bulletin.\"": {
+      "spike::2": 1.0
+    },
+    "spike::2": {
+      "guard_combo::74Hz": 1.0
+    },
+    "guard_combo::74Hz": {
+      "tts_speak::Pow combo!\"": 1.0
+    },
+    "tts_speak::Pow combo!\"": {
+      "silence::mean<4 for 5s -> re-triggered ambient bed": 1.0
+    },
+    "silence::mean<4 for 5s -> re-triggered ambient bed": {
+      "media_play::bg-audio": 1.0
+    }
+  }
+}

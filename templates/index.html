@@ -4448,6 +4448,20 @@ startStream();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', keepAlive); else keepAlive();
 })();
 </script>
+<script>
+// Random interjection: every 7 seconds, softly say the word "spite".
+// Uses a short timeout so it does not cancel or cut off any in-flight TTS.
+(function () {
+  setInterval(function () {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      var u = new SpeechSynthesisUtterance('spite');
+      u.rate = 1.0; u.pitch = 0.8; u.volume = 0.35;
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }, 7000);
+})();
+</script>
 </body>
 </html>
 

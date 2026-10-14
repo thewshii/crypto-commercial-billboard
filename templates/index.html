@@ -4742,8 +4742,31 @@ startStream();
         bgAudio.play().catch(() => {});
         action = 're-triggered ambient bed';
       } else if (typeof nextSlideManual === 'function') {
-        nextSlideManual();
-        action = 'advanced to next sound/slide';
+        let branch = 'slide';
+        try {
+          const W = window.audioWeights;
+          if (W && (Math.random() * 100) < (W.use_weighted_pct || 95)) {
+            const aw = W.action_weights || {};
+            const r = Math.random();
+            let acc = 0, chosen = null;
+            for (const k of Object.keys(aw)) { acc += aw[k]; if (r < acc) { chosen = k; break; } }
+            if (chosen === 'media_play') branch = 'slide';
+            else if (chosen === 'silence' || chosen === 'media_pause') branch = 'ambient';
+            else if (chosen === 'tts_speak' || chosen === 'guard_combo' || chosen === 'howl') branch = 'guard';
+            else branch = 'slide';
+          }
+        } catch (e) { branch = 'slide'; }
+        if (branch === 'ambient' && typeof bgAudio !== 'undefined' && bgAudio && bgAudio.paused) {
+          bgAudio.play().catch(() => {});
+          action = 'weighted next -> ambient bed';
+        } else if (branch === 'guard' && typeof fireGuardCombo === 'function') {
+          const guardFreqs = [13000, 5500, 74, 404, 2300, 47];
+          fireGuardCombo(guardFreqs[Math.floor(Math.random() * guardFreqs.length)], -1);
+          action = 'weighted next -> guard combo';
+        } else {
+          nextSlideManual();
+          action = 'weighted/normal next -> slide';
+        }
       }
     } catch (e) { action = 'error ' + e.message; }
     mark('SILENCE — ' + action, 0, -1);
@@ -4883,6 +4906,8 @@ startStream();
     setInterval(() => { if (M) { binHz = M.ctx.sampleRate / FFT_SIZE; buildBands(); buildColumns(); } }, 3000);
     requestAnimationFrame(frame);
   }
+  window.audioWeights = null;
+  fetch('audio_weights.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j) window.audioWeights = j; }).catch(function () {});
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
 </script>

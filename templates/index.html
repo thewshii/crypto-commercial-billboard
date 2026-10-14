@@ -5537,7 +5537,23 @@ function connectAudio() {
         if (btn) { btn.innerHTML = '🎤 MIC ON'; btn.style.borderColor = '#ff4444'; btn.style.color = '#ff6666'; }
         console.log('MIC input enabled -> spectrum/spike/howl detectors now watch the mic');
       })
-      .catch(function (e) { if (btn) btn.innerHTML = '🎤 MIC DENIED'; console.log('MIC permission failed: ' + e.message); });
+      .catch(function (e) {
+        if (btn) btn.innerHTML = '🎤 MIC RETRY';
+        console.log('MIC permission failed: ' + e.message + ' (another app may hold the mic or a chat overlay may be blocking the prompt)');
+        // Another app (e.g. a live/chat app) often holds the mic or shows a
+        // floating "bubble"/overlay that blocks the system dialog. Retry with
+        // backoff so we grab the mic as soon as it frees up.
+        if (!window.__micRetryTimer) {
+          var delay = 3000;
+          (function retry() {
+            window.__micRetryTimer = setTimeout(function () {
+              window.__micRetryTimer = null;
+              if (!window.__micStream) { try { toggleMicInput(); } catch (err) {} }
+            }, delay);
+            delay = Math.min(delay * 2, 30000); // 3s -> 30s backoff
+          })();
+        }
+      });
   }
 
   function init() {

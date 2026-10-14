@@ -4901,7 +4901,7 @@ startStream();
       try {
         if ('speechSynthesis' in window) {
           window.speechSynthesis.cancel();
-          const u = new SpeechSynthesisUtterance(String(silenceCountUp));
+          const u = new SpeechSynthesisUtterance('listen ' + String(silenceCountUp));
           u.rate = 1.0; u.pitch = 0.8; u.volume = 0.9;
           window.speechSynthesis.speak(u);
         }

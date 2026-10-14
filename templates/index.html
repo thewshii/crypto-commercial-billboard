@@ -5200,8 +5200,8 @@ startStream();
       // Cut every audio: all media elements + speech.
       try { document.querySelectorAll('audio, video').forEach(function (el) { el.pause(); }); } catch (e) {}
       try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch (e) {}
-      mark('PULSATION — all audio cut, total recognition', 0, -1);
-      logShift('PULSATION', 'same frequencies oscillating', 'cut audio -> total recognition');
+      mark('PULSATION — all audio cut, ALIEN CORRECTION', 0, -1);
+      logShift('PULSATION', 'same shape sliding back and forth', 'cut ALL audio -> Alien correction');
       function finishRecognition() {
         pulsationRecognizing = false;
         try {
@@ -5212,7 +5212,7 @@ startStream();
       // Announce, then listen via mic for total recognition (after the
       // announcement ends, so it does not contaminate the mic).
       if ('speechSynthesis' in window) {
-        const u = new SpeechSynthesisUtterance('Total recognition engaged. All audio cut. Listening.');
+        const u = new SpeechSynthesisUtterance('Alien correction.');
         u.rate = 1.0; u.pitch = 0.6;
         u.onend = function () { startTotalRecognition(finishRecognition); };
         u.onerror = function () { startTotalRecognition(finishRecognition); };

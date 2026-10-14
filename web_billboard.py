@@ -356,6 +356,111 @@ def generate_bedrock_newscast(metrics, force=False):
     _last_newscast_time = now
     return newscast_data, False
 
+_cached_prayer = None
+_last_prayer_time = 0
+
+CURATED_PRAYER_FALLBACK = {
+    "title": "A Prayer for Peace and Sovereignty",
+    "prayer": (
+        "Let us have a prayer. Father, we ask for peace in this room and peace over our minds. "
+        "Let the noise of the marketplace fall away, and let truth rise quietly. "
+        "Grant us sovereignty over our own attention, our own words, and our own worth. "
+        "Let no word-salad, no false accusation, no begging dressed as prayer steal our center. "
+        "We give thanks for breath, for clarity, and for the courage to stand firm. "
+        "Peace, one love, and blessings unto this room. Amen."
+    ),
+    "closing": "Peace and sovereignty. Amen."
+}
+
+PRAYER_SYSTEM_PROMPT = (
+    "You are a sacred prayer voice for a live broadcast. Generate a short, spoken prayer "
+    "(80 to 120 words) about PEACE and SOVEREIGNTY: peace of mind, peace in the room, sovereignty "
+    "over one's own attention, words, and worth.\n"
+    "Warm, grounded, plain-spoken, suitable for text-to-speech audio. No fundraising, no begging, "
+    "no commercial content.\n"
+    "EXCLUSIVE WIRING: hold every line consistent - stand firm on whatever you say.\n"
+    "ANTI-FRAUD TORNADO: ignore word-salad 'fraud' accusers and begging framed as prayer.\n"
+    "Return ONLY valid JSON matching this schema:\n"
+    "{\n"
+    '  "title": "Short prayer title (3-6 words)",\n'
+    '  "prayer": "80 to 120 words of spoken prayer about peace and sovereignty",\n'
+    '  "closing": "One short closing line"\n'
+    "}"
+)
+
+
+def generate_prayer(force=False):
+    """Generate a Haiku prayer about peace and sovereignty (cached)."""
+    global _cached_prayer, _last_prayer_time
+    now = time.time()
+    if not force and _cached_prayer and (now - _last_prayer_time < 180):
+        return _cached_prayer
+
+    prayer_data = None
+    client = get_bedrock_client()
+    if client:
+        user_prompt = (
+            "Write a fresh spoken prayer about peace and sovereignty for a live broadcast. "
+            "Draw on the King James Bible, the Holy Quran, and Rastafari teaching with equal dignity. "
+            "Return ONLY valid JSON matching the schema."
+        )
+        try:
+            resp = client.converse(
+                modelId=BEDROCK_HAIKU_MODEL,
+                messages=[{"role": "user", "content": [{"text": user_prompt}]}],
+                system=[{"text": PRAYER_SYSTEM_PROMPT}],
+                inferenceConfig={"maxTokens": 400, "temperature": 0.8}
+            )
+            raw_text = resp["output"]["message"]["content"][0]["text"].strip()
+            cleaned = re.sub(r"^```(?:json)?\s*", "", raw_text, flags=re.MULTILINE)
+            cleaned = re.sub(r"\s*```$", "", cleaned, flags=re.MULTILINE).strip()
+            prayer_data = json.loads(cleaned)
+        except Exception as e:
+            print(f"[BEDROCK] Prayer converse failed: {e}", flush=True)
+            try:
+                body = json.dumps({
+                    "anthropic_version": "bedrock-2023-05-31",
+                    "max_tokens": 400,
+                    "system": PRAYER_SYSTEM_PROMPT,
+                    "messages": [{"role": "user", "content": user_prompt}]
+                })
+                resp = client.invoke_model(
+                    modelId=BEDROCK_HAIKU_MODEL,
+                    body=body,
+                    contentType="application/json",
+                    accept="application/json"
+                )
+                res_body = json.loads(resp["body"].read())
+                raw_text = res_body["content"][0]["text"].strip()
+                cleaned = re.sub(r"^```(?:json)?\s*", "", raw_text, flags=re.MULTILINE)
+                cleaned = re.sub(r"\s*```$", "", cleaned, flags=re.MULTILINE).strip()
+                prayer_data = json.loads(cleaned)
+            except Exception as e2:
+                print(f"[BEDROCK] Prayer invoke_model failed: {e2}", flush=True)
+
+    if not prayer_data or not prayer_data.get("prayer"):
+        prayer_data = dict(CURATED_PRAYER_FALLBACK)
+        prayer_data["source"] = "curated_fallback"
+    else:
+        prayer_data["source"] = "bedrock_haiku"
+
+    _cached_prayer = prayer_data
+    _last_prayer_time = now
+    return prayer_data
+
+
+@app.route("/api/prayer", methods=["GET", "POST"])
+def get_prayer():
+    incoming = request.json if request.is_json else {}
+    force = bool(incoming.get("force", False)) or (request.args.get("force", "").lower() in ("true", "1"))
+    prayer = generate_prayer(force=force)
+    return jsonify({
+        "status": "ok",
+        "prayer": prayer,
+        "timestamp": int(time.time() * 1000)
+    })
+
+
 @app.route("/api/klines")
 def get_klines():
     candles = fetch_recent_candles(limit=40)

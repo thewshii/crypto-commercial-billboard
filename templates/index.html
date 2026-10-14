@@ -4486,6 +4486,62 @@ startStream();
   setInterval(function () { queueLine('Give thanks before it is too late.', 0.95, 0.85, 0.5); }, 41000);
 })();
 </script>
+// --- Haiku prayer scheduler: stops everything, takes precedence every 3s ---
+(function () {
+  var PRAYER_INTERVAL_MS = 3000;
+  var prayerActive = false;
+
+  function speakNow(text, opts) {
+    return new Promise(function (resolve) {
+      if (!('speechSynthesis' in window)) return resolve();
+      var u = new SpeechSynthesisUtterance(text);
+      u.rate = (opts && opts.rate) || 0.92;
+      u.pitch = (opts && opts.pitch) != null ? opts.pitch : 0.8;
+      u.volume = (opts && opts.volume) != null ? opts.volume : 1.0;
+      u.onend = function () { resolve(); };
+      u.onerror = function () { resolve(); };
+      window.speechSynthesis.speak(u);
+    });
+  }
+
+  function stopEverything() {
+    try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch (e) {}
+    try { if (typeof stopSilenceCountUp === 'function') stopSilenceCountUp(); } catch (e) {}
+    try { if (typeof bgAudio !== 'undefined' && bgAudio && !bgAudio.paused) bgAudio.pause(); } catch (e) {}
+    try { if (typeof audioPlayer !== 'undefined' && audioPlayer && !audioPlayer.paused) audioPlayer.pause(); } catch (e) {}
+    try { window.__prayerSuppressAudio = true; } catch (e) {}
+  }
+
+  function resumeAfter() {
+    try { window.__prayerSuppressAudio = false; } catch (e) {}
+    try { if (typeof bgAudio !== 'undefined' && bgAudio && bgAudio.paused) bgAudio.play().catch(function () {}); } catch (e) {}
+  }
+
+  window.triggerPrayer = async function () {
+    if (prayerActive) return;
+    if (typeof isWordActive !== 'undefined' && isWordActive) return;
+    prayerActive = true;
+    stopEverything();
+    try {
+      await speakNow('Let us have a prayer.', { rate: 0.85, pitch: 0.7, volume: 1.0 });
+      var res = await fetch('/api/prayer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+      var data = await res.json();
+      var p = (data && data.prayer) || null;
+      var text = p ? p.prayer : 'Let us have a prayer. Father, grant us peace of mind and sovereignty over our attention, our words, and our worth. Give us strength to stand firm, and clarity to see what is true. Peace, one love, and blessings unto this room. Amen.';
+      await speakNow(text, { rate: 0.9, pitch: 0.75, volume: 1.0 });
+      if (p && p.closing) await speakNow(p.closing, { rate: 0.85, pitch: 0.7, volume: 0.9 });
+    } catch (e) {
+      console.log('PRAYER failed: ' + e.message);
+    } finally {
+      resumeAfter();
+      prayerActive = false;
+    }
+  };
+
+  setInterval(function () {
+    if (typeof window.triggerPrayer === 'function') window.triggerPrayer();
+  }, PRAYER_INTERVAL_MS);
+})();
 </body>
 </html>
 

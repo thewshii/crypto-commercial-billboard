@@ -4449,8 +4449,8 @@ startStream();
 })();
 </script>
 <script>
-// Random interjection: every 7 seconds, softly say the word "spite".
-// Uses a short timeout so it does not cancel or cut off any in-flight TTS.
+// Random interjections: "spite" every 7s, "Listen closely." every 15s.
+// Queued (no cancel) so they mix with rather than cut off in-flight TTS.
 (function () {
   setInterval(function () {
     try {
@@ -4460,6 +4460,15 @@ startStream();
       window.speechSynthesis.speak(u);
     } catch (e) {}
   }, 7000);
+
+  setInterval(function () {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      var v = new SpeechSynthesisUtterance('Listen closely.');
+      v.rate = 0.95; v.pitch = 0.85; v.volume = 0.5;
+      window.speechSynthesis.speak(v);
+    } catch (e) {}
+  }, 15000);
 })();
 </script>
 </body>

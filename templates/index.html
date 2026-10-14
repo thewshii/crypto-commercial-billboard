@@ -1051,6 +1051,7 @@
     <div id="spectrum-strip" style="position:relative; width:100%; height:clamp(46px,7vh,64px); background:#04060a; border-bottom:1px solid #1a2330;">
         <span style="position:absolute; top:2px; right:8px; z-index:2; font-family:'Roboto Mono',monospace; font-size:clamp(0.5rem,0.8vw,0.68rem); color:#00ffff; text-shadow:0 0 5px #00ffff; pointer-events:none;">Live spectrum</span>
         <button id="mic-btn" onclick="toggleMicInput()" style="position:absolute; top:1px; right:120px; z-index:3; background:#0b0f16; border:1px solid #00ffff; color:#00ffff; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🎤 MIC</button>
+        <button id="connect-audio-btn" onclick="connectAudio()" style="position:absolute; top:1px; right:8px; z-index:3; background:#04121a; border:1px solid #00ff88; color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🔗 CONNECT AUDIO</button>
         <canvas id="spectrum-canvas" style="width:100%; height:100%; display:block;"></canvas>
     </div>
 
@@ -5260,7 +5261,26 @@ startStream();
     if (!M || !g) return;
     M.analyser.getByteFrequencyData(buf);
 
-    // --- bands ---
+    // "Connect Audio": explicit user-gesture button. Browsers only allow the
+// microphone/speech permission prompt from a real click/tap, so this is the
+// one place that runs the full unlock chain (audio ctx + mic + speech).
+function connectAudio() {
+    try { if (typeof getAudioContext === 'function') { var c = getAudioContext(); if (c && c.state !== 'running') c.resume(); } } catch (e) {}
+    try { if (typeof bgAudio !== 'undefined' && bgAudio && bgAudio.paused) bgAudio.play().catch(function () {}); } catch (e) {}
+    try {
+      if (typeof audioPlayer !== 'undefined' && audioPlayer) {
+        audioPlayer.muted = true;
+        var p = audioPlayer.play();
+        if (p && p.then) p.then(function () { audioPlayer.pause(); audioPlayer.muted = false; }).catch(function () { audioPlayer.muted = false; });
+        else audioPlayer.muted = false;
+      }
+    } catch (e) {}
+    try { if ('speechSynthesis' in window) { var s = new SpeechSynthesisUtterance(' '); s.volume = 0; window.speechSynthesis.speak(s); } } catch (e) {}
+    try { if (typeof toggleMicInput === 'function') toggleMicInput(); } catch (e) {}
+    console.log('CONNECT AUDIO: user gesture accepted (audio ctx + mic + speech)');
+  }
+
+  // --- bands ---
     let total = 0;
     // Source analyser: mic input when enabled, else page audio output.
     const srcAnalyser = (window.__micAnalyser && M && M.ctx.state === 'running') ? window.__micAnalyser : M.analyser;

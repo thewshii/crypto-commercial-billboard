@@ -4853,6 +4853,11 @@ startStream();
   function startSilenceCountUp() {
     if (silenceCountTimer !== null) return;
     silenceCountUp = 0;
+    // Counting takes precedence over any other audio: cancel speech and
+    // pause background/slide media so nothing competes with the count.
+    try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch (e) {}
+    try { if (typeof bgAudio !== 'undefined' && bgAudio) bgAudio.pause(); } catch (e) {}
+    try { if (typeof audioPlayer !== 'undefined' && audioPlayer) audioPlayer.pause(); } catch (e) {}
     silenceCountTimer = setInterval(function () {
       silenceCountUp += 1;
       try {
@@ -4891,6 +4896,7 @@ startStream();
     return false;
   }
   function fireGuardCombo(hz, band) {
+    if (silenceCountTimer !== null) return; // counting takes precedence
     const combo = GUARD_COMBO_BAG[Math.floor(Math.random() * GUARD_COMBO_BAG.length)];
     mark(combo.tag + ' ' + fmtHz(hz), hz > 0 ? hz : 1000, band);
     logShift('GUARD-COMBO', fmtHz(hz), combo.tag);

@@ -4518,6 +4518,18 @@ startStream();
   const SPIKE_RELEASE_S = 0.5;
   const SPIKE_COOLDOWN_MS = 1000;
 
+  // ---- "Guard combos": special spike frequencies treated like in-game combos ----
+  const GUARD_COMBO_FREQS = [13000, 5500, 74, 404, 2300, 47]; // 13.0k, 5.5k, 74, 404, 2.3k, 47Hz howl
+  const GUARD_COMBO_TOL = 0.20;     // 20% tolerance
+  const GUARD_COMBO_BAG = [
+    { tag: 'GUARD COMBO!',  speech: 'Guard combo! Pow! You were given much — remember to give back, or feel the smite.' },
+    { tag: 'POW COMBO!',    speech: 'Pow combo! The righteous strike lands — give thanks while you still can.' },
+    { tag: 'SMITE!',        speech: 'Smite! The hammer falls — do not hoard what was freely given.' },
+    { tag: 'WRATH COMBO!',   speech: 'Wrath combo! Every gift demands a return — tithe or tremble.' },
+    { tag: 'DIVINE COMBO!', speech: 'Divine combo! The sky thunders — faithfulness multiplies the gift.' },
+    { tag: 'PILE COMBO!',   speech: 'Pile combo! Stacked high and struck down — be a cheerful giver.' }
+  ];
+
   const MARKER_MS = 2500;           // how long a shift label stays on the strip
   // =============================================================
 
@@ -4643,6 +4655,46 @@ startStream();
   let silenceSince = 0, silenceFired = false;
   let rateTarget = 1, rateNow = 1;
 
+  // inject pow animation style once
+  (function () {
+    if (document.getElementById('guard-combo-style')) return;
+    const st = document.createElement('style');
+    st.id = 'guard-combo-style';
+    st.textContent = '@keyframes guardPow{0%{transform:translate(-50%,-50%) scale(0.2);opacity:0}35%{transform:translate(-50%,-50%) scale(1.6);opacity:1}100%{transform:translate(-50%,-50%) scale(2.4);opacity:0}}';
+    (document.head || document.body).appendChild(st);
+  })();
+
+  function isGuardComboFreq(hz) {
+    for (let i = 0; i < GUARD_COMBO_FREQS.length; i++) {
+      const f = GUARD_COMBO_FREQS[i];
+      if (Math.abs(hz - f) / Math.max(1, f) <= GUARD_COMBO_TOL) return true;
+    }
+    return false;
+  }
+  function fireGuardCombo(hz, band) {
+    const combo = GUARD_COMBO_BAG[Math.floor(Math.random() * GUARD_COMBO_BAG.length)];
+    mark(combo.tag + ' ' + fmtHz(hz), hz > 0 ? hz : 1000, band);
+    logShift('GUARD-COMBO', fmtHz(hz), combo.tag);
+    // visual pow burst at band centre
+    try {
+      const x = band >= 0 ? ( (xForHz(bandStart[band] * binHz) + xForHz(bandEnd[band] * binHz)) / 2 ) : cw / 2;
+      const y = ch * 0.35;
+      const el = document.createElement('div');
+      el.textContent = combo.tag;
+      el.style.cssText = 'position:fixed;left:' + (canvas.getBoundingClientRect().left + x / (window.devicePixelRatio || 1)) + 'px;top:' + (canvas.getBoundingClientRect().top + y / (window.devicePixelRatio || 1)) + 'px;transform:translate(-50%,-50%);font-family:monospace;font-size:18px;font-weight:bold;color:#ffdd00;text-shadow:0 0 12px #ff6600,0 0 24px #ff0000;pointer-events:none;z-index:10060;animation:guardPow 1s forwards;';
+      document.body.appendChild(el);
+      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 1100);
+    } catch (e) {}
+    // tts
+    try {
+      if ('speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance(combo.speech);
+        u.rate = 1.05; u.pitch = 0.85; u.volume = 0.9;
+        window.speechSynthesis.speak(u);
+      }
+    } catch (e) {}
+  }
+
   function applyHowl(hz) {
     const ctx = M.ctx, t = ctx.currentTime;
     howlActive = true; howlLastSeen = performance.now(); howlHz = hz;
@@ -4655,6 +4707,7 @@ startStream();
     rateTarget = hz > 1000 ? 1 - HOWL_RATE_SHIFT : 1 + HOWL_RATE_SHIFT; // nudge content away from the howl
     mark('HOWL ' + fmtHz(hz) + ' — notched', hz, -1);
     logShift('HOWL', fmtHz(hz), 'notch Q' + HOWL_NOTCH_Q + ', band ' + HOWL_BAND_CUT_DB + 'dB, playbackRate ' + rateTarget.toFixed(2));
+    if (isGuardComboFreq(hz)) fireGuardCombo(hz, -1);
   }
   function releaseHowl() {
     const ctx = M.ctx, t = ctx.currentTime;
@@ -4677,6 +4730,7 @@ startStream();
     M.spikePeak.gain.linearRampToValueAtTime(0, t + SPIKE_ATTACK_S + SPIKE_RELEASE_S);
     mark('SPIKE band ' + (band + 1) + ' ' + fmtHz(hz) + ' — ducked', hz, band);
     logShift('SPIKE', 'band ' + (band + 1) + ' ~' + fmtHz(hz) + ' (+' + Math.round(jump) + ')', 'duck ' + SPIKE_DUCK_DB + 'dB ' + (SPIKE_ATTACK_S * 1000) + 'ms attack, ' + (SPIKE_RELEASE_S * 1000) + 'ms release');
+    if (isGuardComboFreq(hz)) fireGuardCombo(hz, band);
   }
   function applySilence() {
     let action = 'none';

@@ -69,6 +69,15 @@ def get_bedrock_client():
 
 app = Flask(__name__)
 
+@app.after_request
+def add_cache_headers(response):
+    # Static media (sounds, images) is versioned by filename; cache it
+    # long-lived so repeat rotations hit the browser cache instead of
+    # re-downloading ~1.4 MB WAVs on every cycle.
+    if request.path.startswith("/sounds/") or request.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    return response
+
 @app.route("/")
 def index():
     return render_template("index.html")

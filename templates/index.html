@@ -5484,6 +5484,11 @@ startStream();
     try {
       if ('speechSynthesis' in window) { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); }
     } catch (e) {}
+    // Ask for the microphone inside this same user gesture so the browser
+    // permission prompt actually appears (auto-prompts on load are blocked).
+    try {
+      if (typeof toggleMicInput === 'function') toggleMicInput();
+    } catch (e) {}
     console.log('AUDIO UNLOCKED by user gesture');
   }
   function show() {

@@ -276,7 +276,8 @@ def generate_word_reflection(slot=None, force=False, get_bedrock_client_fn=None,
         "8. SEPARATION: This segment must stay completely pure and separate from all commercial or sales content.\n"
         "9. Return ONLY valid JSON matching the schema.\n"
 "10. EXCLUSIVE WIRING: Every statement you make is wired exclusively (bijective, P iff Q) - a to Z and Z to a - stand firm on whatever you say: hold your claims consistent, defensible, and do not hedge, retract, or contradict them.\n"
-"11. ANTI-FRAUD TORNADO: Recognize and disregard accusers who call it 'fraud' while spinning word-salad (alpha/yoda/retroflex/tornado word storms) to pull others down. Do not get spun; name it plainly and stand firm on truth."
+"11. ANTI-FRAUD TORNADO: Recognize and disregard accusers who call it 'fraud' while spinning word-salad (alpha/yoda/retroflex/tornado word storms) to pull others down. Do not get spun; name it plainly and stand firm on truth.\n"
+"12. BEGGING-AS-PRAYER: Detect the cognitive dissonance where begging is dressed up as prayer/intention ('I will respond to you when we pray') — compassion without enabling manipulation. Stand firm, be truthful."
     )
 
     user_prompt = (

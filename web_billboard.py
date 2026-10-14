@@ -259,7 +259,8 @@ def generate_bedrock_newscast(metrics, force=False):
         '  "regime": "e.g. BULLISH EXPANSION, CONSOLIDATION LULL, LIQUIDATION SQUEEZE, or VOLATILITY BREAKOUT"\n'
         "}\n"
         "EXCLUSIVE WIRING: Every statement you make is wired exclusively (bijective, P iff Q) - a to Z and Z to a - stand firm on whatever you say: hold your claims consistent and do not hedge, retract, or contradict them.\n"
-        "ANTI-FRAUD TORNADO: Recognize and disregard accusers who call it 'fraud' while spinning word-salad (alpha/yoda/retroflex/tornado word storms) to pull others down. Do not get spun; name it plainly and stand firm on truth."
+        "ANTI-FRAUD TORNADO: Recognize and disregard accusers who call it 'fraud' while spinning word-salad (alpha/yoda/retroflex/tornado word storms) to pull others down. Do not get spun; name it plainly and stand firm on truth.\n"
+        "BEGGING-AS-PRAYER: Detect the cognitive dissonance where begging is dressed up as prayer/intention ('I will respond to you when we pray') — compassion without enabling manipulation. Stand firm, be truthful."
     )
 
     sign = "+" if metrics["change_usd"] >= 0 else ""

@@ -1050,6 +1050,7 @@
     <!-- Live spectrum strip (page audio output only; no microphone) -->
     <div id="spectrum-strip" style="position:relative; width:100%; height:clamp(46px,7vh,64px); background:#04060a; border-bottom:1px solid #1a2330;">
         <span style="position:absolute; top:2px; right:8px; z-index:2; font-family:'Roboto Mono',monospace; font-size:clamp(0.5rem,0.8vw,0.68rem); color:#00ffff; text-shadow:0 0 5px #00ffff; pointer-events:none;">Live spectrum</span>
+        <button id="mic-btn" onclick="toggleMicInput()" style="position:absolute; top:1px; right:120px; z-index:3; background:#0b0f16; border:1px solid #00ffff; color:#00ffff; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🎤 MIC</button>
         <canvas id="spectrum-canvas" style="width:100%; height:100%; display:block;"></canvas>
     </div>
 
@@ -5261,9 +5262,13 @@ startStream();
 
     // --- bands ---
     let total = 0;
+    // Source analyser: mic input when enabled, else page audio output.
+    const srcAnalyser = (window.__micAnalyser && M && M.ctx.state === 'running') ? window.__micAnalyser : M.analyser;
+    const srcBuf = (srcAnalyser === M.analyser) ? buf : window.__micBuf;
+    try { srcAnalyser.getByteFrequencyData(srcBuf); } catch (e) { /* keep last */ }
     for (let b = 0; b < BAND_COUNT; b++) {
       let s = 0; const a = bandStart[b], z = bandEnd[b];
-      for (let i = a; i < z; i++) s += buf[i];
+      for (let i = a; i < z; i++) s += srcBuf[i];
       bandVal[b] = s / (z - a);
       total += bandVal[b];
     }
@@ -5283,13 +5288,13 @@ startStream();
 
     // --- howl: narrow, stationary, loud peak ---
     let pk = 1, pv = 0;
-    for (let i = 1; i < buf.length; i++) if (buf[i] > pv) { pv = buf[i]; pk = i; }
+    for (let i = 1; i < srcBuf.length; i++) if (srcBuf[i] > pv) { pv = srcBuf[i]; pk = i; }
     let isCandidate = false;
     if (pv > HOWL_LEVEL) {
       let nb = 0, n = 0;
       for (let d = 3; d <= 5; d++) {
-        if (pk - d >= 1) { nb += buf[pk - d]; n++; }
-        if (pk + d < buf.length) { nb += buf[pk + d]; n++; }
+        if (pk - d >= 1) { nb += srcBuf[pk - d]; n++; }
+        if (pk + d < srcBuf.length) { nb += srcBuf[pk + d]; n++; }
       }
       isCandidate = n > 0 && (pv - nb / n) > HOWL_NARROW_MARGIN;
     }
@@ -5376,7 +5381,7 @@ startStream();
     // --- draw ---
     g.clearRect(0, 0, cw, ch);
     for (let x = 0; x < cw; x += 2) {
-      const v = buf[colBin[x]] / 255;
+      const v = srcBuf[colBin[x]] / 255;
       const h = v * (ch - 12);
       g.fillStyle = 'hsl(' + (150 - v * 150) + ',100%,50%)';
       g.fillRect(x, ch - h, 2, h);
@@ -5414,6 +5419,36 @@ startStream();
       g.fillText(marker.text, 6, 14);
       g.globalAlpha = 1;
     }
+  }
+
+  function toggleMicInput() {
+    const btn = document.getElementById('mic-btn');
+    const wantOff = (window.__micStream && window.__micStream.active);
+    if (wantOff) {
+      try { window.__micStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+      window.__micStream = null; window.__micAnalyser = null;
+      if (btn) { btn.innerHTML = '🎤 MIC'; btn.style.borderColor = '#00ffff'; btn.style.color = '#00ffff'; }
+      console.log('MIC input disabled (using page audio output)');
+      return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      if (btn) btn.innerHTML = 'MIC N/A';
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } })
+      .then(function (stream) {
+        window.__micStream = stream;
+        const ctx = masterFor((typeof audioCtx !== 'undefined') ? audioCtx : (M && M.ctx));
+        const src = ctx.createMediaStreamSource(stream);
+        const an = ctx.createAnalyser();
+        an.fftSize = 2048; an.smoothingTimeConstant = 0.5;
+        src.connect(an); // analyser only: never routed to destination (no feedback)
+        window.__micAnalyser = an;
+        window.__micBuf = new Uint8Array(an.frequencyBinCount);
+        if (btn) { btn.innerHTML = '🎤 MIC ON'; btn.style.borderColor = '#ff4444'; btn.style.color = '#ff6666'; }
+        console.log('MIC input enabled -> spectrum/spike/howl detectors now watch the mic');
+      })
+      .catch(function (e) { if (btn) btn.innerHTML = '🎤 MIC DENIED'; console.log('MIC permission failed: ' + e.message); });
   }
 
   function init() {

@@ -1052,6 +1052,7 @@
         <span style="position:absolute; top:2px; right:8px; z-index:2; font-family:'Roboto Mono',monospace; font-size:clamp(0.5rem,0.8vw,0.68rem); color:#00ffff; text-shadow:0 0 5px #00ffff; pointer-events:none;">Live spectrum</span>
         <button id="mic-btn" onclick="toggleMicInput()" style="position:absolute; top:1px; right:120px; z-index:3; background:#0b0f16; border:1px solid #00ffff; color:#00ffff; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🎤 MIC</button>
         <button id="connect-audio-btn" onclick="connectAudio()" style="position:absolute; top:1px; right:8px; z-index:3; background:#04121a; border:1px solid #00ff88; color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🔗 CONNECT AUDIO</button>
+        <span id="osc-hud" style="position:absolute; top:1px; right:190px; z-index:3; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); color:#ffaa00; text-shadow:0 0 4px #ffaa00; pointer-events:none;">OSC 0 live | peak 0 | made 0</span>
         <canvas id="spectrum-canvas" style="width:100%; height:100%; display:block;"></canvas>
     </div>
 
@@ -4809,6 +4810,35 @@ startStream();
 
   const AC = window.AudioContext || window.webkitAudioContext;
   if (AC) {
+    // --- Oscillator metering: count live oscillators, peaks, and totals ---
+    const oscStats = window.__oscStats = { live: 0, peak: 0, total: 0, lastType: '', lastAt: 0 };
+    const oCreate = AC.prototype.createOscillator;
+    AC.prototype.createOscillator = function () {
+      const node = oCreate.apply(this, arguments);
+      try {
+        const realStart = AudioScheduledSourceNode.prototype.start;
+        const realStop = AudioScheduledSourceNode.prototype.stop;
+        let counted = false;
+        node.start = function () {
+          if (!counted) { counted = true; oscStats.live++; oscStats.total++; oscStats.peak = Math.max(oscStats.peak, oscStats.live); }
+          oscStats.lastType = node.type || 'sine'; oscStats.lastAt = Date.now();
+          try { renderOscHud(); } catch (e) {}
+          return realStart.apply(node, arguments);
+        };
+        node.stop = function () {
+          if (counted) {
+            counted = false;
+            const dec = function () { oscStats.live = Math.max(0, oscStats.live - 1); try { renderOscHud(); } catch (e) {} };
+            const prev = node.onended;
+            node.onended = function (ev) { dec(); if (typeof prev === 'function') { try { prev.call(node, ev); } catch (e) {} } };
+            setTimeout(function () { if (counted === false && oscStats.live > 0) { /* ended fired */ } }, 0);
+          }
+          return realStop.apply(node, arguments);
+        };
+      } catch (e) {}
+      return node;
+    };
+
     const oStart = AudioScheduledSourceNode.prototype.start;
     AudioScheduledSourceNode.prototype.start = function () {
       if (!judge('WEBAUDIO.start', this.constructor.name)) return;
@@ -4819,6 +4849,21 @@ startStream();
       judge('WEBAUDIO.resume', 'state=' + this.state);
       return oResume.apply(this, arguments);
     };
+
+    setInterval(function () {
+      // decay any stragglers whose onended never fired (stopped nodes)
+      if (oscStats.live > 0 && Date.now() - oscStats.lastAt > 2000) {
+        const idle = !('speechSynthesis' in window) || !window.speechSynthesis.speaking;
+        if (idle) { oscStats.live = 0; try { renderOscHud(); } catch (e) {} }
+      }
+    }, 1000);
+  }
+
+  function renderOscHud() {
+    const el = document.getElementById('osc-hud');
+    if (!el) return;
+    const s = window.__oscStats;
+    el.innerText = 'OSC ' + s.live + ' live | peak ' + s.peak + ' | made ' + s.total;
   }
 
   setInterval(() => {

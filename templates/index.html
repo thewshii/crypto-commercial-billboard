@@ -1008,6 +1008,12 @@
                     <span id="regime-flips-val">0</span> flips per 10 min
                 </span>
             </div>
+
+            <!-- HOSTILITY: pops up at 13 flips, counts up 13 -> 18 -->
+            <div id="hostility-wrap" style="display:none; align-items:center; gap:4px;" title="Hostility growing: flips at 13+ indicate hostility rising. Counts up 13 to 18.">
+                <span style="color:#888; font-size:clamp(0.52rem, 0.8vw, 0.68rem); font-weight:bold;">HOSTILITY:</span>
+                <span id="hostility-val" style="color:#ff003c; font-weight:900; font-size:clamp(0.72rem, 1.1vw, 0.95rem); text-shadow:0 0 6px #ff003c;">13</span>
+            </div>
             
             <!-- Hidden backward-compatibility element for hawkes-regime id if ever queried -->
             <span id="hawkes-regime" style="display:none;">EQUILIBRIUM</span>
@@ -2456,6 +2462,15 @@
         let antiPeaceByTension = false;
         let antiPeaceByImbalance = false;
         let hasSpokenBrinkInEpisode = false;
+        // Brink de-escalation ladder state (Voss, not Hansen).
+        // Dwell timers: 0 = not currently in the band.
+        let brink40Since = 0;
+        let brink100Since = 0;
+        let brinkTier1Fired = false; // brink >= 40 held 1.5s -> "please calm down"
+        let brinkTier2Fired = false; // brink == 100 held > 1s -> "you don't need to do this"
+        let brinkTier3Fired = false; // brink == 100 held >= 3s -> beans/gifts call to action
+        let fullStopAfterLadderPending = false; // ladder closed with speech -> queue full-stop closer
+        let hostility18Fired = false; // flips >= 18 -> "universal arrival" line, once per crossing
         let antiPeaceByEta = false;   // ANTI-PEACE entered via eta band: held until eta leaves 0.40-0.60 (prevents 1s flip-flop)
         let regimeFlipHistory = [];   // timestamps of regime flips in trailing 10 minutes
         let currentBPM = 14;
@@ -2551,7 +2566,88 @@
                 const utter = new SpeechSynthesisUtterance(phrase);
                 utter.rate = 0.92;
                 utter.pitch = 0.45;
+                // When the jealousy line plays once through, trigger the Word
+                // segment — same as pressing the THE WORD button.
+                utter.onend = function () { if (typeof triggerManualWordSegment === 'function') triggerManualWordSegment(); };
+                utter.onerror = function () { if (typeof triggerManualWordSegment === 'function') triggerManualWordSegment(); };
                 window.speechSynthesis.speak(utter);
+            } else if (typeof triggerManualWordSegment === 'function') {
+                // No browser speech: give the phone TTS line ~6s, then the Word.
+                setTimeout(triggerManualWordSegment, 6000);
+            }
+        }
+
+        // Shared Brink TTS: project /api/speak path + browser speech fallback.
+        function speakBrinkLine(phrase, voice) {
+            try {
+                fetch("/api/speak", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: phrase })
+                }).catch(() => {});
+            } catch (e) {}
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance(phrase);
+                utter.rate = (voice && voice.rate) || 0.92;
+                utter.pitch = (voice && voice.pitch) || 0.45;
+                window.speechSynthesis.speak(utter);
+            }
+        }
+
+        // FULL STOP SEGMENT: own schedule. Pauses the show, speaks a simple
+        // English full-stop message three times, then resumes.
+        let isFullStopActive = false;
+        let fullStopRepeatsLeft = 0;
+
+        function playFullStopSegment() {
+            if (isFullStopActive || isWordActive || isLiqInterrupting) return;
+            isFullStopActive = true;
+            // Pause commercials, background music, and SFX (mirrors the Word segment).
+            if (slideTimer) clearTimeout(slideTimer);
+            if (memoryTimerInterval) { clearInterval(memoryTimerInterval); memoryTimerInterval = null; }
+            window.speechSynthesis.cancel();
+            bgAudio.pause();
+            audioPlayer.pause();
+            fullStopRepeatsLeft = 3;
+            speakFullStopOnce();
+        }
+
+        function speakFullStopOnce() {
+            const msg = "Full stop. Stop right here. Take a breath. Let it go. Full stop.";
+            try {
+                fetch("/api/speak", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: msg })
+                }).catch(() => {});
+            } catch (e) {}
+            if ('speechSynthesis' in window) {
+                const utter = new SpeechSynthesisUtterance(msg);
+                utter.rate = 0.9;
+                utter.pitch = 0.6;
+                utter.onend = function () {
+                    fullStopRepeatsLeft -= 1;
+                    if (fullStopRepeatsLeft > 0) {
+                        setTimeout(speakFullStopOnce, 1000);
+                    } else {
+                        endFullStopSegment();
+                    }
+                };
+                utter.onerror = function () { endFullStopSegment(); };
+                window.speechSynthesis.speak(utter);
+            } else {
+                // No browser speech: phone TTS only, one pass, then resume.
+                setTimeout(endFullStopSegment, 8000);
+            }
+        }
+
+        function endFullStopSegment() {
+            isFullStopActive = false;
+            fullStopRepeatsLeft = 0;
+            window.speechSynthesis.cancel();
+            if (!isLiqInterrupting && !isWordActive) {
+                renderSlide();
             }
         }
 
@@ -2796,7 +2892,11 @@
                     antiPeaceByTension = tensionTriggered;
                     antiPeaceByImbalance = imbalanceTriggered;
                     regimeFlipHistory.push(now);
+                    // The ladder closes with this episode: if it spoke, queue the full-stop closer.
+                    if (hasSpokenBrinkInEpisode || brinkTier1Fired || brinkTier2Fired || brinkTier3Fired) fullStopAfterLadderPending = true;
                     hasSpokenBrinkInEpisode = false; // Reset for new regime episode
+                    brink40Since = 0; brink100Since = 0;
+                    brinkTier1Fired = false; brinkTier2Fired = false; brinkTier3Fired = false;
                     triggerRegimeShiftNewsAnnouncement("ANTI-PEACE", {
                         byTension: tensionTriggered,
                         byImbalance: imbalanceTriggered,
@@ -2827,7 +2927,11 @@
                     antiPeaceByTension = false;
                     antiPeaceByImbalance = false;
                     regimeFlipHistory.push(now);
+                    // The ladder closes with this episode: if it spoke, queue the full-stop closer.
+                    if (hasSpokenBrinkInEpisode || brinkTier1Fired || brinkTier2Fired || brinkTier3Fired) fullStopAfterLadderPending = true;
                     hasSpokenBrinkInEpisode = false; // Reset for new regime episode
+                    brink40Since = 0; brink100Since = 0;
+                    brinkTier1Fired = false; brinkTier2Fired = false; brinkTier3Fired = false;
                     triggerRegimeShiftNewsAnnouncement("BUSCANDO PEACE", {
                         score: normScore,
                         bpm: currentBPM
@@ -2895,6 +2999,44 @@
                 triggerRegimeBrinkTTS();
             }
 
+            // BRINK DE-ESCALATION LADDER (Voss, not Hansen) + 100% CALL TO ACTION.
+            // Evaluated on the 500ms tick. Dwell timers clear when brink drops
+            // below the band. Tiers are monotonic: once a higher tier fires,
+            // lower tiers stay silent for the rest of the episode.
+            // Tier 1: brink >= 40 held 1.5s -> "um, please calm down"
+            // Tier 2: brink == 100 held > 1s -> "you don't need to do this"
+            // Tier 3: brink == 100 held >= 3s -> beans/gifts call to action
+            const _brinkNow = Date.now();
+            if (currentBrink >= 40) {
+                if (!brink40Since) brink40Since = _brinkNow;
+            } else {
+                brink40Since = 0;
+            }
+            if (currentBrink >= 100) {
+                if (!brink100Since) brink100Since = _brinkNow;
+            } else {
+                brink100Since = 0;
+            }
+            if (!isLiqInterrupting && !isWordActive) {
+                if (brink100Since && _brinkNow - brink100Since >= 3000 && !brinkTier3Fired) {
+                    brinkTier3Fired = true;
+                    speakBrinkLine("The room is right at the edge. Their wealth in the way of God is like a single grain which grows seven ears. If you're feeling this, recharge your diamonds, send your beans, ring the bell.");
+                } else if (brink100Since && _brinkNow - brink100Since > 1000 && !brinkTier2Fired && !brinkTier3Fired) {
+                    brinkTier2Fired = true;
+                    speakBrinkLine("You don't need to do this. It sounds like things are getting heated. Let's slow it down together.", { rate: 0.85, pitch: 0.4 });
+                } else if (brink40Since && _brinkNow - brink40Since >= 1500 && !brinkTier1Fired && !brinkTier2Fired && !brinkTier3Fired) {
+                    brinkTier1Fired = true;
+                    speakBrinkLine("Um, please calm down. Let's take a breath here.", { rate: 0.88, pitch: 0.45 });
+                }
+            }
+
+            // After the ladder closes (episode flipped + regime news done),
+            // play the full-stop segment once as the closer.
+            if (fullStopAfterLadderPending && !isRegimeNewsSpeaking && !isWordActive && !isLiqInterrupting && !isFullStopActive) {
+                fullStopAfterLadderPending = false;
+                playFullStopSegment();
+            }
+
             // STEP 5 — OVERLAY UI UPDATES
             const scoreEl = document.getElementById("hawkes-score");
             const etaEl = document.getElementById("hawkes-eta");
@@ -2912,6 +3054,24 @@
             if (bpmValEl) bpmValEl.innerText = currentBPM;
             if (brinkValEl) brinkValEl.innerText = `${currentBrink}%`;
             if (flipsValEl) flipsValEl.innerText = flipsPer10m;
+            // HOSTILITY: pops up at 13 flips, counts up 13 -> 18, caps at 18.
+            const hostilityWrapEl = document.getElementById("hostility-wrap");
+            const hostilityValEl = document.getElementById("hostility-val");
+            if (hostilityWrapEl && hostilityValEl) {
+                if (flipsPer10m >= 13) {
+                    hostilityWrapEl.style.display = "flex";
+                    hostilityValEl.innerText = Math.min(flipsPer10m, 18);
+                } else {
+                    hostilityWrapEl.style.display = "none";
+                }
+            }
+            // HOSTILITY MAX: flips >= 18 -> universal arrival line, once per crossing.
+            if (flipsPer10m >= 18 && !hostility18Fired && !isWordActive && !isLiqInterrupting) {
+                hostility18Fired = true;
+                speakBrinkLine("You have reached a position of universal arrival. Prepare for your new black hole.");
+            } else if (flipsPer10m < 18) {
+                hostility18Fired = false;
+            }
             if (flavorEl) {
                 flavorEl.innerText = flavorText;
                 if (activeRegimeNewsBanner && now < activeRegimeNewsExpires) {
@@ -3835,6 +3995,9 @@ startStream();
         // Check 3x daily "Pause for the Word" schedule (every 30s)
         setInterval(checkWordSchedule, 30000);
 
+        // Full-stop segment on its own schedule (every 2 hours)
+        setInterval(playFullStopSegment, 7200000);
+
         function startStream() {
     document.getElementById("overlay").style.display = "none";
     getAudioContext();
@@ -4542,7 +4705,9 @@ startStream();
     { tag: 'SMITE!',        speech: 'Smite! The hammer falls — do not hoard what was freely given.' },
     { tag: 'WRATH COMBO!',   speech: 'Wrath combo! Every gift demands a return — tithe or tremble.' },
     { tag: 'DIVINE COMBO!', speech: 'Divine combo! The sky thunders — faithfulness multiplies the gift.' },
-    { tag: 'PILE COMBO!',   speech: 'Pile combo! Stacked high and struck down — be a cheerful giver.' }
+    { tag: 'PILE COMBO!',   speech: 'Pile combo! Stacked high and struck down — be a cheerful giver.' },
+    { tag: 'BIJECTION!',    speech: 'Bijection! One-to-one and onto. Every input maps to exactly one output, and every output traces back to exactly one input — so it inverts perfectly. Trying to dislexify a definition that clean is ridiculous.', sfx: 'jetsons' },
+    { tag: 'KILLER COMBO!', speech: 'Killer combo! Double hit! Triple threat! Unstoppable!' }
   ];
 
   const MARKER_MS = 2500;           // how long a shift label stays on the strip
@@ -4668,6 +4833,45 @@ startStream();
   // ---------- Detector state ----------
   let howlBin = -1, howlCount = 0, howlActive = false, howlLastSeen = 0, howlHz = 0;
   let silenceSince = 0, silenceFired = false;
+  let silenceLineSpeaking = false; // Silence-path line (Neuralyzer/comfort) in flight -> count-up pauses
+  let comfortIdx = 0; // 0 -> first-mover comfort, 1 -> women's comfort, 2 -> meditation question, cycles each silence episode
+  // Pulsation: same frequencies wobbling back and forth in a small band
+  let pulsationPeaks = []; // ring buffer of recent peak bins
+  const PULSATION_FRAMES = 45; // ~0.75s at 60fps
+  const PULSATION_MAX_RANGE = 3; // bins of wobble
+  const PULSATION_MIN_REVERSALS = 4; // back-and-forth direction changes
+  let pulsationFired = false;
+  let pulsationRecognizing = false; // recognition window open -> silence path pauses
+  let silenceCountUp = 0;       // seconds counted in the current analyzer-quiet stretch
+  let silenceCountTimer = null; // interval handle for the spoken count-up
+
+  // Marathon silence timer: while the analyzer is quiet, TTS counts up
+  // 1, 2, 3... one number per second, until sound returns. Browser TTS
+  // only (no /api/speak) so the phone TTS isn't spammed once a second.
+  // The count speaks the CURRENT second (cancel before each number) so it
+  // never falls behind. Pauses for the Word / liquidation breaks.
+  function startSilenceCountUp() {
+    if (silenceCountTimer !== null) return;
+    silenceCountUp = 0;
+    silenceCountTimer = setInterval(function () {
+      silenceCountUp += 1;
+      try {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(String(silenceCountUp));
+          u.rate = 1.0; u.pitch = 0.8; u.volume = 0.9;
+          window.speechSynthesis.speak(u);
+        }
+      } catch (e) {}
+    }, 1000);
+  }
+  function stopSilenceCountUp() {
+    if (silenceCountTimer !== null) {
+      clearInterval(silenceCountTimer);
+      silenceCountTimer = null;
+    }
+    silenceCountUp = 0;
+  }
   let rateTarget = 1, rateNow = 1;
 
   // inject pow animation style once
@@ -4706,6 +4910,27 @@ startStream();
         const u = new SpeechSynthesisUtterance(combo.speech);
         u.rate = 1.05; u.pitch = 0.85; u.volume = 0.9;
         window.speechSynthesis.speak(u);
+      }
+    } catch (e) {}
+    // Jetsons-style flying-car warble, synthesized live (no audio file):
+    // warbling pitch sweeps, like a retro spaceship passing by.
+    try {
+      if (combo.sfx === 'jetsons' && M && M.ctx) {
+        const ctx = M.ctx, t0 = ctx.currentTime;
+        const osc = ctx.createOscillator(), g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, t0);
+        osc.frequency.exponentialRampToValueAtTime(1250, t0 + 0.35);
+        osc.frequency.exponentialRampToValueAtTime(260, t0 + 0.7);
+        osc.frequency.exponentialRampToValueAtTime(1450, t0 + 1.05);
+        osc.frequency.exponentialRampToValueAtTime(420, t0 + 1.4);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.12, t0 + 0.08);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.5);
+        osc.connect(g);
+        g.connect((M.input) || ctx.destination);
+        osc.start(t0);
+        osc.stop(t0 + 1.6);
       }
     } catch (e) {}
   }
@@ -4747,9 +4972,204 @@ startStream();
     logShift('SPIKE', 'band ' + (band + 1) + ' ~' + fmtHz(hz) + ' (+' + Math.round(jump) + ')', 'duck ' + SPIKE_DUCK_DB + 'dB ' + (SPIKE_ATTACK_S * 1000) + 'ms attack, ' + (SPIKE_RELEASE_S * 1000) + 'ms release');
     if (isGuardComboFreq(hz)) fireGuardCombo(hz, band);
   }
+  // Neuralyzer (Men in Black concept): 5s+ of silence -> white flash +
+  // memory-wipe line, then the normal silence branch proceeds. Original
+  // line, not a movie quote. No meter state is reset. Pauses the silence
+  // count-up while the line speaks; the count restarts at 1 after.
+  function fireNeuralyzer() {
+    try {
+      const word = (typeof isWordActive !== 'undefined' && isWordActive);
+      const liq = (typeof isLiqInterrupting !== 'undefined' && isLiqInterrupting);
+      if (word || liq) return;
+      stopSilenceCountUp();
+      // White flash overlay (the Neuralyzer flash)
+      const flash = document.createElement('div');
+      flash.style.cssText = 'position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:99999;transition:opacity 0.12s ease;';
+      document.body.appendChild(flash);
+      requestAnimationFrame(function () {
+        flash.style.opacity = '1';
+        setTimeout(function () {
+          flash.style.transition = 'opacity 0.7s ease';
+          flash.style.opacity = '0';
+          setTimeout(function () { flash.remove(); }, 750);
+        }, 120);
+      });
+      if ('speechSynthesis' in window) {
+        silenceLineSpeaking = true;
+        const u = new SpeechSynthesisUtterance('Neuralyzer flash. The last few seconds never happened. Clean slate.');
+        u.rate = 1.0; u.pitch = 0.6; u.volume = 0.9;
+        // Chain a comfort after the wipe lands: cycle first-mover /
+        // women's comfort / meditation question each silence episode.
+        u.onend = function () {
+          if (comfortIdx === 0) speakFirstMoverComfort();
+          else if (comfortIdx === 1) speakWomenComfort();
+          else speakMeditationQuestion();
+          comfortIdx = (comfortIdx + 1) % 3;
+        };
+        u.onerror = function () { silenceLineSpeaking = false; };
+        window.speechSynthesis.speak(u);
+      }
+    } catch (e) {}
+  }
+
+  // First-mover comfort: spoken after the Neuralyzer line, once per
+  // silence episode. The count-up stays paused until this line ends.
+  function speakFirstMoverComfort() {
+    try {
+      const text = "If you were the first to do it, I know it feels heavy. Being first costs more than it gives. You paid for the map everyone else walks on now. You are not behind. You are the reason the road exists.";
+      try {
+        fetch("/api/speak", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: text })
+        }).catch(() => {});
+      } catch (e) {}
+      if ('speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 0.92; u.pitch = 0.6; u.volume = 0.9;
+        u.onend = function () { silenceLineSpeaking = false; };
+        u.onerror = function () { silenceLineSpeaking = false; };
+        window.speechSynthesis.speak(u);
+      } else {
+        silenceLineSpeaking = false;
+      }
+    } catch (e) { silenceLineSpeaking = false; }
+  }
+
+  // Meditation question: ask the room if they have a practice of
+  // meditation — solitude and peace of mind. Not a prescription, not
+  // medical advice, not telling anyone to practice anything unlicensed.
+  // Just asking.
+  function speakMeditationQuestion() {
+    try {
+      const text = "Let me ask you something. Do you have a practice of meditation? I am not telling you to practice anything, and this is not medical advice. I am just asking, do you practice solitude and peace of mind?";
+      try {
+        fetch("/api/speak", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: text })
+        }).catch(() => {});
+      } catch (e) {}
+      if ('speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 0.92; u.pitch = 0.6; u.volume = 0.9;
+        u.onend = function () { silenceLineSpeaking = false; };
+        u.onerror = function () { silenceLineSpeaking = false; };
+        window.speechSynthesis.speak(u);
+      } else {
+        silenceLineSpeaking = false;
+      }
+    } catch (e) { silenceLineSpeaking = false; }
+  }
+
+  // Women's comfort: spoken after the Neuralyzer line, alternating with
+  // the first-mover comfort each silence episode. Direct address: it is
+  // not too late, the life of work was not for nothing.
+  function speakWomenComfort() {
+    try {
+      const text = "To the women in this room, to the female energy holding this together, it is not too late. I know it feels like you have done too much already, given too much already, worked your whole life for no real reward. Your work was not wasted. Your heart carried this. It is not too late. Your reward is still coming.";
+      try {
+        fetch("/api/speak", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: text })
+        }).catch(() => {});
+      } catch (e) {}
+      if ('speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 0.92; u.pitch = 0.6; u.volume = 0.9;
+        u.onend = function () { silenceLineSpeaking = false; };
+        u.onerror = function () { silenceLineSpeaking = false; };
+        window.speechSynthesis.speak(u);
+      } else {
+        silenceLineSpeaking = false;
+      }
+    } catch (e) { silenceLineSpeaking = false; }
+  }
+
+  // Pulsation response: cut every audio, then attempt total recognition.
+  // Page audio is cut so the mic can hear the real signal cleanly.
+  // Audio resumes after the recognition window ends.
+  function applyPulsation() {
+    try {
+      if (pulsationRecognizing) return;
+      pulsationRecognizing = true;
+      stopSilenceCountUp();
+      const wasBgPlaying = (typeof bgAudio !== 'undefined' && bgAudio && !bgAudio.paused);
+      const wasPlayerPlaying = (typeof audioPlayer !== 'undefined' && audioPlayer && !audioPlayer.paused);
+      // Cut every audio: all media elements + speech.
+      try { document.querySelectorAll('audio, video').forEach(function (el) { el.pause(); }); } catch (e) {}
+      try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch (e) {}
+      mark('PULSATION — all audio cut, total recognition', 0, -1);
+      logShift('PULSATION', 'same frequencies oscillating', 'cut audio -> total recognition');
+      function finishRecognition() {
+        pulsationRecognizing = false;
+        try {
+          if (wasBgPlaying && typeof bgAudio !== 'undefined' && bgAudio && bgAudio.paused) bgAudio.play().catch(() => {});
+          if (wasPlayerPlaying && typeof audioPlayer !== 'undefined' && audioPlayer && audioPlayer.paused) audioPlayer.play().catch(() => {});
+        } catch (e) {}
+      }
+      // Announce, then listen via mic for total recognition (after the
+      // announcement ends, so it does not contaminate the mic).
+      if ('speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance('Total recognition engaged. All audio cut. Listening.');
+        u.rate = 1.0; u.pitch = 0.6;
+        u.onend = function () { startTotalRecognition(finishRecognition); };
+        u.onerror = function () { startTotalRecognition(finishRecognition); };
+        window.speechSynthesis.speak(u);
+      } else {
+        startTotalRecognition(finishRecognition);
+      }
+    } catch (e) { pulsationRecognizing = false; }
+  }
+
+  // Total recognition: mic-based SpeechRecognition, best effort (fails
+  // quiet if unavailable or mic denied). Whatever is heard is spoken
+  // back via TTS (recognition -> TTS), then audio resumes.
+  function startTotalRecognition(done) {
+    try {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) { logShift('RECOGNITION', 'SpeechRecognition unavailable', 'skipped'); done(); return; }
+      const rec = new SR();
+      rec.lang = 'en-US';
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      let heard = '';
+      const timer = setTimeout(function () { try { rec.stop(); } catch (e) {} }, 10000);
+      rec.onresult = function (ev) {
+        try {
+          heard = ev.results[0][0].transcript;
+          mark('RECOGNITION — ' + heard, 0, -1);
+          logShift('RECOGNITION', 'total recognition result', heard);
+        } catch (e) {}
+      };
+      function wrapUp() {
+        clearTimeout(timer);
+        if (heard) {
+          try {
+            if ('speechSynthesis' in window) {
+              const u = new SpeechSynthesisUtterance('Recognized: ' + heard);
+              u.rate = 0.95; u.pitch = 0.6;
+              u.onend = function () { done(); };
+              u.onerror = function () { done(); };
+              window.speechSynthesis.speak(u);
+              return;
+            }
+          } catch (e) {}
+        }
+        done();
+      }
+      rec.onerror = function () { wrapUp(); };
+      rec.onend = function () { wrapUp(); };
+      rec.start();
+    } catch (e) { done(); }
+  }
+
   function applySilence() {
+    if (pulsationRecognizing) return; // recognition window owns the silence path
     let action = 'none';
     try {
+      fireNeuralyzer();
       const word = (typeof isWordActive !== 'undefined' && isWordActive);
       const liq = (typeof isLiqInterrupting !== 'undefined' && isLiqInterrupting);
       if (word || liq) { action = 'skipped (word/liquidation active)'; }
@@ -4758,9 +5178,20 @@ startStream();
         action = 're-triggered ambient bed';
       } else if (typeof nextSlideManual === 'function') {
         let branch = 'slide';
+        let wordKey = null;
         try {
           const W = window.audioWeights;
-          if (W && (Math.random() * 100) < (W.use_weighted_pct || 95)) {
+          // Lean toward the Word when nearly every logged event is speech:
+          // gap = total events - TTS speaks == 1. Once per slot per day,
+          // same cadence as the scheduled Word play.
+          const gap = W ? (W.event_count || 0) - ((W.kind_counts && W.kind_counts.tts_speak) || 0) : -1;
+          if (gap === 1 && typeof playWordSegment === 'function' && typeof getCurrentSlotName === 'function' && !isWordActive) {
+            const _now = new Date();
+            wordKey = 'word_played_' + _now.toISOString().slice(0, 10) + '_' + getCurrentSlotName();
+            if (!localStorage.getItem(wordKey)) branch = 'word';
+            else wordKey = null;
+          }
+          if (branch !== 'word' && W && (Math.random() * 100) < (W.use_weighted_pct || 95)) {
             const aw = W.action_weights || {};
             const r = Math.random();
             let acc = 0, chosen = null;
@@ -4771,7 +5202,13 @@ startStream();
             else branch = 'slide';
           }
         } catch (e) { branch = 'slide'; }
-        if (branch === 'ambient' && typeof bgAudio !== 'undefined' && bgAudio && bgAudio.paused) {
+        if (branch === 'word') {
+          // Spend this slot's scheduled Word play so the 30s schedule
+          // check won't double-fire it later.
+          if (wordKey) localStorage.setItem(wordKey, 'true');
+          playWordSegment(null, false);
+          action = 'word lean (gap==1) -> Pause for the Word';
+        } else if (branch === 'ambient' && typeof bgAudio !== 'undefined' && bgAudio && bgAudio.paused) {
           bgAudio.play().catch(() => {});
           action = 'weighted next -> ambient bed';
         } else if (branch === 'guard' && typeof fireGuardCombo === 'function') {
@@ -4834,12 +5271,50 @@ startStream();
     if (howlCount >= HOWL_FRAMES && !howlActive) applyHowl(pk * binHz);
     else if (howlActive && !isCandidate && now - howlLastSeen > HOWL_RELEASE_MS) releaseHowl();
 
+    // --- pulsation: same frequencies wobbling back and forth ---
+    // Peak bin stays in a small band but keeps reversing direction.
+    // (A static peak is a howl, handled above; this is the wobble.)
+    pulsationPeaks.push(pk);
+    if (pulsationPeaks.length > PULSATION_FRAMES) pulsationPeaks.shift();
+    if (pulsationPeaks.length >= PULSATION_FRAMES) {
+      let mn = Infinity, mx = -Infinity, reversals = 0, lastDir = 0;
+      for (let i = 0; i < pulsationPeaks.length; i++) {
+        if (pulsationPeaks[i] < mn) mn = pulsationPeaks[i];
+        if (pulsationPeaks[i] > mx) mx = pulsationPeaks[i];
+        if (i > 0) {
+          const d = Math.sign(pulsationPeaks[i] - pulsationPeaks[i - 1]);
+          if (d !== 0 && lastDir !== 0 && d !== lastDir) reversals++;
+          if (d !== 0) lastDir = d;
+        }
+      }
+      const pulsating = (mx - mn) <= PULSATION_MAX_RANGE && reversals >= PULSATION_MIN_REVERSALS && mean > SILENCE_MEAN;
+      if (pulsating && !pulsationFired) {
+        pulsationFired = true;
+        applyPulsation();
+      } else if (!pulsating) {
+        pulsationFired = false;
+      }
+    }
+
     // --- silence (speech synthesis is not routable, so it is not counted as silence) ---
     const speaking = ('speechSynthesis' in window) && window.speechSynthesis.speaking;
     if (mean < SILENCE_MEAN && !speaking && M.ctx.state === 'running' && !document.hidden) {
       if (!silenceSince) silenceSince = now;
       if (!silenceFired && now - silenceSince > SILENCE_MS) { silenceFired = true; applySilence(); }
     } else { silenceSince = 0; silenceFired = false; }
+
+    // --- marathon silence count-up: analyzer-quiet -> TTS counts 1/sec upward ---
+    // Gated on the analyzer mean only (speech is not routable, so the
+    // count-up's own voice must not break the quiet condition).
+    // Pauses while a silence-path line (Neuralyzer / comfort) speaks,
+    // and while a pulsation recognition window is open.
+    const wordActive = (typeof isWordActive !== 'undefined' && isWordActive);
+    const liqActive = (typeof isLiqInterrupting !== 'undefined' && isLiqInterrupting);
+    if (mean < SILENCE_MEAN && M.ctx.state === 'running' && !document.hidden && !wordActive && !liqActive && !silenceLineSpeaking && !pulsationRecognizing) {
+      startSilenceCountUp();
+    } else {
+      stopSilenceCountUp();
+    }
 
     // --- smooth playbackRate nudge for the currently playing media ---
     if (Math.abs(rateNow - rateTarget) > 0.0005) {

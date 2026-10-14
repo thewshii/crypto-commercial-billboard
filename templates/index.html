@@ -4270,6 +4270,21 @@ startStream();
             50%, 100% { opacity: 0; }
         }
     </style>
+<script>
+(function () {
+  async function keepAlive() {
+    try { if ('wakeLock' in navigator && !window.__wakeLock) window.__wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) {
+      try { if (typeof getAudioContext === 'function') { var c = getAudioContext(); if (c && c.state !== 'running') c.resume(); } } catch (e) {}
+      try { if (typeof bgAudio !== 'undefined' && bgAudio && bgAudio.paused) bgAudio.play().catch(function () {}); } catch (e) {}
+      keepAlive();
+    }
+  });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', keepAlive); else keepAlive();
+})();
+</script>
 </body>
 </html>
 

@@ -4471,6 +4471,19 @@ startStream();
       window.speechSynthesis.speak(v);
     } catch (e) {}
   }, 15000);
+
+  function queueLine(text, rate, pitch, volume) {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      var u = new SpeechSynthesisUtterance(text);
+      u.rate = rate || 1.0; u.pitch = pitch == null ? 0.85 : pitch; u.volume = volume == null ? 0.5 : volume;
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+
+  setInterval(function () { queueLine('This cap does not fit.', 1.0, 0.8, 0.5); }, 29000);
+  setInterval(function () { queueLine('This is not rashing.', 1.0, 0.8, 0.5); }, 35000);
+  setInterval(function () { queueLine('Give thanks before it is too late.', 0.95, 0.85, 0.5); }, 41000);
 })();
 </script>
 </body>

@@ -4801,8 +4801,19 @@ startStream();
     { tag: 'DIVINE COMBO!', speech: 'Divine combo! The sky thunders — faithfulness multiplies the gift.' },
     { tag: 'PILE COMBO!',   speech: 'Pile combo! Stacked high and struck down — be a cheerful giver.' },
     { tag: 'BIJECTION!',    speech: 'Bijection! One-to-one and onto. Every input maps to exactly one output, and every output traces back to exactly one input — so it inverts perfectly. Trying to dislexify a definition that clean is ridiculous.', sfx: 'jetsons' },
-    { tag: 'KILLER COMBO!', speech: 'Killer combo! Double hit! Triple threat! Unstoppable!' }
+    { tag: 'KILLER COMBO!', speech: 'Killer combo! Double hit! Triple threat! Unstoppable! You just got your butt kicked.' },
+    { tag: 'GOD COMBO!',    speech: 'God combo! The almighty moved on your frequency. Same shape, same sins, fresh verdict — you just got your butt kicked.' },
+    { tag: 'GATEKEEPER!',   speech: 'Gatekeeper! That shape is on repeat and so is the truth. You just got your butt kicked.' },
+    { tag: 'NOODLE!',       speech: 'Noodle! You got soft on a frequency you cannot read. You just got your butt kicked.' },
+    { tag: 'CLEAN SWEEP!',  speech: 'Clean sweep! The shape repeated and so did the correction. You just got your butt kicked.' },
+    { tag: 'ROUND TWO!',    speech: 'Round two! Same sins, same shape, new verdict. You just got your butt kicked.' },
+    { tag: 'READ IT BACK!', speech: 'Read it back! The pattern holds whether you like it or not. Truth, not feelings — you just got your butt kicked.' },
+    { tag: 'DETECTED!',     speech: 'Detected! That shape slid back and forth on purpose. You just got your butt kicked.' },
+    { tag: 'OWNED!',        speech: 'Owned! No frequency flip was gonna save that one. You just got your butt kicked.' }
   ];
+  // Shape memory: the same frequency/shape rotating through the bag, so a
+  // repeated shape earns a different combo (and verdict) on each pass.
+  const SHAPE_COMBO_MEMORY = {};
 
   const MARKER_MS = 2500;           // how long a shift label stays on the strip
   // =============================================================
@@ -4991,9 +5002,15 @@ startStream();
   }
   function fireGuardCombo(hz, band) {
     if (silenceCountTimer !== null) return; // counting takes precedence
-    const combo = GUARD_COMBO_BAG[Math.floor(Math.random() * GUARD_COMBO_BAG.length)];
-    mark(combo.tag + ' ' + fmtHz(hz), hz > 0 ? hz : 1000, band);
-    logShift('GUARD-COMBO', fmtHz(hz), combo.tag);
+    // Same shape (frequency bucket) -> rotate through the bag so the same
+    // repeated shape never says the same thing twice in a row.
+    const shapeKey = 'hz' + Math.round(hz / 25) * 25;
+    const seen = SHAPE_COMBO_MEMORY[shapeKey] || 0;
+    const combo = GUARD_COMBO_BAG[seen % GUARD_COMBO_BAG.length];
+    SHAPE_COMBO_MEMORY[shapeKey] = seen + 1;
+    const pass = (seen % GUARD_COMBO_BAG.length) + 1;
+    mark(combo.tag + ' #' + pass + ' ' + fmtHz(hz), hz > 0 ? hz : 1000, band);
+    logShift('GUARD-COMBO', fmtHz(hz) + ' shape#' + pass, combo.tag);
     // visual pow burst at band centre
     try {
       const x = band >= 0 ? ( (xForHz(bandStart[band] * binHz) + xForHz(bandEnd[band] * binHz)) / 2 ) : cw / 2;

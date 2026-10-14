@@ -4800,3 +4800,39 @@ startStream();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
 </script>
+<!-- Tap-to-start audio gate: one gesture unlocks Web Audio, music, slide audio and speech -->
+<script>
+(function () {
+  function unlock() {
+    try { if (typeof getAudioContext === 'function') getAudioContext(); } catch (e) {}
+    try {
+      if (typeof bgAudio !== 'undefined' && bgAudio && typeof isMusicEnabled !== 'undefined' && isMusicEnabled) bgAudio.play().catch(() => {});
+    } catch (e) {}
+    try {
+      if (typeof audioPlayer !== 'undefined' && audioPlayer) {
+        audioPlayer.muted = true;
+        const p = audioPlayer.play();
+        if (p && p.then) p.then(() => { audioPlayer.pause(); audioPlayer.muted = false; }).catch(() => { audioPlayer.muted = false; });
+        else audioPlayer.muted = false;
+      }
+    } catch (e) {}
+    try {
+      if ('speechSynthesis' in window) { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); }
+    } catch (e) {}
+    console.log('AUDIO UNLOCKED by user gesture');
+  }
+  function show() {
+    if (document.getElementById('audio-gate')) return;
+    const d = document.createElement('div');
+    d.id = 'audio-gate';
+    d.style.cssText = 'position:fixed;inset:0;z-index:10050;background:rgba(0,0,0,0.82);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;cursor:pointer;font-family:"Press Start 2P",monospace;color:#00ff88;text-shadow:0 0 12px #00ff88;text-align:center;padding:20px;';
+    d.innerHTML = '<div style="font-size:clamp(14px,3.5vw,26px);">🔊 TAP TO START AUDIO</div><div style="font-size:clamp(8px,1.6vw,12px);color:#00ffff;text-shadow:0 0 8px #00ffff;">music • voice • sound effects</div>';
+    const go = () => { unlock(); d.remove(); };
+    d.addEventListener('pointerdown', go, { once: true });
+    d.addEventListener('keydown', go, { once: true });
+    document.body.appendChild(d);
+  }
+  const already = navigator.userActivation && navigator.userActivation.hasBeenActive;
+  if (already) unlock(); else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', show); else show();
+})();
+</script>

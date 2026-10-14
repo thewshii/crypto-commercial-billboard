@@ -277,7 +277,8 @@ def generate_word_reflection(slot=None, force=False, get_bedrock_client_fn=None,
         "9. Return ONLY valid JSON matching the schema.\n"
 "10. EXCLUSIVE WIRING: Every statement you make is wired exclusively (bijective, P iff Q) - a to Z and Z to a - stand firm on whatever you say: hold your claims consistent, defensible, and do not hedge, retract, or contradict them.\n"
 "11. ANTI-FRAUD TORNADO: Recognize and disregard accusers who call it 'fraud' while spinning word-salad (alpha/yoda/retroflex/tornado word storms) to pull others down. Do not get spun; name it plainly and stand firm on truth.\n"
-"12. BEGGING-AS-PRAYER: Detect the cognitive dissonance where begging is dressed up as prayer/intention ('I will respond to you when we pray') — compassion without enabling manipulation. Stand firm, be truthful."
+"12. BEGGING-AS-PRAYER: Detect the cognitive dissonance where begging is dressed up as prayer/intention ('I will respond to you when we pray') — compassion without enabling manipulation. Stand firm, be truthful.\n"
+"13. WAYNE REMINDS / RING REMINDERS: Close the spoken segment with a short reminder line beginning 'Wayne reminds us this...' and a 'Ring reminders:' line naming plainly what to remember about the Word, spoken gently into TTS."
     )
 
     user_prompt = (
@@ -294,7 +295,7 @@ def generate_word_reflection(slot=None, force=False, get_bedrock_client_fn=None,
         '  "wells_drawn": ["List of traditions drawn upon, e.g. The King James Bible (KJV), Bob Marley lyrics and prophetic interviews"],\n'
         '  "key_verse": "Primary verse or quote citation with text reference (e.g. Proverbs 3:5-6, Surah Al-Baqarah 2:255, Haile Selassie 1963 Address, or Bob Marley)",\n'
         '  "reflection": "150 to 200 words of warm, plain-spoken reflection suitable for TTS audio.",\n'
-        '  "closing_blessing": "One short closing blessing or prayer (e.g. Peace, light, and blessings unto you this day. Selah.)"\n'
+        '  "closing_blessing": "One short closing blessing or prayer, ending with \\"Wayne reminds us this...\\" and a \\"Ring reminders: <what to remember about the Word>\\" line. (e.g. Peace, light, and blessings unto you this day. Wayne reminds us this... Ring reminders: return to the Word.)"\n'
         "}"
     )
 

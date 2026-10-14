@@ -1041,6 +1041,12 @@
         </div>
     </div>
 
+    <!-- Live spectrum strip (page audio output only; no microphone) -->
+    <div id="spectrum-strip" style="position:relative; width:100%; height:clamp(46px,7vh,64px); background:#04060a; border-bottom:1px solid #1a2330;">
+        <span style="position:absolute; top:2px; right:8px; z-index:2; font-family:'Roboto Mono',monospace; font-size:clamp(0.5rem,0.8vw,0.68rem); color:#00ffff; text-shadow:0 0 5px #00ffff; pointer-events:none;">Live spectrum</span>
+        <canvas id="spectrum-canvas" style="width:100%; height:100%; display:block;"></canvas>
+    </div>
+
     <div class="animation-container ascii-anim-target">
     </div>
 
@@ -4482,5 +4488,315 @@ startStream();
   setInterval(() => {
     if (window.audioCtx && window.audioCtx.state === 'suspended') judge('WEBAUDIO.SUSPENDED', 'no user gesture yet');
   }, 5000);
+})();
+</script>
+<!-- Live spectrum analyzer: master audio chain + detectors + organic rule shifts (additive) -->
+<script>
+(function () {
+  // ===================== TUNABLE CONSTANTS =====================
+  const FFT_SIZE = 2048;
+  const BAND_COUNT = 8;
+  const MIN_HZ = 20, MAX_HZ = 20000;
+
+  const HOWL_LEVEL = 210;           // byte value the peak must exceed
+  const HOWL_FRAMES = 10;           // consecutive frames (~170ms)
+  const HOWL_BIN_TOLERANCE = 1;     // peak may drift +-1 bin
+  const HOWL_NARROW_MARGIN = 30;    // peak must exceed neighbours (+-3..5 bins) by this much
+  const HOWL_RELEASE_MS = 2000;     // howl absent this long -> start releasing
+  const HOWL_RELEASE_RAMP_S = 1.5;  // notch fade-out time
+  const HOWL_NOTCH_Q = 10;
+  const HOWL_BAND_CUT_DB = -6;
+  const HOWL_RATE_SHIFT = 0.02;     // playbackRate nudge (2%)
+
+  const SILENCE_MEAN = 4;           // mean byte value across bands
+  const SILENCE_MS = 5000;
+
+  const SPIKE_JUMP = 50;            // byte units
+  const SPIKE_FRAMES = 3;           // within this many frames
+  const SPIKE_DUCK_DB = -6;
+  const SPIKE_ATTACK_S = 0.1;
+  const SPIKE_RELEASE_S = 0.5;
+  const SPIKE_COOLDOWN_MS = 1000;
+
+  const MARKER_MS = 2500;           // how long a shift label stays on the strip
+  // =============================================================
+
+  const origConnect = AudioNode.prototype.connect;
+  const masters = new WeakMap();
+  let M = null; // active master chain
+
+  function db(x) { return Math.pow(10, x / 20); }
+
+  function buildMaster(ctx) {
+    const m = {};
+    m.ctx = ctx;
+    m.input = ctx.createGain();
+    m.dry = ctx.createGain();
+    m.notch = ctx.createBiquadFilter();
+    m.notch.type = 'notch'; m.notch.Q.value = HOWL_NOTCH_Q; m.notch.frequency.value = 1000;
+    m.wet = ctx.createGain(); m.wet.gain.value = 0;
+    m.howlPeak = ctx.createBiquadFilter();
+    m.howlPeak.type = 'peaking'; m.howlPeak.Q.value = HOWL_NOTCH_Q; m.howlPeak.gain.value = 0; m.howlPeak.frequency.value = 1000;
+    m.spikePeak = ctx.createBiquadFilter();
+    m.spikePeak.type = 'peaking'; m.spikePeak.Q.value = 1.2; m.spikePeak.gain.value = 0; m.spikePeak.frequency.value = 1000;
+    m.analyser = ctx.createAnalyser();
+    m.analyser.fftSize = FFT_SIZE;
+    m.analyser.smoothingTimeConstant = 0.5;
+    m.sum = ctx.createGain();
+    m.master = ctx.createGain();   // the single master GainNode
+    origConnect.call(m.input, m.dry);
+    origConnect.call(m.dry, m.sum);
+    origConnect.call(m.input, m.notch);
+    origConnect.call(m.notch, m.wet);
+    origConnect.call(m.wet, m.sum);
+    origConnect.call(m.sum, m.howlPeak);
+    origConnect.call(m.howlPeak, m.spikePeak);
+    origConnect.call(m.spikePeak, m.master);
+    origConnect.call(m.master, m.analyser);
+    origConnect.call(m.analyser, ctx.destination);
+    masters.set(ctx, m);
+    return m;
+  }
+  function masterFor(ctx) { return masters.get(ctx) || buildMaster(ctx); }
+
+  // Route every connection that targets the speakers through the master chain (existing code untouched)
+  AudioNode.prototype.connect = function (dest) {
+    if (typeof AudioDestinationNode !== 'undefined' && dest instanceof AudioDestinationNode && this.context === dest.context) {
+      const m = masterFor(this.context);
+      M = m;
+      arguments[0] = m.input;
+    }
+    return origConnect.apply(this, arguments);
+  };
+
+  // Media elements (<audio>): attach once the context is running so autoplay behaviour is never made worse
+  const attached = new WeakSet();
+  function attachMedia() {
+    let ctx = null;
+    try { ctx = (typeof audioCtx !== 'undefined') ? audioCtx : null; } catch (e) {}
+    if (!ctx || ctx.state !== 'running') return;
+    const m = masterFor(ctx); M = m;
+    ['bg-audio', 'slide-audio'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el || attached.has(el)) return;
+      try {
+        const src = ctx.createMediaElementSource(el);
+        origConnect.call(src, m.input);
+        attached.add(el);
+        console.log('SPECTRUM tap: ' + id + ' routed through master');
+      } catch (e) { attached.add(el); }
+    });
+  }
+  setInterval(attachMedia, 700);
+
+  // ---------- Display ----------
+  const canvas = document.getElementById('spectrum-canvas');
+  const g = canvas ? canvas.getContext('2d') : null;
+  let cw = 0, ch = 0;
+  function resize() {
+    if (!canvas) return;
+    const r = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    cw = Math.max(1, Math.floor(r.width * dpr)); ch = Math.max(1, Math.floor(r.height * dpr));
+    canvas.width = cw; canvas.height = ch;
+    buildColumns();
+  }
+
+  const buf = new Uint8Array(FFT_SIZE / 2);
+  const bandStart = new Int32Array(BAND_COUNT), bandEnd = new Int32Array(BAND_COUNT);
+  const bandVal = new Float32Array(BAND_COUNT);
+  const hist = new Float32Array(BAND_COUNT * (SPIKE_FRAMES + 1));
+  let histPos = 0;
+  const spikeLast = new Float64Array(BAND_COUNT);
+  let colBin = new Int32Array(0);
+  let binHz = 24000 / (FFT_SIZE / 2);
+
+  function hzToBin(hz) { return Math.min(buf.length - 1, Math.max(1, Math.round(hz / binHz))); }
+  function buildBands() {
+    for (let b = 0; b < BAND_COUNT; b++) {
+      const lo = MIN_HZ * Math.pow(MAX_HZ / MIN_HZ, b / BAND_COUNT);
+      const hi = MIN_HZ * Math.pow(MAX_HZ / MIN_HZ, (b + 1) / BAND_COUNT);
+      bandStart[b] = hzToBin(lo);
+      bandEnd[b] = Math.max(bandStart[b] + 1, hzToBin(hi));
+    }
+  }
+  function buildColumns() {
+    colBin = new Int32Array(cw);
+    for (let x = 0; x < cw; x++) {
+      const hz = MIN_HZ * Math.pow(MAX_HZ / MIN_HZ, x / cw);
+      colBin[x] = hzToBin(hz);
+    }
+  }
+  function xForHz(hz) { return Math.log(hz / MIN_HZ) / Math.log(MAX_HZ / MIN_HZ) * cw; }
+
+  const marker = { text: '', hz: 0, band: -1, until: 0 };
+  function mark(text, hz, band) {
+    marker.text = text; marker.hz = hz; marker.band = band; marker.until = performance.now() + MARKER_MS;
+  }
+  function logShift(detector, where, action) {
+    console.log('SHIFT ' + detector + ' @ ' + where + ' -> ' + action);
+  }
+  function fmtHz(hz) { return hz >= 1000 ? (hz / 1000).toFixed(1) + 'kHz' : Math.round(hz) + 'Hz'; }
+
+  // ---------- Detector state ----------
+  let howlBin = -1, howlCount = 0, howlActive = false, howlLastSeen = 0, howlHz = 0;
+  let silenceSince = 0, silenceFired = false;
+  let rateTarget = 1, rateNow = 1;
+
+  function applyHowl(hz) {
+    const ctx = M.ctx, t = ctx.currentTime;
+    howlActive = true; howlLastSeen = performance.now(); howlHz = hz;
+    M.notch.frequency.setValueAtTime(hz, t);
+    M.howlPeak.frequency.setValueAtTime(hz, t);
+    M.dry.gain.cancelScheduledValues(t); M.wet.gain.cancelScheduledValues(t); M.howlPeak.gain.cancelScheduledValues(t);
+    M.dry.gain.setTargetAtTime(0, t, 0.03);
+    M.wet.gain.setTargetAtTime(1, t, 0.03);
+    M.howlPeak.gain.setTargetAtTime(HOWL_BAND_CUT_DB, t, 0.05);
+    rateTarget = hz > 1000 ? 1 - HOWL_RATE_SHIFT : 1 + HOWL_RATE_SHIFT; // nudge content away from the howl
+    mark('HOWL ' + fmtHz(hz) + ' — notched', hz, -1);
+    logShift('HOWL', fmtHz(hz), 'notch Q' + HOWL_NOTCH_Q + ', band ' + HOWL_BAND_CUT_DB + 'dB, playbackRate ' + rateTarget.toFixed(2));
+  }
+  function releaseHowl() {
+    const ctx = M.ctx, t = ctx.currentTime;
+    howlActive = false;
+    M.dry.gain.cancelScheduledValues(t); M.wet.gain.cancelScheduledValues(t); M.howlPeak.gain.cancelScheduledValues(t);
+    M.dry.gain.setTargetAtTime(1, t, HOWL_RELEASE_RAMP_S / 3);
+    M.wet.gain.setTargetAtTime(0, t, HOWL_RELEASE_RAMP_S / 3);
+    M.howlPeak.gain.setTargetAtTime(0, t, HOWL_RELEASE_RAMP_S / 3);
+    rateTarget = 1;
+    logShift('HOWL', fmtHz(howlHz), 'released over ' + HOWL_RELEASE_RAMP_S + 's');
+  }
+  function applySpike(band, jump) {
+    const ctx = M.ctx, t = ctx.currentTime;
+    const lo = bandStart[band] * binHz, hi = bandEnd[band] * binHz;
+    const hz = Math.sqrt(Math.max(lo, 1) * hi);
+    M.spikePeak.frequency.setValueAtTime(hz, t);
+    M.spikePeak.gain.cancelScheduledValues(t);
+    M.spikePeak.gain.setValueAtTime(M.spikePeak.gain.value, t);
+    M.spikePeak.gain.linearRampToValueAtTime(SPIKE_DUCK_DB, t + SPIKE_ATTACK_S);
+    M.spikePeak.gain.linearRampToValueAtTime(0, t + SPIKE_ATTACK_S + SPIKE_RELEASE_S);
+    mark('SPIKE band ' + (band + 1) + ' ' + fmtHz(hz) + ' — ducked', hz, band);
+    logShift('SPIKE', 'band ' + (band + 1) + ' ~' + fmtHz(hz) + ' (+' + Math.round(jump) + ')', 'duck ' + SPIKE_DUCK_DB + 'dB ' + (SPIKE_ATTACK_S * 1000) + 'ms attack, ' + (SPIKE_RELEASE_S * 1000) + 'ms release');
+  }
+  function applySilence() {
+    let action = 'none';
+    try {
+      const word = (typeof isWordActive !== 'undefined' && isWordActive);
+      const liq = (typeof isLiqInterrupting !== 'undefined' && isLiqInterrupting);
+      if (word || liq) { action = 'skipped (word/liquidation active)'; }
+      else if (typeof isMusicEnabled !== 'undefined' && isMusicEnabled && bgAudio && bgAudio.paused) {
+        bgAudio.play().catch(() => {});
+        action = 're-triggered ambient bed';
+      } else if (typeof nextSlideManual === 'function') {
+        nextSlideManual();
+        action = 'advanced to next sound/slide';
+      }
+    } catch (e) { action = 'error ' + e.message; }
+    mark('SILENCE — ' + action, 0, -1);
+    logShift('SILENCE', 'mean<' + SILENCE_MEAN + ' for ' + (SILENCE_MS / 1000) + 's', action);
+  }
+
+  function frame(now) {
+    requestAnimationFrame(frame);
+    if (!M || !g) return;
+    M.analyser.getByteFrequencyData(buf);
+
+    // --- bands ---
+    let total = 0;
+    for (let b = 0; b < BAND_COUNT; b++) {
+      let s = 0; const a = bandStart[b], z = bandEnd[b];
+      for (let i = a; i < z; i++) s += buf[i];
+      bandVal[b] = s / (z - a);
+      total += bandVal[b];
+    }
+    const mean = total / BAND_COUNT;
+
+    // --- spike history ring ---
+    const slots = SPIKE_FRAMES + 1;
+    const cur = histPos % slots, old = (histPos + 1) % slots; // old = SPIKE_FRAMES frames ago
+    for (let b = 0; b < BAND_COUNT; b++) hist[b * slots + cur] = bandVal[b];
+    if (histPos >= SPIKE_FRAMES) {
+      for (let b = 0; b < BAND_COUNT; b++) {
+        const jump = bandVal[b] - hist[b * slots + old];
+        if (jump > SPIKE_JUMP && now - spikeLast[b] > SPIKE_COOLDOWN_MS) { spikeLast[b] = now; applySpike(b, jump); }
+      }
+    }
+    histPos++;
+
+    // --- howl: narrow, stationary, loud peak ---
+    let pk = 1, pv = 0;
+    for (let i = 1; i < buf.length; i++) if (buf[i] > pv) { pv = buf[i]; pk = i; }
+    let isCandidate = false;
+    if (pv > HOWL_LEVEL) {
+      let nb = 0, n = 0;
+      for (let d = 3; d <= 5; d++) {
+        if (pk - d >= 1) { nb += buf[pk - d]; n++; }
+        if (pk + d < buf.length) { nb += buf[pk + d]; n++; }
+      }
+      isCandidate = n > 0 && (pv - nb / n) > HOWL_NARROW_MARGIN;
+    }
+    if (isCandidate && howlBin >= 0 && Math.abs(pk - howlBin) <= HOWL_BIN_TOLERANCE) howlCount++;
+    else howlCount = isCandidate ? 1 : 0;
+    howlBin = isCandidate ? pk : -1;
+    if (isCandidate) howlLastSeen = now;
+    if (howlCount >= HOWL_FRAMES && !howlActive) applyHowl(pk * binHz);
+    else if (howlActive && !isCandidate && now - howlLastSeen > HOWL_RELEASE_MS) releaseHowl();
+
+    // --- silence (speech synthesis is not routable, so it is not counted as silence) ---
+    const speaking = ('speechSynthesis' in window) && window.speechSynthesis.speaking;
+    if (mean < SILENCE_MEAN && !speaking && M.ctx.state === 'running' && !document.hidden) {
+      if (!silenceSince) silenceSince = now;
+      if (!silenceFired && now - silenceSince > SILENCE_MS) { silenceFired = true; applySilence(); }
+    } else { silenceSince = 0; silenceFired = false; }
+
+    // --- smooth playbackRate nudge for the currently playing media ---
+    if (Math.abs(rateNow - rateTarget) > 0.0005) {
+      rateNow += (rateTarget - rateNow) * 0.04;
+      if (bgAudio) bgAudio.playbackRate = rateNow;
+      if (audioPlayer) audioPlayer.playbackRate = rateNow;
+    } else if (rateNow !== rateTarget) {
+      rateNow = rateTarget;
+      if (bgAudio) bgAudio.playbackRate = rateNow;
+      if (audioPlayer) audioPlayer.playbackRate = rateNow;
+    }
+
+    // --- draw ---
+    g.clearRect(0, 0, cw, ch);
+    for (let x = 0; x < cw; x += 2) {
+      const v = buf[colBin[x]] / 255;
+      const h = v * (ch - 12);
+      g.fillStyle = 'hsl(' + (150 - v * 150) + ',100%,50%)';
+      g.fillRect(x, ch - h, 2, h);
+    }
+    if (now < marker.until) {
+      const alpha = Math.min(1, (marker.until - now) / 600);
+      g.globalAlpha = alpha * 0.35;
+      g.fillStyle = '#ffdd00';
+      if (marker.band >= 0) {
+        const x0 = xForHz(bandStart[marker.band] * binHz), x1 = xForHz(bandEnd[marker.band] * binHz);
+        g.fillRect(x0, 0, Math.max(3, x1 - x0), ch);
+      } else if (marker.hz > 0) {
+        const x = xForHz(marker.hz);
+        g.fillRect(x - 3, 0, 6, ch);
+      } else { g.fillRect(0, 0, cw, ch); }
+      g.globalAlpha = alpha;
+      g.fillStyle = '#ffffff';
+      g.font = Math.max(10, Math.round(ch * 0.2)) + 'px monospace';
+      g.textBaseline = 'top';
+      g.fillText(marker.text, 6, 14);
+      g.globalAlpha = 1;
+    }
+  }
+
+  function init() {
+    if (!canvas) return;
+    buildBands();
+    resize();
+    window.addEventListener('resize', resize);
+    // sample rate known once a context exists
+    setInterval(() => { if (M) { binHz = M.ctx.sampleRate / FFT_SIZE; buildBands(); buildColumns(); } }, 3000);
+    requestAnimationFrame(frame);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
 </script>

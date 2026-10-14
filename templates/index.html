@@ -5602,9 +5602,14 @@ function connectAudio() {
     d.id = 'audio-gate';
     d.style.cssText = 'position:fixed;inset:0;z-index:10050;background:rgba(0,0,0,0.82);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;cursor:pointer;font-family:"Press Start 2P",monospace;color:#00ff88;text-shadow:0 0 12px #00ff88;text-align:center;padding:20px;';
     d.innerHTML = '<div style="font-size:clamp(14px,3.5vw,26px);">🔊 TAP TO START AUDIO</div><div style="font-size:clamp(8px,1.6vw,12px);color:#00ffff;text-shadow:0 0 8px #00ffff;">music • voice • sound effects</div>';
-    const go = () => { unlock(); d.remove(); };
-    d.addEventListener('pointerdown', go, { once: true });
-    d.addEventListener('keydown', go, { once: true });
+    const go = () => { if (gateFired) return; gateFired = true; unlock(); d.remove(); };
+    let gateFired = false;
+    // Firefox/desktop: 'click' is the trusted activation it requires for
+    // getUserMedia; pointerdown alone can be treated as non-activation.
+    d.addEventListener('click', go);
+    d.addEventListener('pointerdown', go);
+    d.addEventListener('touchend', go);
+    d.addEventListener('keydown', go);
     document.body.appendChild(d);
   }
   const already = navigator.userActivation && navigator.userActivation.hasBeenActive;

@@ -181,6 +181,7 @@ class CommercialBillboard:
             f"13.6x PAYOFF RATIO (+${self.stats['ev_usd']:.2f}/TRADE) ⚡ "
             f"RENDER UNTO CAESAR HIS COMPLIANCE, RENDER UNTO TRUTH YOUR MINDSET ⚡ "
 f"WIRED EXCLUSIVELY (BIJECTION: 1-TO-1 & ONTO) ⚡ A TO Z AND Z TO A ⚡ STAND FIRM ON WHATEVER YOU SAY ⚡ "
+f"IGNORE THE FRAUD-CALLERS & WORD-SALAD TORNADOES — STAND FIRM ⚡ "
         )
 
         ensure_sound_files()

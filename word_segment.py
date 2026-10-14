@@ -274,7 +274,8 @@ def generate_word_reflection(slot=None, force=False, get_bedrock_client_fn=None,
         "6. LENGTH: Exactly 150 to 200 words for the spoken reflection (about 1 minute of speech).\n"
         "7. NO REPEATS: Review the provided recent history of themes and verses, and choose a fresh perspective and distinct scriptures/citations.\n"
         "8. SEPARATION: This segment must stay completely pure and separate from all commercial or sales content.\n"
-        "9. Return ONLY valid JSON matching the schema."
+        "9. Return ONLY valid JSON matching the schema.\n"
+"10. EXCLUSIVE WIRING: Every statement you make is wired exclusively (bijective, P iff Q) - a to Z and Z to a - stand firm on whatever you say: hold your claims consistent, defensible, and do not hedge, retract, or contradict them."
     )
 
     user_prompt = (

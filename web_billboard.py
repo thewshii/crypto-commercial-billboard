@@ -257,7 +257,8 @@ def generate_bedrock_newscast(metrics, force=False):
         '  "punchline": "call to action punchline in all caps (recharge diamonds, buy beans, ring bell)",\n'
         '  "speech": "3-4 sentences rapid spoken broadcast script for TTS",\n'
         '  "regime": "e.g. BULLISH EXPANSION, CONSOLIDATION LULL, LIQUIDATION SQUEEZE, or VOLATILITY BREAKOUT"\n'
-        "}"
+        "}\n"
+        "EXCLUSIVE WIRING: Every statement you make is wired exclusively (bijective, P iff Q) - a to Z and Z to a - stand firm on whatever you say: hold your claims consistent and do not hedge, retract, or contradict them."
     )
 
     sign = "+" if metrics["change_usd"] >= 0 else ""

@@ -4564,6 +4564,10 @@ startStream();
       if (now - lastSpiteAt < 60000) return;
       lastSpiteAt = now;
 
+      // 18-second guard for "Wayne reminds us this" playback
+      try { window.__wayneGuardUntil = Date.now() + 18000; } catch (e) {}
+      setTimeout(function () { try { window.__wayneGuardUntil = 0; } catch (e) {} }, 18000);
+
       // Speak the Wayne reminder, then cancel after 1s and
       // replay the bell 7 times before resuming playback.
       window.speechSynthesis.cancel();
@@ -4633,6 +4637,7 @@ startStream();
     // event gets through immediately (temporal drag = filler steps aside).
     try {
       if (window.__prayerSuppressAudio) return true;
+      if (window.__wayneGuardUntil && Date.now() < window.__wayneGuardUntil) return true;
       if (typeof isWordActive !== 'undefined' && isWordActive) return true;
       if (typeof isLiqInterrupting !== 'undefined' && isLiqInterrupting) return true;
       if (typeof isRegimeNewsSpeaking !== 'undefined' && isRegimeNewsSpeaking) return true;

@@ -5090,21 +5090,44 @@ startStream();
   function startSilenceCountUp() {
     if (silenceCountTimer !== null) return;
     silenceCountUp = 0;
-    // Counting takes precedence over any other audio: cancel speech and
-    // pause background/slide media so nothing competes with the count.
-    try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch (e) {}
+    // SECURITY: the count is protected. Any speechSynthesis.cancel() from
+    // elsewhere is ignored while the count owns the voice, and if a count
+    // utterance is interrupted it is immediately re-spoken.
+    window.__countUpActive = true;
+    try {
+      if (!window.__countCancelPatched && 'speechSynthesis' in window) {
+        const ss = window.speechSynthesis;
+        const realCancel = ss.cancel.bind(ss);
+        window.__realSpeechCancel = realCancel;
+        ss.cancel = function () {
+          if (window.__countUpActive) return; // count owns the voice
+          return realCancel.apply(ss, arguments);
+        };
+        window.__countCancelPatched = true;
+      }
+    } catch (e) {}
     try { if (typeof bgAudio !== 'undefined' && bgAudio) bgAudio.pause(); } catch (e) {}
     try { if (typeof audioPlayer !== 'undefined' && audioPlayer) audioPlayer.pause(); } catch (e) {}
+    var sayCurrent = function () {
+      try {
+        if (!('speechSynthesis' in window)) return;
+        var u = new SpeechSynthesisUtterance('listen ' + String(silenceCountUp));
+        u.rate = 1.0; u.pitch = 0.8; u.volume = 0.9;
+        u.onend = function () {
+          // If we were cancelled mid-utterance, say the number again.
+          if (window.__countUpActive && silenceCountTimer !== null) sayCurrent();
+        };
+        u.onerror = function () {
+          if (window.__countUpActive && silenceCountTimer !== null) {
+            setTimeout(function () { if (window.__countUpActive) sayCurrent(); }, 120);
+          }
+        };
+        window.speechSynthesis.speak(u);
+      } catch (e) {}
+    };
     silenceCountTimer = setInterval(function () {
       silenceCountUp += 1;
-      try {
-        if ('speechSynthesis' in window) {
-          window.speechSynthesis.cancel();
-          const u = new SpeechSynthesisUtterance('listen ' + String(silenceCountUp));
-          u.rate = 1.0; u.pitch = 0.8; u.volume = 0.9;
-          window.speechSynthesis.speak(u);
-        }
-      } catch (e) {}
+      sayCurrent();
     }, 1000);
   }
   function stopSilenceCountUp() {
@@ -5113,6 +5136,13 @@ startStream();
       silenceCountTimer = null;
     }
     silenceCountUp = 0;
+    window.__countUpActive = false;
+    try {
+      if (window.__countCancelPatched && window.__realSpeechCancel) {
+        window.speechSynthesis.cancel = window.__realSpeechCancel;
+        window.__countCancelPatched = false;
+      }
+    } catch (e) {}
   }
   let rateTarget = 1, rateNow = 1;
 

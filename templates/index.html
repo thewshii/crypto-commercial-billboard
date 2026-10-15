@@ -4945,6 +4945,14 @@ startStream();
     } catch (e) {}
   }, 500);
 
+  // Recurring line every 500ms
+  setInterval(function () {
+    try {
+      if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return;
+      queueLine("are you walking around in here? Get out the governor's gonna catch you.", 0.95, 0.8, 0.5);
+    } catch (e) {}
+  }, 500);
+
   // Recurring line every 125ms
   setInterval(function () {
     try {

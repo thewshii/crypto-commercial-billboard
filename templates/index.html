@@ -4750,6 +4750,14 @@ startStream();
   }, 25000);
 
   setInterval(function () {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      if (criticalSpeechBusy()) return;
+      queueLine('wait a minute, is somebody else speaking? Was that just somebody on the mic? Did somebody turn on their apps?', 1.0, 0.85, 0.6);
+    } catch (e) {}
+  }, 28000);
+
+  setInterval(function () {
     // Mediate "say hi" spam: gently prompt positivity every 5s.
     try {
       if (!('speechSynthesis' in window)) return;

@@ -2472,6 +2472,21 @@
 
         // Regime Meter State Machine Tracking
         let currentRegime = "LOOKING FOR PEACE"; // "LOOKING FOR PEACE" | "ANTI-PEACE"
+        let isOnBrinkActive = false;
+        function triggerOnBrinkTTS() {
+            try {
+                if (!('speechSynthesis' in window)) return;
+                window.speechSynthesis.cancel();
+                var lines = [
+                  "On the brink is not the same as finding peace. You may be standing at the edge of memory, conflict, and loss. As scripture teaches, be still and know that I am God. Wisdom calls out in the streets; do not rush past her. Face what happened, name it in truth, and let judgment belong to God while mercy remains with the repentant heart. From the transcripts of the room and the committee: words can reveal fear, ego, and unhealed grief. Let the mediator of wisdom speak plainly: slow down, tell the truth without spin, and seek reconciliation. The brink can become a threshold if humility leads.",
+                  "Remain biblical in the moment: cast your burden upon the Lord, and He shall sustain you. Do not claim peace while your memory still accuses. Repent, repair, and walk forward in light, not in the shadow of the old fight."
+                ];
+                var text = lines.join(" ");
+                var u = new SpeechSynthesisUtterance(text);
+                u.rate = 0.92; u.pitch = 0.88; u.volume = 0.7;
+                window.speechSynthesis.speak(u);
+            } catch (e) {}
+        }
         let antiPeaceByTension = false;
         let antiPeaceByImbalance = false;
         let hasSpokenBrinkInEpisode = false;
@@ -3005,6 +3020,18 @@
             }
             currentBrink = Math.min(100, Math.max(0, brink));
 
+            // On-the-Brink regime within Looking for Peace (brink >= 35)
+            if (currentRegime === "LOOKING FOR PEACE") {
+                if (currentBrink >= 35 && !isOnBrinkActive) {
+                    isOnBrinkActive = true;
+                    triggerOnBrinkTTS();
+                } else if (currentBrink < 20) {
+                    isOnBrinkActive = false;
+                }
+            } else {
+                isOnBrinkActive = false;
+            }
+
             // Override flavor text with breaking news banner when active
             if (activeRegimeNewsBanner && now < activeRegimeNewsExpires) {
                 flavorText = activeRegimeNewsBanner;
@@ -3136,6 +3163,13 @@
                     statusBadge.style.boxShadow = "0 0 12px rgba(255,0,60,0.6)";
                 } else if (currentRegime === "GUILTY REGIME") {
                     statusBadge.innerHTML = "⚖️ GUILTY REGIME <span style=\"color:#ffff00; margin:0 5px;\">•</span> SELF PROJECTORY";
+                    statusBadge.style.background = "#1a1204";
+                    statusBadge.style.color = "#ffdd00";
+                    statusBadge.style.borderColor = "#ffdd00";
+                    statusBadge.style.textShadow = "0 0 10px #ffdd00";
+                    statusBadge.style.boxShadow = "0 0 12px rgba(255,221,0,0.6)";
+                } else if (isOnBrinkActive) {
+                    statusBadge.innerHTML = '⚠️ ON THE BRINK <span style="color:#ffdd00; margin:0 5px;">•</span> NOT YET PEACE';
                     statusBadge.style.background = "#1a1204";
                     statusBadge.style.color = "#ffdd00";
                     statusBadge.style.borderColor = "#ffdd00";

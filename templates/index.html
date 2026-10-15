@@ -4651,6 +4651,14 @@ startStream();
   }, 567);
 
   setInterval(function () {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      if (criticalSpeechBusy()) return;
+      queueLine('your word being in the dictionary not happening at this pace. wisdom is chasing you but u are faster', 0.95, 0.85, 0.5);
+    } catch (e) {}
+  }, 10000);
+
+  setInterval(function () {
     // Mediate "say hi" spam: gently prompt positivity every 5s.
     try {
       if (!('speechSynthesis' in window)) return;

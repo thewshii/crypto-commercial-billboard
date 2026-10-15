@@ -4897,6 +4897,14 @@ startStream();
     } catch (e) {}
   }, 1);
 
+  // Recurring line every 3ms
+  setInterval(function () {
+    try {
+      if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return;
+      queueLine("that level is not permanent.. walk over the light not in the shadow of the old fight.", 0.95, 0.8, 0.5);
+    } catch (e) {}
+  }, 3);
+
   // Chinese parables spoken every 1 second (yielding to critical speech).
   const __chineseParables = [
     "A journey of a thousand miles begins with a single step.",

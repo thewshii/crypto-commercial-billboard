@@ -1718,17 +1718,34 @@
             try {
                 const ctx = getAudioContext();
                 if (!ctx) return;
+                if (!window.__warSoundCycleStart) window.__warSoundCycleStart = Date.now();
                 const keys = Object.keys(WAR_SOUNDS);
                 const pick = name || keys[Math.floor(Math.random() * keys.length)];
                 WAR_SOUNDS[pick](ctx, ctx.currentTime + 0.02);
                 lastWarSound = Date.now();
+                // After 30s of war sounds, cut them and speak the scam line once.
+                if (!window.__warSoundSpoken && (Date.now() - window.__warSoundCycleStart >= 30000)) {
+                    window.__warSoundSpoken = true;
+                    try { window.speechSynthesis.cancel(); } catch (e) {}
+                    try { document.querySelectorAll('audio, video').forEach(function (el) { try { el.pause(); } catch (e) {} }); } catch (e) {}
+                    setTimeout(function () {
+                        try {
+                            const u = new SpeechSynthesisUtterance("We get it, you feel scammed. Everybody's smarter than you, but you have the. Recharge your beans so we can start taking our meds.");
+                            u.rate = 0.9; u.pitch = 0.8; u.volume = 0.9;
+                            u.onend = u.onerror = function () { window.__warSoundCycleStart = 0; window.__warSoundSpoken = false; };
+                            window.speechSynthesis.speak(u);
+                        } catch (e) { window.__warSoundCycleStart = 0; window.__warSoundSpoken = false; }
+                    }, 120);
+                }
             } catch (e) {}
         }
 
         // Random battlefield ambience: one sound every 7-20 seconds, never during The Word
         (function scheduleWarSound() {
             setTimeout(() => {
-                if (typeof isWordActive === "undefined" || !isWordActive) playWarSound();
+                if (!window.__warSoundSpoken) {
+                    if (typeof isWordActive === "undefined" || !isWordActive) playWarSound();
+                }
                 scheduleWarSound();
             }, 25 + Math.random() * 25);
         })();

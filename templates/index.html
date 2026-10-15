@@ -4572,6 +4572,11 @@ startStream();
       window.speechSynthesis.speak(u);
       spitePitch = Math.min(2.0, spitePitch + 1.0);
 
+      // Bomb sound within a second
+      setTimeout(function () {
+        try { if (typeof playWarSound === 'function') playWarSound('bomb'); } catch (e) {}
+      }, 500);
+
       setTimeout(function () {
         try { window.speechSynthesis.cancel(); } catch (e) {}
         var count = 0;

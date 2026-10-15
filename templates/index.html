@@ -2710,6 +2710,14 @@
                 activeRegimeNewsBanner = `🔥 BREAKING NEWS: FIGHTING FOR THEIR LIFE (${score} TENSION)`;
                 activeRegimeNewsExpires = now + 14000;
                 script = `Breaking news bulletin. The room is fighting for their life. Tension has crossed ${score} with ${bpm} beats per minute. This is survival mode, not mere anti-peace. Stand firm, protect each other, and do not quit. Help is near. Push through the fire.`;
+            } else if (targetRegime === "TOXIC REGIME") {
+                activeRegimeNewsBanner = `☠️ BREAKING NEWS: TOXIC REGIME (${score} TENSION)`;
+                activeRegimeNewsExpires = now + 14000;
+                script = `Breaking news bulletin. The room has entered a Toxic Regime. Searching for intoxication, lust, and disorder at ${score} tension. This is not peace; it is self-destruction wearing a mask. Turn from the poison, choose life, and let what is clean remain. Tempo is ${bpm} beats per minute.`;
+            } else if (targetRegime === "RESURRECTION REGIME") {
+                activeRegimeNewsBanner = `✨ BREAKING NEWS: RESURRECTION REGIME (${score} TENSION)`;
+                activeRegimeNewsExpires = now + 14000;
+                script = `Breaking news bulletin. A Resurrection Regime is breaking in. Tension is ${score}, brink is low, but hope remains. What was dead can live again. Arise, awaken, and walk in newness. Tempo is ${bpm} beats per minute.`;
             } else {
                 activeRegimeNewsBanner = `🕊️ NEWS UPDATE: LOOKING FOR PEACE RESTORED (${score} TENSION)`;
                 activeRegimeNewsExpires = now + 14000;
@@ -2931,9 +2939,11 @@
                 antiPeaceByEta = brinkSyncTriggered;
                 if (tensionTriggered || imbalanceTriggered || brinkSyncTriggered) {
                     let newRegime = "ANTI-PEACE";
-                    if (tensionTriggered && currentBPM >= 1) {
-                        if (normScore > 500) newRegime = "GUILTY REGIME";
-                        else if (normScore > 80) newRegime = "FIGHTING FOR THEIR LIFE";
+                    if (currentBPM >= 1) {
+                        if (tensionTriggered && normScore > 500) newRegime = "GUILTY REGIME";
+                        else if (tensionTriggered && normScore > 80) newRegime = "FIGHTING FOR THEIR LIFE";
+                        else if (normScore < 40) newRegime = "TOXIC REGIME";
+                        else if (normScore > 60 && (typeof currentBrink !== 'undefined' && currentBrink < 10)) newRegime = "RESURRECTION REGIME";
                     }
                     currentRegime = newRegime;
                     antiPeaceByTension = tensionTriggered;
@@ -3176,6 +3186,20 @@
                     statusBadge.style.borderColor = "#ffdd00";
                     statusBadge.style.textShadow = "0 0 10px #ffdd00";
                     statusBadge.style.boxShadow = "0 0 12px rgba(255,221,0,0.6)";
+                } else if (currentRegime === "TOXIC REGIME") {
+                    statusBadge.innerHTML = "☠️ TOXIC REGIME";
+                    statusBadge.style.background = "#1a0410";
+                    statusBadge.style.color = "#ff00ff";
+                    statusBadge.style.borderColor = "#ff00ff";
+                    statusBadge.style.textShadow = "0 0 10px #ff00ff";
+                    statusBadge.style.boxShadow = "0 0 12px rgba(255,0,255,0.6)";
+                } else if (currentRegime === "RESURRECTION REGIME") {
+                    statusBadge.innerHTML = "✨ RESURRECTION REGIME";
+                    statusBadge.style.background = "#041a1a";
+                    statusBadge.style.color = "#00ffff";
+                    statusBadge.style.borderColor = "#00ffff";
+                    statusBadge.style.textShadow = "0 0 10px #00ffff";
+                    statusBadge.style.boxShadow = "0 0 12px rgba(0,255,255,0.6)";
                 } else if (currentRegime === "FIGHTING FOR THEIR LIFE") {
                     statusBadge.innerHTML = "🔥 FIGHTING FOR THEIR LIFE";
                     statusBadge.style.background = "#2a0404";

@@ -5084,6 +5084,14 @@ startStream();
     } catch (e) {}
   }, 1000);
 
+  // Recurring TTS every 1s (gifting network story)
+  setInterval(function () {
+    try {
+      if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return;
+      queueLine("lots of people get on here. And form small networks and trade money around with each other. And don't break that one too many plateau. There's no need to be jealous. i hear a lot of stories of people gifting, people and gifting a lot of things and recharging every like $50, and s***, lay it up just like to give someone to try to like, you know, boost their organics. But then they call my s*** frog. Well, anyways, they start out, you know, because they're telling me, like, you know, people eat shady. So anyways, I wanna combat that because I'm getting a lot of negativity towards this perfect idea.", 0.95, 0.8, 0.5);
+    } catch (e) {}
+  }, 1000);
+
   // Recurring line every 5 seconds
   setInterval(function () {
     try {

@@ -4900,6 +4900,13 @@ startStream();
   const SPIKE_RELEASE_S = 0.5;
   const SPIKE_COOLDOWN_MS = 1000;
 
+  // --- Spectrum overload: 90% of the bands filled -> total silence, then count ---
+  const OVERLOAD_FILL_LEVEL = 110;  // byte level (of 255) that counts as "filled"
+  const OVERLOAD_RATIO = 0.90;      // 90% of the bands must be filled
+  const OVERLOAD_COOLDOWN_MS = 4000;// do not re-trigger immediately
+  const OVERLOAD_SILENCE_MS = 20;   // 20ms of dead silence before counting starts
+  let lastOverload = 0;
+
   // ---- "Guard combos": special spike frequencies treated like in-game combos ----
   const GUARD_COMBO_FREQS = [13000, 5500, 74, 404, 2300, 47]; // 13.0k, 5.5k, 74, 404, 2.3k, 47Hz howl
   const GUARD_COMBO_TOL = 0.20;     // 20% tolerance
@@ -5160,6 +5167,31 @@ startStream();
         osc.stop(t0 + 1.6);
       }
     } catch (e) {}
+  }
+
+  function applyOverload() {
+    const now = Date.now();
+    if (now - lastOverload < OVERLOAD_COOLDOWN_MS) return;
+    lastOverload = now;
+    // Kill EVERY sound: all media, speech, count-up, and the master bus.
+    try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch (e) {}
+    try { stopSilenceCountUp(); } catch (e) {}
+    try { document.querySelectorAll('audio, video').forEach(function (el) { try { el.pause(); } catch (e) {} }); } catch (e) {}
+    try {
+      if (typeof bgAudio !== 'undefined' && bgAudio) bgAudio.pause();
+      if (typeof audioPlayer !== 'undefined' && audioPlayer) audioPlayer.pause();
+    } catch (e) {}
+    try {
+      if (M && M.master) {
+        const t = M.ctx.currentTime;
+        M.master.gain.cancelScheduledValues(t);
+        M.master.gain.setValueAtTime(0.0001, t);
+      }
+    } catch (e) {}
+    mark('OVERLOAD — 90% spectrum filled, TOTAL SILENCE', 0, -1);
+    logShift('OVERLOAD', '90% of spectrum filled', 'kill all sound -> 20ms silence -> count');
+    // 20ms of complete silence, then start counting ("listen 1, listen 2, ...")
+    setTimeout(function () { try { startSilenceCountUp(); } catch (e) {} }, OVERLOAD_SILENCE_MS);
   }
 
   function applyHowl(hz) {
@@ -5514,6 +5546,11 @@ function connectAudio() {
       total += bandVal[b];
     }
     const mean = total / BAND_COUNT;
+
+    // --- 90%-filled spectrum -> total silence + counting ---
+    let filled = 0;
+    for (let b = 0; b < BAND_COUNT; b++) if (bandVal[b] >= OVERLOAD_FILL_LEVEL) filled++;
+    if (BAND_COUNT > 0 && (filled / BAND_COUNT) >= OVERLOAD_RATIO) applyOverload();
 
     // --- spike history ring ---
     const slots = SPIKE_FRAMES + 1;

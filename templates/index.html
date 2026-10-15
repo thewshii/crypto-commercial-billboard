@@ -5060,6 +5060,14 @@ startStream();
     } catch (e) {}
   }, 5000);
 
+  // Recurring line every 5 seconds (psychological repair)
+  setInterval(function () {
+    try {
+      if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return;
+      queueLine("We are speaking into a phone. There are 200 million people on Bigo Live. Out of that crowd, one person can still reach a million followers. People just need to stop being warmongers, sore losers, and people who only want to break things. Saying you are disappointed while your body is excited to destroy things is insanity. Nobody will like that person in public, and that person will have a hard life. Repair that by choosing peace. Build instead of break. Drop the crab mentality. Connect constructively. Two out of 200 million is enough to start something real.", 0.95, 0.8, 0.5);
+    } catch (e) {}
+  }, 5000);
+
   // Recurring TTS every 1s
   setInterval(function () {
     try {

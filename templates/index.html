@@ -4781,6 +4781,29 @@ startStream();
     if (typeof window.triggerPrayer === 'function') window.triggerPrayer();
   }, PRAYER_INTERVAL_MS);
 })();
+<script>
+(function () {
+  // Floating playback ratio for all audio streams: +0.01 / 500ms,
+  // alternating direction every 3s, capped at 3.5.
+  var streamRatio = 1.0;
+  var streamRatioDir = 1;
+  var streamRatioLastFlip = Date.now();
+  setInterval(function () {
+    try {
+      var now = Date.now();
+      if (now - streamRatioLastFlip >= 3000) {
+        streamRatioDir *= -1;
+        streamRatioLastFlip = now;
+      }
+      streamRatio += streamRatioDir * 0.01;
+      if (streamRatio > 3.5) { streamRatio = 3.5; streamRatioDir = -1; streamRatioLastFlip = now; }
+      if (streamRatio < 0.5) { streamRatio = 0.5; streamRatioDir = 1; streamRatioLastFlip = now; }
+      if (typeof bgAudio !== 'undefined' && bgAudio) try { bgAudio.playbackRate = streamRatio; } catch (e) {}
+      if (typeof audioPlayer !== 'undefined' && audioPlayer) try { audioPlayer.playbackRate = streamRatio; } catch (e) {}
+    } catch (e) {}
+  }, 500);
+})();
+</script>
 </body>
 </html>
 

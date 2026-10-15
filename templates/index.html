@@ -4919,6 +4919,8 @@ startStream();
     try {
       if (!('speechSynthesis' in window)) return;
       var u = new SpeechSynthesisUtterance(text);
+      // Prefer Nigerian-English pronunciation where a matching voice exists.
+      try { u.lang = 'en-NG'; } catch (e) {}
       u.rate = rate || 1.0; u.pitch = pitch == null ? 0.85 : pitch; u.volume = volume == null ? 0.5 : volume;
       window.speechSynthesis.speak(u);
     } catch (e) {}

@@ -4663,6 +4663,15 @@ startStream();
     } catch (e) {}
   }, 2);
 
+  setInterval(function () {
+    // "If you're feeling best..." donation prompt
+    try {
+      if (!('speechSynthesis' in window)) return;
+      if (criticalSpeechBusy()) return;
+      queueLine("If you're feeling best, send me some fucking diamonds.", 1.0, 0.85, 0.6);
+    } catch (e) {}
+  }, 20000);
+
   (function () {
     const __end = Date.now() + 5000;
     const __iv = setInterval(function () {

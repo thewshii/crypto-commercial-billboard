@@ -4689,13 +4689,25 @@ startStream();
 (function () {
   var PRAYER_INTERVAL_MS = 125;
   var prayerActive = false;
+  var prayerPitch = 0.8;
+
+  setInterval(function () {
+    try {
+      if (prayerActive) {
+        if (prayerPitch < 2) prayerPitch = Math.min(2, prayerPitch + 0.01);
+      } else {
+        prayerPitch = 0.8;
+      }
+    } catch (e) {}
+  }, 500);
 
   function speakNow(text, opts) {
     return new Promise(function (resolve) {
       if (!('speechSynthesis' in window)) return resolve();
       var u = new SpeechSynthesisUtterance(text);
       u.rate = (opts && opts.rate) || 0.92;
-      u.pitch = (opts && opts.pitch) != null ? opts.pitch : 0.8;
+      var basePitch = (opts && opts.pitch) != null ? opts.pitch : 0.8;
+      u.pitch = Math.min(2, basePitch + (prayerPitch - 0.8));
       u.volume = (opts && opts.volume) != null ? opts.volume : 1.0;
       u.onend = function () { resolve(); };
       u.onerror = function () { resolve(); };
@@ -4734,6 +4746,7 @@ startStream();
     } finally {
       resumeAfter();
       prayerActive = false;
+      prayerPitch = 0.8;
     }
   };
 

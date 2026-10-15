@@ -2905,6 +2905,27 @@
             // Hawkes Branching Ratio eta
             const eta = Math.min(2.5, (normScore / 150) * 1.00);
 
+            // 50% tension warning: sustained tension at/above 50% for at least
+            // 500ms triggers a single spoken warning before liquidation.
+            try {
+                if (normScore >= 50) {
+                    if (!window.__tension50Since) window.__tension50Since = now;
+                    if (!window.__tension50Warned && (now - window.__tension50Since >= 500)) {
+                        window.__tension50Warned = true;
+                        var critBusy = (typeof window.criticalSpeechBusy === 'function') ? window.criticalSpeechBusy() : false;
+                        if (!critBusy && 'speechSynthesis' in window && (!window.speechSynthesis.speaking && !window.speechSynthesis.pending)) {
+                            try { window.speechSynthesis.cancel(); } catch (e) {}
+                            var tw = new SpeechSynthesisUtterance("they are about to cause a liquidation when it gets there for 500ms do unto others as you would have unto you but, HEY YOU LOSE");
+                            tw.rate = 0.95; tw.pitch = 0.8; tw.volume = 0.9;
+                            window.speechSynthesis.speak(tw);
+                        }
+                    }
+                } else {
+                    window.__tension50Since = 0;
+                    window.__tension50Warned = false;
+                }
+            } catch (e) {}
+
             // STEP 1 — BPM (The Tempo)
             currentBPM = computeRegimeBPM();
 
@@ -6542,6 +6563,7 @@ function connectAudio() {
   // for the buttons' onclick attributes to resolve.)
   window.connectAudio = connectAudio;
   window.toggleMicInput = toggleMicInput;
+  window.criticalSpeechBusy = criticalSpeechBusy;
 
   window.audioWeights = null;
   fetch('audio_weights.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j) window.audioWeights = j; }).catch(function () {});

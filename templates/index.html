@@ -4672,6 +4672,14 @@ startStream();
   }, 8000);
 
   setInterval(function () {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      if (criticalSpeechBusy()) return;
+      queueLine('TTS B.', 1.0, 0.85, 0.5);
+    } catch (e) {}
+  }, 9000);
+
+  setInterval(function () {
     // Mediate "say hi" spam: gently prompt positivity every 5s.
     try {
       if (!('speechSynthesis' in window)) return;

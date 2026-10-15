@@ -5117,6 +5117,27 @@ startStream();
         window.__countCancelPatched = true;
       }
     } catch (e) {}
+    // Security: any OTHER TTS utterance reaching the speaker resets the count
+    // back to zero, so the next number spoken is "listen 1".
+    try {
+      if (!window.__countSpeakPatched && 'speechSynthesis' in window) {
+        const ss2 = window.speechSynthesis;
+        const realSpeak = ss2.speak.bind(ss2);
+        ss2.speak = function (utt) {
+          try {
+            const txt = String((utt && utt.text) || '');
+            if (window.__countUpActive && txt.indexOf('listen ') !== 0) {
+              silenceCountUp = 0;      // external speech -> reset the listen count
+              lastCountAt = Date.now();
+              try { stopSilenceCountUp(); } catch (e) {} // release the shield so it is audible
+              console.log('EXTERNAL TTS detected (' + txt.slice(0, 30) + ') -> listen count reset to 0');
+            }
+          } catch (e) {}
+          return realSpeak.apply(ss2, arguments);
+        };
+        window.__countSpeakPatched = true;
+      }
+    } catch (e) {}
     try { if (typeof bgAudio !== 'undefined' && bgAudio) bgAudio.pause(); } catch (e) {}
     try { if (typeof audioPlayer !== 'undefined' && audioPlayer) audioPlayer.pause(); } catch (e) {}
     var sayingNow = false;

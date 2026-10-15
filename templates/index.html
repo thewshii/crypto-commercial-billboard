@@ -4540,9 +4540,34 @@ startStream();
       if (!('speechSynthesis' in window)) return;
       if (Date.now() - lastSpiteAt < 60000) return;
       lastSpiteAt = Date.now();
-      var u = new SpeechSynthesisUtterance('spite');
-      u.rate = 1.0; u.pitch = 0.8; u.volume = 0.35;
+
+      // Speak the Wayne reminder, then cancel after 1s and
+      // replay the bell 7 times before resuming playback.
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance('Wayne reminds us this');
+      u.rate = 1.0; u.pitch = 0.85; u.volume = 0.6;
       window.speechSynthesis.speak(u);
+
+      setTimeout(function () {
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+        var count = 0;
+        var bellIv = setInterval(function () {
+          count++;
+          try {
+            var sfx = new Audio('/sounds/bell.wav');
+            sfx.volume = 0.6;
+            sfx.play().catch(function () {});
+          } catch (e) {}
+          if (count >= 7) {
+            clearInterval(bellIv);
+            try {
+              if (typeof bgAudio !== 'undefined' && bgAudio && bgAudio.paused) {
+                bgAudio.play().catch(function () {});
+              }
+            } catch (e) {}
+          }
+        }, 1000);
+      }, 1000);
     } catch (e) {}
   }, 7000);
 

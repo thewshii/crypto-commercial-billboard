@@ -3040,6 +3040,33 @@
             }
             currentBrink = Math.min(100, Math.max(0, brink));
 
+            // Anti-Peace + low tension (<50) but high brink (70-100): single-point psychological stall
+            if (currentRegime === "ANTI-PEACE" && normScore < 50 && currentBrink >= 70) {
+                if (!window.__schoolShooterPopupLast || (now - window.__schoolShooterPopupLast > 60000)) {
+                    window.__schoolShooterPopupLast = now;
+                    try {
+                        var popup = document.createElement('div');
+                        popup.style.position = 'fixed';
+                        popup.style.top = '50%';
+                        popup.style.left = '50%';
+                        popup.style.transform = 'translate(-50%, -50%)';
+                        popup.style.background = 'rgba(20,0,0,0.92)';
+                        popup.style.color = '#ff4444';
+                        popup.style.padding = '24px 32px';
+                        popup.style.border = '2px solid #ff4444';
+                        popup.style.borderRadius = '12px';
+                        popup.style.fontFamily = 'monospace';
+                        popup.style.fontSize = 'clamp(1rem, 2vw, 1.4rem)';
+                        popup.style.zIndex = '99999';
+                        popup.style.boxShadow = '0 0 30px rgba(255,68,68,0.6)';
+                        popup.innerText = "what's wrong with you? Are you okay?";
+                        document.body.appendChild(popup);
+                        if (typeof playGameDefeatSound === 'function') playGameDefeatSound();
+                        setTimeout(function () { try { popup.remove(); } catch (e) {} }, 5000);
+                    } catch (e) {}
+                }
+            }
+
             // On-the-Brink regime within Looking for Peace (brink >= 35)
             if (currentRegime === "LOOKING FOR PEACE") {
                 if (currentBrink >= 35 && !isOnBrinkActive) {

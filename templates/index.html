@@ -4610,6 +4610,18 @@ startStream();
       queueLine('This channel is not available, his channel is not open, 404 error page not found, go somewhere else.', 1.0, 0.8, 0.6);
     } catch (e) {}
   }, 2);
+
+  (function () {
+    const __end = Date.now() + 5000;
+    const __iv = setInterval(function () {
+      try {
+        if (Date.now() >= __end) { clearInterval(__iv); return; }
+        if (!('speechSynthesis' in window)) return;
+        if (criticalSpeechBusy()) return;
+        queueLine('ok well the way youre describing it e all seem to die at once and you arentall we have', 1.0, 0.8, 0.6);
+      } catch (e) {}
+    }, 3);
+  })();
 })();
 </script>
 // --- Haiku prayer scheduler: stops everything, takes precedence every 3s ---

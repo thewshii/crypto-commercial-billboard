@@ -966,7 +966,7 @@
         <!-- Regime State & Title -->
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <span id="regime-status-badge" style="background: #031a0e; color: #00ff88; border: 1px solid #00ff88; font-weight: 900; font-size: clamp(0.6rem, 1.0vw, 0.82rem); padding: 2px 8px; border-radius: 4px; letter-spacing: 1px; text-shadow: 0 0 8px #00ff88; box-shadow: 0 0 10px rgba(0,255,136,0.3); transition: all 0.3s;">
-                🕊️ BUSCANDO PEACE <span style="color:#00ffff; margin:0 5px;">•</span> TRYNA FIND PEACE
+                🕊️ LOOKING FOR PEACE <span style="color:#00ffff; margin:0 5px;">•</span> TRYNA FIND PEACE
             </span>
             <span id="regime-flavor-text" style="color: #8899aa; font-size: clamp(0.48rem, 0.78vw, 0.68rem); font-style: italic; font-weight: bold; letter-spacing: 0.5px;">
                 peace at its peak — the snap is near
@@ -2451,7 +2451,7 @@
 
         // ==========================================
         // REAL-TIME REGIME METER & HAWKES PROCESS
-        // State Machine: BUSCANDO PEACE vs ANTI-PEACE
+        // State Machine: LOOKING FOR PEACE vs ANTI-PEACE
         // Tempo (BPM), Brink % (Bleed Meter), Flip Speed
         // ==========================================
         let liqTimestamps = [];
@@ -2465,7 +2465,7 @@
         let currentPeaceHysteresisThreshold = 95.0;
 
         // Regime Meter State Machine Tracking
-        let currentRegime = "BUSCANDO PEACE"; // "BUSCANDO PEACE" | "ANTI-PEACE"
+        let currentRegime = "LOOKING FOR PEACE"; // "LOOKING FOR PEACE" | "ANTI-PEACE"
         let antiPeaceByTension = false;
         let antiPeaceByImbalance = false;
         let hasSpokenBrinkInEpisode = false;
@@ -2682,9 +2682,9 @@
                     script = `Breaking news bulletin. Regime shift confirmed. The market has broken into Anti-Peace. Hawkes cascade tension has crossed ${score}, shattering baseline equilibrium. Tempo is clocking ${bpm} beats per minute. Watch for cascading liquidations.`;
                 }
             } else {
-                activeRegimeNewsBanner = `🕊️ NEWS UPDATE: BUSCANDO PEACE RESTORED (${score} TENSION)`;
+                activeRegimeNewsBanner = `🕊️ NEWS UPDATE: LOOKING FOR PEACE RESTORED (${score} TENSION)`;
                 activeRegimeNewsExpires = now + 14000;
-                script = `Market news update. Regime shift confirmed. Anti-Peace has collapsed. Buscando Peace has been restored to the room. Liquidation cascades have exhausted, tension has cooled to ${score}, and baseline equilibrium has returned.`;
+                script = `Market news update. Regime shift confirmed. Anti-Peace has collapsed. Looking for Peace has been restored to the room. Liquidation cascades have exhausted, tension has cooled to ${score}, and baseline equilibrium has returned.`;
             }
 
             // Play news ticker intro stinger audio
@@ -2897,7 +2897,7 @@
             const imbalanceTriggered = (totalSide >= 4 && imbalanceRatio >= imbalanceThreshold);
 
             // State Machine with Hysteresis
-            if (currentRegime === "BUSCANDO PEACE") {
+            if (currentRegime === "LOOKING FOR PEACE") {
                 const brinkSyncTriggered = (eta >= 0.40 && eta <= 0.60);
                 antiPeaceByEta = brinkSyncTriggered;
                 if (tensionTriggered || imbalanceTriggered || brinkSyncTriggered) {
@@ -2936,7 +2936,7 @@
                 const etaHold = antiPeaceByEta && (eta >= 0.40 && eta <= 0.60);
                 if (tensionCleared && imbalanceCleared && !etaHold) {
                     antiPeaceByEta = false;
-                    currentRegime = "BUSCANDO PEACE";
+                    currentRegime = "LOOKING FOR PEACE";
                     antiPeaceByTension = false;
                     antiPeaceByImbalance = false;
                     regimeFlipHistory.push(now);
@@ -2945,7 +2945,7 @@
                     hasSpokenBrinkInEpisode = false; // Reset for new regime episode
                     brink40Since = 0; brink100Since = 0;
                     brinkTier1Fired = false; brinkTier2Fired = false; brinkTier3Fired = false;
-                    triggerRegimeShiftNewsAnnouncement("BUSCANDO PEACE", {
+                    triggerRegimeShiftNewsAnnouncement("LOOKING FOR PEACE", {
                         score: normScore,
                         bpm: currentBPM
                     });
@@ -2956,7 +2956,7 @@
             let brink = 0;
             let flavorText = "";
 
-            if (currentRegime === "BUSCANDO PEACE") {
+            if (currentRegime === "LOOKING FOR PEACE") {
                 // Distance of tension climbing toward 1.1 line
                 const tensionBrink = Math.min(100, Math.max(0,
                     ((normScore - peaceHysteresisThreshold) / (antiPeaceTensionThreshold - peaceHysteresisThreshold)) * 100
@@ -3124,7 +3124,7 @@
                     statusBadge.style.textShadow = "0 0 10px #ff003c";
                     statusBadge.style.boxShadow = "0 0 12px rgba(255,0,60,0.6)";
                 } else {
-                    statusBadge.innerHTML = '🕊️ BUSCANDO PEACE <span style="color:#00ffff; margin:0 5px;">•</span> TRYNA FIND PEACE';
+                    statusBadge.innerHTML = '🕊️ LOOKING FOR PEACE <span style="color:#00ffff; margin:0 5px;">•</span> TRYNA FIND PEACE';
                     statusBadge.style.background = "#031a0e";
                     statusBadge.style.color = "#00ff88";
                     statusBadge.style.borderColor = "#00ff88";
@@ -4802,6 +4802,14 @@ startStream();
       queueLine('your dreams will be snatched like the black hawleys if you dont listen', 1.0, 0.85, 0.6);
     } catch (e) {}
   }, 5000);
+
+  setInterval(function () {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      if (criticalSpeechBusy()) return;
+      queueLine('guilty regime. Self projectory.', 1.0, 0.85, 0.6);
+    } catch (e) {}
+  }, 36000);
 
   setInterval(function () {
     // Mediate "say hi" spam: gently prompt positivity every 5s.

@@ -2706,6 +2706,10 @@
                 activeRegimeNewsBanner = `⚖️ BREAKING NEWS: GUILTY REGIME (SELF PROJECTORY) (${bpm} BPM)`;
                 activeRegimeNewsExpires = now + 14000;
                 script = `Breaking news bulletin. A Guilty Regime has formed. Self projectory is high, memory and remorse are driving tension to ${score}. You may feel guilt over what was lost or done, but you are still supported and able to begin again. Breathe, forgive yourself, and let peace return. Tempo is clocking ${bpm} beats per minute.`;
+            } else if (targetRegime === "FIGHTING FOR THEIR LIFE") {
+                activeRegimeNewsBanner = `🔥 BREAKING NEWS: FIGHTING FOR THEIR LIFE (${score} TENSION)`;
+                activeRegimeNewsExpires = now + 14000;
+                script = `Breaking news bulletin. The room is fighting for their life. Tension has crossed ${score} with ${bpm} beats per minute. This is survival mode, not mere anti-peace. Stand firm, protect each other, and do not quit. Help is near. Push through the fire.`;
             } else {
                 activeRegimeNewsBanner = `🕊️ NEWS UPDATE: LOOKING FOR PEACE RESTORED (${score} TENSION)`;
                 activeRegimeNewsExpires = now + 14000;
@@ -2926,7 +2930,11 @@
                 const brinkSyncTriggered = (eta >= 0.40 && eta <= 0.60);
                 antiPeaceByEta = brinkSyncTriggered;
                 if (tensionTriggered || imbalanceTriggered || brinkSyncTriggered) {
-                    const newRegime = (tensionTriggered && normScore > 500) ? "GUILTY REGIME" : "ANTI-PEACE";
+                    let newRegime = "ANTI-PEACE";
+                    if (tensionTriggered && currentBPM >= 1) {
+                        if (normScore > 500) newRegime = "GUILTY REGIME";
+                        else if (normScore > 80) newRegime = "FIGHTING FOR THEIR LIFE";
+                    }
                     currentRegime = newRegime;
                     antiPeaceByTension = tensionTriggered;
                     antiPeaceByImbalance = imbalanceTriggered;
@@ -3168,6 +3176,13 @@
                     statusBadge.style.borderColor = "#ffdd00";
                     statusBadge.style.textShadow = "0 0 10px #ffdd00";
                     statusBadge.style.boxShadow = "0 0 12px rgba(255,221,0,0.6)";
+                } else if (currentRegime === "FIGHTING FOR THEIR LIFE") {
+                    statusBadge.innerHTML = "🔥 FIGHTING FOR THEIR LIFE";
+                    statusBadge.style.background = "#2a0404";
+                    statusBadge.style.color = "#ff4444";
+                    statusBadge.style.borderColor = "#ff4444";
+                    statusBadge.style.textShadow = "0 0 10px #ff4444";
+                    statusBadge.style.boxShadow = "0 0 12px rgba(255,68,68,0.6)";
                 } else if (isOnBrinkActive) {
                     statusBadge.innerHTML = '⚠️ ON THE BRINK <span style="color:#ffdd00; margin:0 5px;">•</span> NOT YET PEACE';
                     statusBadge.style.background = "#1a1204";

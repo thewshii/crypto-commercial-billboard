@@ -3063,6 +3063,7 @@
             if (etaEl) etaEl.innerText = eta.toFixed(2);
             if (bpmValEl) bpmValEl.innerText = currentBPM;
             if (brinkValEl) brinkValEl.innerText = `${currentBrink}%`;
+            try { trackBrinkSweep(currentBrink); } catch (e) {}
             if (flipsValEl) flipsValEl.innerText = flipsPer10m;
             // HOSTILITY: pops up at 13 flips, counts up 13 -> 18, caps at 18.
             const hostilityWrapEl = document.getElementById("hostility-wrap");
@@ -5183,7 +5184,60 @@ startStream();
     } catch (e) {}
   }
 
-  // --- Low regime flips + heavy audio switching -> cut all sound, "silence your mind" ---
+  // --- Two consecutive 0 -> 100 brink sweeps: cut all sound, speak the Word ---
+let brinkSweeps = 0;
+let brinkAtBottom = false;
+let brinkLastValue = 0;
+let lastBrinkSweepFire = 0;
+const BRINK_SWEEP_RESET_MS = 30000; // a sweep must complete within this window
+
+function trackBrinkSweep(v) {
+  const now = Date.now();
+  if (typeof v !== 'number' || isNaN(v)) return;
+  // arm at the bottom (<= 5)
+  if (v <= 5) { brinkAtBottom = true; }
+  // complete the sweep when we hit the top (>= 100) after having been at the bottom
+  if (brinkAtBottom && v >= 100) {
+    brinkAtBottom = false;
+    const quick = (now - (brinkSweepArmedAt || now)) <= BRINK_SWEEP_RESET_MS;
+    brinkSweeps = quick ? brinkSweeps + 1 : 1;
+    brinkSweepArmedAt = now;
+    console.log('BRINK sweep 0->100 #' + brinkSweeps);
+    if (brinkSweeps >= 2 && (now - lastBrinkSweepFire) > 20000) {
+      lastBrinkSweepFire = now;
+      brinkSweeps = 0;
+      fireBrinkDoubleSweep();
+    }
+  }
+  brinkLastValue = v;
+}
+let brinkSweepArmedAt = 0;
+
+function fireBrinkDoubleSweep() {
+  try {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    document.querySelectorAll('audio, video').forEach(function (el) { try { el.pause(); } catch (e) {} });
+    if (typeof bgAudio !== 'undefined' && bgAudio) bgAudio.pause();
+    if (typeof audioPlayer !== 'undefined' && audioPlayer) audioPlayer.pause();
+    if (typeof stopSilenceCountUp === 'function') stopSilenceCountUp();
+  } catch (e) {}
+  try {
+    if (typeof mark === 'function') mark('BRINK 0->100 x2 — CUT ALL SOUND', 0, -1);
+    if (typeof logShift === 'function') logShift('BRINK-SWEEP', '0->100 twice in a row', 'cut all sound -> speak the Word');
+  } catch (e) {}
+  console.log('BRINK swept 0->100 twice in a row -> cutting all sound and speaking the Word');
+  if (typeof playWordSegment === 'function') {
+    try { playWordSegment(null, true); } catch (e) {}
+  } else if ('speechSynthesis' in window) {
+    const u = new SpeechSynthesisUtterance('Let us have a prayer.');
+    u.rate = 0.9; u.pitch = 0.8;
+    window.speechSynthesis.speak(u);
+  }
+}
+window.trackBrinkSweep = trackBrinkSweep;
+window.fireBrinkDoubleSweep = fireBrinkDoubleSweep;
+
+// --- Low regime flips + heavy audio switching -> cut all sound, "silence your mind" ---
 const FLIP_SWITCH_WINDOW_MS = 20000;  // look at audio switches over the last 20s
 const FLIP_SWITCH_MIN_SWITCHES = 8;   // "a lot of switching"
 const FLIP_LOW_THRESHOLD = 9;         // flips below 9

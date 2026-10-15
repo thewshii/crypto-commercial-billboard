@@ -2717,7 +2717,7 @@
             } else if (targetRegime === "RESURRECTION REGIME") {
                 activeRegimeNewsBanner = `✨ BREAKING NEWS: RESURRECTION REGIME (${score} TENSION)`;
                 activeRegimeNewsExpires = now + 14000;
-                script = `Breaking news bulletin. A Resurrection Regime is breaking in. Tension is ${score}, brink is low, but hope remains. What was dead can live again. Arise, awaken, and walk in newness. Tempo is ${bpm} beats per minute.`;
+                script = `Breaking news bulletin. A Resurrection Regime is breaking in. Tension is ${score}, brink is low, but hope remains. What was dead can live again. Arise, awaken, and walk in newness. Vs total lull, decent quiet for once. Is everybody okay? Sail one and put a one in the chat. If you're okay. Tempo is ${bpm} beats per minute.`;
             } else {
                 activeRegimeNewsBanner = `🕊️ NEWS UPDATE: LOOKING FOR PEACE RESTORED (${score} TENSION)`;
                 activeRegimeNewsExpires = now + 14000;
@@ -2939,7 +2939,9 @@
                 antiPeaceByEta = brinkSyncTriggered;
                 if (tensionTriggered || imbalanceTriggered || brinkSyncTriggered) {
                     let newRegime = "ANTI-PEACE";
-                    if (currentBPM >= 1) {
+                    if (regimeFlipHistory.length === 0) {
+                        newRegime = "RESURRECTION REGIME";
+                    } else if (currentBPM >= 1) {
                         if (tensionTriggered && normScore > 500) newRegime = "GUILTY REGIME";
                         else if (tensionTriggered && normScore > 80) newRegime = "FIGHTING FOR THEIR LIFE";
                         else if (normScore < 40) newRegime = "TOXIC REGIME";

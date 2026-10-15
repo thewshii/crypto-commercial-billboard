@@ -5083,6 +5083,8 @@ startStream();
   let silenceCountTimer = null; // interval handle for the spoken count-up
   let silenceCountChainTimer = null; // one-shot timer chaining number -> number
   // Every 10th number escalates into a warning about the wrath of God.
+  window.__countEdgeLine = 'There is no need to do this. The room is right at the edge.';
+  window.__countWinnerLine = 'Congratulations, you are a random winner. And that does not mean it is worse than anything. You are worth it.';
   window.__countWrathLines = [
     'Warning: the wrath of God is upon you. Stop what you are doing right now. With regards to your sin, repent.',
     'Hear it: the wrath of God is not sleeping. Stop what you are doing right now. With regards to your sin, turn back.',
@@ -5126,12 +5128,15 @@ startStream();
       sayingNow = true;
       lastCountAt = Date.now();
       // Every 10 numbers, escalate: a warning about the wrath of God.
-      const milestone = (silenceCountUp % 10 === 0);
+      // Milestones: every 20 -> winner, every 15 -> edge warning, every 10 -> wrath.
+      const W = window.__countWrathLines || [];
+      const milestoneText = (silenceCountUp % 20 === 0) ? (window.__countWinnerLine + ' listen ' + silenceCountUp)
+        : (silenceCountUp % 15 === 0) ? (window.__countEdgeLine + ' listen ' + silenceCountUp)
+        : (silenceCountUp % 10 === 0) ? (W[(silenceCountUp / 10 - 1) % Math.max(1, W.length)] + ' listen ' + silenceCountUp)
+        : ('listen ' + String(silenceCountUp));
       try {
         if (!('speechSynthesis' in window)) { sayingNow = false; return; }
-        var u = new SpeechSynthesisUtterance(milestone
-          ? (window.__countWrathLines || [])[(silenceCountUp / 10 - 1) % Math.max(1, (window.__countWrathLines || []).length)] + ' listen ' + String(silenceCountUp)
-          : 'listen ' + String(silenceCountUp));
+        var u = new SpeechSynthesisUtterance(milestoneText);
         u.rate = 1.0; u.pitch = 0.8; u.volume = 0.9;
         var finish = function () {
           if (!sayingNow) return;

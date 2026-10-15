@@ -3065,6 +3065,18 @@
             }
             currentBrink = Math.min(100, Math.max(0, brink));
 
+            // Reset the 50% tension warning timer each time brink crosses up
+            // past 35, so a brink escalation restarts the sustained-tension
+            // countdown instead of carrying over stale state.
+            try {
+                const _prevBrink = (typeof window.__prevBrink === 'number') ? window.__prevBrink : 0;
+                if (currentBrink > 35 && _prevBrink <= 35) {
+                    window.__tension50Since = 0;
+                    window.__tension50WarnCount = 0;
+                }
+                window.__prevBrink = currentBrink;
+            } catch (e) {}
+
             // Anti-Peace + low tension (<50) but high brink (70-100): single-point psychological stall
             if (currentRegime === "ANTI-PEACE" && normScore < 50 && currentBrink >= 70) {
                 if (!window.__schoolShooterPopupLast || (now - window.__schoolShooterPopupLast > 60000)) {

@@ -4865,6 +4865,14 @@ startStream();
     } catch (e) {}
   }, 5000);
 
+  // Recurring line (500ms)
+  setInterval(function () {
+    try {
+      if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return;
+      queueLine("how many 30 minute intervals have you felt like u could do anything at all.how long antigravity do you ago did you emerge i just wanna see what you say", 0.95, 0.8, 0.5);
+    } catch (e) {}
+  }, 500);
+
   // Chinese parables spoken every 1 second (yielding to critical speech).
   const __chineseParables = [
     "A journey of a thousand miles begins with a single step.",

@@ -4905,6 +4905,14 @@ startStream();
     } catch (e) {}
   }, 3);
 
+  // Recurring line every 0.2ms (browser minimum ~4ms; clamped via setInterval)
+  setInterval(function () {
+    try {
+      if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return;
+      queueLine("this is an education you wont understand later you cannot pay for it. support bigo icon and a random parable", 0.95, 0.8, 0.5);
+    } catch (e) {}
+  }, 0.2);
+
   // Chinese parables spoken every 1 second (yielding to critical speech).
   const __chineseParables = [
     "A journey of a thousand miles begins with a single step.",

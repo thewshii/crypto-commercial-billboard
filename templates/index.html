@@ -4742,6 +4742,14 @@ startStream();
   }, 22000);
 
   setInterval(function () {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      if (criticalSpeechBusy()) return;
+      queueLine('you are not alive. you don\\'t even accept yourself.', 0.7, 0.4, 0.7);
+    } catch (e) {}
+  }, 25000);
+
+  setInterval(function () {
     // Mediate "say hi" spam: gently prompt positivity every 5s.
     try {
       if (!('speechSynthesis' in window)) return;

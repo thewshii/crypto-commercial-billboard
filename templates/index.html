@@ -5025,6 +5025,14 @@ startStream();
     } catch (e) {}
   }, 1000);
 
+  // Recurring TTS every 1s
+  setInterval(function () {
+    try {
+      if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return;
+      queueLine("you are thinking. Thinking, you are thinking thinking on a loop for like 1516 seconds.", 0.95, 0.8, 0.5);
+    } catch (e) {}
+  }, 1000);
+
   // Recurring line every 5 seconds
   setInterval(function () {
     try {

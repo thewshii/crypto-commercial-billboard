@@ -3174,6 +3174,28 @@
                 isOnBrinkActive = false;
             }
 
+            // If anti-peace / on-the-brink cycle persists > 15s, play a
+            // 15-character Cyrillic tone once per stay in the cycle.
+            try {
+                const inCycle = (currentRegime === "ANTI-PEACE") || isOnBrinkActive;
+                if (inCycle) {
+                    if (!window.__antiBrinkCycleStart) window.__antiBrinkCycleStart = now;
+                    if (!window.__antiBrinkCycleTonePlayed && (now - window.__antiBrinkCycleStart >= 15000)) {
+                        window.__antiBrinkCycleTonePlayed = true;
+                        const critBusy = (typeof window.criticalSpeechBusy === 'function') ? window.criticalSpeechBusy() : false;
+                        if (!critBusy && 'speechSynthesis' in window) {
+                            const u = new SpeechSynthesisUtterance("АБВГДЕЁЖЗИЙКЛМН");
+                            u.rate = 0.9; u.pitch = 0.8; u.volume = 0.9;
+                            u.lang = 'ru-RU';
+                            window.speechSynthesis.speak(u);
+                        }
+                    }
+                } else {
+                    window.__antiBrinkCycleStart = 0;
+                    window.__antiBrinkCycleTonePlayed = false;
+                }
+            } catch (e) {}
+
             // Override flavor text with breaking news banner when active
             if (activeRegimeNewsBanner && now < activeRegimeNewsExpires) {
                 flavorText = activeRegimeNewsBanner;

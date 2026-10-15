@@ -4535,6 +4535,7 @@ startStream();
 // Queued (no cancel) so they mix with rather than cut off in-flight TTS.
 (function () {
   var lastSpiteAt = 0;
+  var spitePitch = 0.8;
   var spiteAttemptWindowStart = 0;
   var spiteAttemptCount = 0;
   var warnedThisMinute = false;
@@ -4567,8 +4568,9 @@ startStream();
       // replay the bell 7 times before resuming playback.
       window.speechSynthesis.cancel();
       var u = new SpeechSynthesisUtterance('Wayne reminds us this');
-      u.rate = 1.0; u.pitch = 0.85; u.volume = 0.6;
+      u.rate = 1.0; u.pitch = spitePitch; u.volume = 0.6;
       window.speechSynthesis.speak(u);
+      spitePitch = Math.min(2.0, spitePitch + 1.0);
 
       setTimeout(function () {
         try { window.speechSynthesis.cancel(); } catch (e) {}

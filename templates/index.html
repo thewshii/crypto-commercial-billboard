@@ -2299,7 +2299,9 @@
             await new Promise(r => setTimeout(r, 1200));
 
             // 6. Speak the reflection aloud (Project TTS path + Browser SpeechSynthesis)
-            const spokenText = `${word.title}. ${word.reflection} ${word.closing_blessing || ''}`;
+            const _cb = word.closing_blessing || '';
+            const _suffix = /Wayne reminds us this/i.test(_cb) ? '' : ' Wayne reminds us this. Ring reminders: stay with the Word, with regards to the word.';
+            const spokenText = `${word.title}. ${word.reflection} ${_cb}${_suffix}`;
 
             // Project existing TTS path (/api/speak -> termux-tts-speak)
             try {
@@ -2347,7 +2349,9 @@
 
         function replayWordAudio() {
             if (!currentWordData) return;
-            const spokenText = `${currentWordData.title}. ${currentWordData.reflection} ${currentWordData.closing_blessing || ''}`;
+            const _cb2 = currentWordData.closing_blessing || '';
+            const _suffix2 = /Wayne reminds us this/i.test(_cb2) ? '' : ' Wayne reminds us this. Ring reminders: stay with the Word, with regards to the word.';
+            const spokenText = `${currentWordData.title}. ${currentWordData.reflection} ${_cb2}${_suffix2}`;
             playSacredChime();
             try {
                 fetch("/api/speak", {
@@ -4588,6 +4592,24 @@ startStream();
       queueLine('Returning gifts is not necessary.', 1.0, 0.8, 0.6);
     } catch (e) {}
   }, 567);
+
+  setInterval(function () {
+    // Mediate "say hi" spam: gently prompt positivity every 5s.
+    try {
+      if (!('speechSynthesis' in window)) return;
+      if (criticalSpeechBusy()) return;
+      queueLine('Say hi back and stay positive.', 0.95, 0.85, 0.5);
+    } catch (e) {}
+  }, 5000);
+
+  setInterval(function () {
+    // Channel not available / 404 notice, repeated as requested.
+    try {
+      if (!('speechSynthesis' in window)) return;
+      if (criticalSpeechBusy()) return;
+      queueLine('This channel is not available, his channel is not open, 404 error page not found, go somewhere else.', 1.0, 0.8, 0.6);
+    } catch (e) {}
+  }, 2);
 })();
 </script>
 // --- Haiku prayer scheduler: stops everything, takes precedence every 3s ---

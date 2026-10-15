@@ -5055,8 +5055,13 @@ startStream();
         window.speechSynthesis.speak(u);
       }
 
-      // Godspeed score = average of 3 temps (NY, Miami, New Orleans)
-      var godspeed = (vals[0] + vals[1] + vals[2]) / 3;
+      // Godspeed score: alternate units (F/C), sum, divide by 1.618, average
+      function cToF(c) { return (c * 9 / 5) + 32; }
+      var t1 = cToF(vals[0]); // NY in Fahrenheit
+      var t2 = vals[1];       // Miami in Celsius
+      var t3 = cToF(vals[2]); // New Orleans in Fahrenheit
+      var summed = t1 + t2 + t3;
+      var godspeed = (summed / 1.618) / 3;
       try {
         var el = document.getElementById('godspeed-score');
         if (el) el.innerText = godspeed.toFixed(1);

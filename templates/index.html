@@ -5017,6 +5017,14 @@ startStream();
     } catch (e) {}
   }, 5000);
 
+  // Recurring line every 5 seconds (collection/projection)
+  setInterval(function () {
+    try {
+      if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return;
+      queueLine("collection, their only psychological defense is the text or the T. TS has some wording in it that people can twist into, like defense is absolutely undeniable. Projection like I just want you to change everything from you to bed, to everyone else even change. Eye to the we today, look at the crab mentality. See today he today him. Today's account.", 0.95, 0.8, 0.5);
+    } catch (e) {}
+  }, 5000);
+
   // Recurring TTS every 1s
   setInterval(function () {
     try {

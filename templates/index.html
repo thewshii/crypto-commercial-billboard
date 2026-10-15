@@ -6803,6 +6803,12 @@ function connectAudio() {
     try {
       if (typeof toggleMicInput === 'function') toggleMicInput();
     } catch (e) {}
+    try {
+      const astTime = (typeof audioCtx !== 'undefined' && audioCtx) ? audioCtx.currentTime : Date.now();
+      window.__startDots = window.__startDots || [];
+      window.__startDots.push(astTime + ' .');
+      console.log('.');
+    } catch (e) {}
     console.log('AUDIO UNLOCKED by user gesture');
   }
   function show() {

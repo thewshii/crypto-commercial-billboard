@@ -3001,6 +3001,7 @@
                 regimeFlipHistory.shift();
             }
             const flipsPer10m = regimeFlipHistory.length;
+            try { window.__flipsPer10m = flipsPer10m; } catch (e) {}
 
             // STEP 6 — TTS TRIGGER when BRINK crosses 80%
             if (currentBrink >= 80 && !hasSpokenBrinkInEpisode) {
@@ -4763,6 +4764,10 @@ startStream();
 
   // Returns true if the action is allowed. Logs everything (bursts coalesced).
   function judge(kind, detail) {
+    // Track media switches (audio play/source changes) for the flip/switch rule.
+    if (kind === 'MEDIA.play' || kind === 'MEDIA.pause') {
+      try { (window.__mediaSwitchLog || (window.__mediaSwitchLog = [])).push(Date.now()); } catch (e) {}
+    }
     const who = caller();
     const now = performance.now();
     let allowed = true, by = '';
@@ -5178,7 +5183,56 @@ startStream();
     } catch (e) {}
   }
 
-  // --- RSI OVERBOUGHT: cut all sound, then speak the troubles sequence ---
+  // --- Low regime flips + heavy audio switching -> cut all sound, "silence your mind" ---
+const FLIP_SWITCH_WINDOW_MS = 20000;  // look at audio switches over the last 20s
+const FLIP_SWITCH_MIN_SWITCHES = 8;   // "a lot of switching"
+const FLIP_LOW_THRESHOLD = 9;         // flips below 9
+const FLIP_SWITCH_COOLDOWN_MS = 90000;
+const SILENCE_MIND_LINES = [
+  "Silence your mind.",
+  "The thoughts you have are not even yours.",
+  "If you want to get deep, it's a river, it's a stream.",
+  "You do not have to touch any of the fish.",
+  "As a matter of fact, they don't want to touch you.",
+  "The amount of fish in the sea is not a prize.",
+  "The amount of fish in the sea is not a price."
+];
+
+function audioSwitchesInWindow(ms) {
+  const now = Date.now();
+  const arr = window.__mediaSwitchLog || (window.__mediaSwitchLog = []);
+  while (arr.length && now - arr[0] > ms) arr.shift();
+  return arr.length;
+}
+window.audioSwitchesInWindow = audioSwitchesInWindow;
+
+let lastFlipSwitch = 0;
+function checkFlipSwitchOverload() {
+  const flips = (typeof window.__flipsPer10m === 'number') ? window.__flipsPer10m : null;
+  if (flips === null) return;
+  const now = Date.now();
+  if (flips >= FLIP_LOW_THRESHOLD) return;
+  if (audioSwitchesInWindow(FLIP_SWITCH_WINDOW_MS) < FLIP_SWITCH_MIN_SWITCHES) return;
+  if (now - lastFlipSwitch < FLIP_SWITCH_COOLDOWN_MS) return;
+  lastFlipSwitch = now;
+  try {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    document.querySelectorAll('audio, video').forEach(function (el) { try { el.pause(); } catch (e) {} });
+    if (typeof bgAudio !== 'undefined' && bgAudio) bgAudio.pause();
+    if (typeof audioPlayer !== 'undefined' && audioPlayer) audioPlayer.pause();
+    if (typeof stopSilenceCountUp === 'function') stopSilenceCountUp();
+  } catch (e) {}
+  try {
+    if (typeof mark === 'function') mark('FLIPS ' + flips + ' < 9 + HEAVY SWITCHING — CUT', 0, -1);
+    if (typeof logShift === 'function') logShift('FLIP-SWITCH', 'flips=' + flips + ' switches=' + audioSwitchesInWindow(FLIP_SWITCH_WINDOW_MS), 'cut all sound -> silence your mind');
+  } catch (e) {}
+  console.log('FLIPS ' + flips + ' below 9 with heavy switching -> cutting all sound for "silence your mind"');
+  speakSeq(SILENCE_MIND_LINES, 0);
+}
+window.checkFlipSwitchOverload = checkFlipSwitchOverload;
+setInterval(checkFlipSwitchOverload, 1000);
+
+// --- RSI OVERBOUGHT: cut all sound, then speak the troubles sequence ---
 const RSI_OVERBOUGHT_LEVEL = 70;
 const RSI_OVERBOUGHT_COOLDOWN_MS = 60000;
 let lastOverbought = 0;

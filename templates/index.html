@@ -4696,6 +4696,14 @@ startStream();
   }, 17000);
 
   setInterval(function () {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      if (criticalSpeechBusy()) return;
+      queueLine('the idea that you are so entitled is disgusting. Why do you feel like you have the right to disturb other people?', 0.5, 0.5, 0.6);
+    } catch (e) {}
+  }, 16000);
+
+  setInterval(function () {
     // Mediate "say hi" spam: gently prompt positivity every 5s.
     try {
       if (!('speechSynthesis' in window)) return;

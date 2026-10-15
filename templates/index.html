@@ -4622,6 +4622,15 @@ startStream();
       } catch (e) {}
     }, 3);
   })();
+
+  setInterval(function () {
+    // Warning about touching objects on screen.
+    try {
+      if (!('speechSynthesis' in window)) return;
+      if (criticalSpeechBusy()) return;
+      queueLine('you do not have to touch any of the objects that you see here, do not touch them, you will pay a price.', 1.0, 0.8, 0.6);
+    } catch (e) {}
+  }, 12000);
 })();
 </script>
 // --- Haiku prayer scheduler: stops everything, takes precedence every 3s ---

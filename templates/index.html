@@ -4758,6 +4758,44 @@ startStream();
   }, 28000);
 
   setInterval(function () {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      if (criticalSpeechBusy()) return;
+      queueLine('wayne hawley jr place of birth stx', 1.0, 0.85, 0.6);
+    } catch (e) {}
+  }, 31000);
+
+  setInterval(function () {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      if (criticalSpeechBusy()) return;
+      queueLine('saint croix. virgin islands of the united states', 1.0, 0.85, 0.6);
+    } catch (e) {}
+  }, 32000);
+
+  setInterval(function () {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      if (criticalSpeechBusy()) return;
+      queueLine('virgin islands of the united states', 0.95, 0.55, 0.6);
+    } catch (e) {}
+  }, 33000);
+
+  setInterval(function () {
+    // Every 5s cut all audio and say bovoni / suffer alley
+    try {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      try { if (typeof bgAudio !== 'undefined' && bgAudio) bgAudio.pause(); } catch (e) {}
+      try { if (typeof audioPlayer !== 'undefined' && audioPlayer) audioPlayer.pause(); } catch (e) {}
+      queueLine('bovoni. suffer alley..', 0.9, 0.7, 0.7);
+      setTimeout(function () {
+        try { if (typeof bgAudio !== 'undefined' && bgAudio && bgAudio.paused) bgAudio.play().catch(function () {}); } catch (e) {}
+      }, 2000);
+    } catch (e) {}
+  }, 5000);
+
+  setInterval(function () {
     // Mediate "say hi" spam: gently prompt positivity every 5s.
     try {
       if (!('speechSynthesis' in window)) return;

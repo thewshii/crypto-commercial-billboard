@@ -3469,6 +3469,9 @@
                 rsiEl.innerHTML = `RSI: <strong>${rsi.toFixed(1)}</strong> <span style="font-size:0.85em; opacity:0.85;">[${rsiBadge}]</span>`;
             }
 
+            // RSI OVERBOUGHT: cut every sound, then speak the troubles sequence.
+            if (rsi >= RSI_OVERBOUGHT_LEVEL) triggerOverboughtSequence(rsi);
+
             // 2. Calculate 10-period Momentum: Close[now] - Close[now - 10]
             const curClose = candles[candles.length - 1].close;
             const momLookback = Math.min(10, candles.length - 1);
@@ -5175,7 +5178,54 @@ startStream();
     } catch (e) {}
   }
 
-  window.onHawkesOverload = function (raw) {
+  // --- RSI OVERBOUGHT: cut all sound, then speak the troubles sequence ---
+const RSI_OVERBOUGHT_LEVEL = 70;
+const RSI_OVERBOUGHT_COOLDOWN_MS = 60000;
+let lastOverbought = 0;
+const OVERBOUGHT_LINES = [
+  "Quail your troubles.",
+  "Forget your troubles.",
+  "Don't worry.",
+  "This life is filled with a bunch of signs.",
+  "Every decision branches off into a matrix, or another three, or an infinite amount that you can decide from.",
+  "Don't let that get to you.",
+  "Don't let that eat you alive."
+];
+
+function speakSeq(lines, i) {
+  if (i >= lines.length) return Promise.resolve();
+  return new Promise(function (resolve) {
+    if (!('speechSynthesis' in window)) return resolve();
+    var u = new SpeechSynthesisUtterance(lines[i]);
+    u.rate = 0.9; u.pitch = 0.8; u.volume = 1.0;
+    u.onend = function () { speakSeq(lines, i + 1).then(resolve); };
+    u.onerror = function () { resolve(); };
+    window.speechSynthesis.speak(u);
+  });
+}
+
+function triggerOverboughtSequence(rsi) {
+  const now = Date.now();
+  if (now - lastOverbought < RSI_OVERBOUGHT_COOLDOWN_MS) return;
+  lastOverbought = now;
+  try {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    document.querySelectorAll('audio, video').forEach(function (el) { try { el.pause(); } catch (e) {} });
+    if (typeof bgAudio !== 'undefined' && bgAudio) bgAudio.pause();
+    if (typeof audioPlayer !== 'undefined' && audioPlayer) audioPlayer.pause();
+    if (typeof stopSilenceCountUp === 'function') stopSilenceCountUp();
+  } catch (e) {}
+  try {
+    if (typeof mark === 'function') mark('RSI OVERBOUGHT ' + rsi.toFixed(1) + ' — CUT', 0, -1);
+    if (typeof logShift === 'function') logShift('RSI-OVERBOUGHT', 'RSI ' + rsi.toFixed(1) + ' >= ' + RSI_OVERBOUGHT_LEVEL, 'cut all sound -> troubles sequence');
+  } catch (e) {}
+  console.log('RSI OVERBOUGHT ' + rsi.toFixed(1) + ' -> cutting all sound for the troubles sequence');
+  speakSeq(OVERBOUGHT_LINES, 0);
+}
+window.triggerOverboughtSequence = triggerOverboughtSequence;
+
+// --- Hawkes tension overload hook (tension > 600) ---
+window.onHawkesOverload = function (raw) {
     if (Date.now() - lastOverload < OVERLOAD_COOLDOWN_MS) return;
     lastOverload = Date.now();
     try { if (typeof applyOverload === 'function') applyOverload(); } catch (e) {}

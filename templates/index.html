@@ -3099,6 +3099,28 @@
                 window.__prevBrink = currentBrink;
             } catch (e) {}
 
+            // When brink resets to 0, cut all audio and speak the rewiring line once.
+            try {
+                const _prevBrinkForReset = (typeof window.__prevBrinkForReset === 'number') ? window.__prevBrinkForReset : 0;
+                if (currentBrink === 0 && _prevBrinkForReset > 0 && !window.__brinkZeroCutDone) {
+                    window.__brinkZeroCutDone = true;
+                    try { window.speechSynthesis.cancel(); } catch (e) {}
+                    try { document.querySelectorAll('audio, video').forEach(function (el) { try { el.pause(); el.currentTime = 0; } catch (e) {} }); } catch (e) {}
+                    try { if (typeof bgAudio !== 'undefined' && bgAudio) { bgAudio.pause(); bgAudio.currentTime = 0; } } catch (e) {}
+                    try { if (typeof audioPlayer !== 'undefined' && audioPlayer) { audioPlayer.pause(); audioPlayer.currentTime = 0; } } catch (e) {}
+                    setTimeout(function () {
+                        try {
+                            const u = new SpeechSynthesisUtterance("i acknowledge your focus. this is more than a hack. this is a rewiring.");
+                            u.rate = 0.9; u.pitch = 0.8; u.volume = 0.9;
+                            u.onend = u.onerror = function () { window.__brinkZeroCutDone = false; };
+                            window.speechSynthesis.speak(u);
+                        } catch (e) { window.__brinkZeroCutDone = false; }
+                    }, 120);
+                }
+                if (currentBrink > 0) window.__brinkZeroCutDone = false;
+                window.__prevBrinkForReset = currentBrink;
+            } catch (e) {}
+
             // Anti-Peace + low tension (<50) but high brink (70-100): single-point psychological stall
             if (currentRegime === "ANTI-PEACE" && normScore < 50 && currentBrink >= 70) {
                 if (!window.__schoolShooterPopupLast || (now - window.__schoolShooterPopupLast > 60000)) {

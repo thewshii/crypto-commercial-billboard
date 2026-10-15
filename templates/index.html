@@ -2930,6 +2930,28 @@
                 }
             } catch (e) {}
 
+            // Extra reset + warning: tension above 40 and lingering at 60+ for 1s
+            // resets the 50% tension warning timer and speaks the warning line.
+            try {
+                if (normScore > 40 && normScore >= 60) {
+                    if (!window.__tension40LingerSince) window.__tension40LingerSince = now;
+                    if (!window.__tension40LingerWarned && (now - window.__tension40LingerSince >= 1000)) {
+                        window.__tension40LingerWarned = true;
+                        window.__tension50Since = 0;
+                        window.__tension50WarnCount = 0;
+                        const critBusy = (typeof window.criticalSpeechBusy === 'function') ? window.criticalSpeechBusy() : false;
+                        if (!critBusy && 'speechSynthesis' in window) {
+                            const u = new SpeechSynthesisUtterance("they are about to cause a liquidation when it gets there for 500ms do unto others as you would have unto you but, HEY YOU LOSE");
+                            u.rate = 0.95; u.pitch = 0.8; u.volume = 0.9;
+                            window.speechSynthesis.speak(u);
+                        }
+                    }
+                } else {
+                    window.__tension40LingerSince = 0;
+                    window.__tension40LingerWarned = false;
+                }
+            } catch (e) {}
+
             // STEP 1 — BPM (The Tempo)
             currentBPM = computeRegimeBPM();
 

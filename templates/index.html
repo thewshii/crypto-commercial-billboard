@@ -2687,6 +2687,10 @@
                 } else {
                     script = `Breaking news bulletin. Regime shift confirmed. The market has broken into Anti-Peace. Hawkes cascade tension has crossed ${score}, shattering baseline equilibrium. Tempo is clocking ${bpm} beats per minute. Watch for cascading liquidations.`;
                 }
+            } else if (targetRegime === "GUILTY REGIME") {
+                activeRegimeNewsBanner = `⚖️ BREAKING NEWS: GUILTY REGIME (SELF PROJECTORY) (${bpm} BPM)`;
+                activeRegimeNewsExpires = now + 14000;
+                script = `Breaking news bulletin. A Guilty Regime has formed. Self projectory is high, memory and remorse are driving tension to ${score}. You may feel guilt over what was lost or done, but you are still supported and able to begin again. Breathe, forgive yourself, and let peace return. Tempo is clocking ${bpm} beats per minute.`;
             } else {
                 activeRegimeNewsBanner = `🕊️ NEWS UPDATE: LOOKING FOR PEACE RESTORED (${score} TENSION)`;
                 activeRegimeNewsExpires = now + 14000;
@@ -2816,7 +2820,7 @@
                 lastY = y;
             }
 
-            let strokeColor = (currentRegime === "ANTI-PEACE") ? "#ff003c" : "#00ff88";
+            let strokeColor = (currentRegime === "ANTI-PEACE") ? "#ff003c" : (currentRegime === "GUILTY REGIME" ? "#ffdd00" : "#00ff88");
             if (currentBrink >= 80) strokeColor = "#ffdd00";
 
             ctx.strokeStyle = strokeColor;
@@ -2907,7 +2911,8 @@
                 const brinkSyncTriggered = (eta >= 0.40 && eta <= 0.60);
                 antiPeaceByEta = brinkSyncTriggered;
                 if (tensionTriggered || imbalanceTriggered || brinkSyncTriggered) {
-                    currentRegime = "ANTI-PEACE";
+                    const newRegime = (tensionTriggered && normScore > 500) ? "GUILTY REGIME" : "ANTI-PEACE";
+                    currentRegime = newRegime;
                     antiPeaceByTension = tensionTriggered;
                     antiPeaceByImbalance = imbalanceTriggered;
                     regimeFlipHistory.push(now);
@@ -2916,7 +2921,7 @@
                     hasSpokenBrinkInEpisode = false; // Reset for new regime episode
                     brink40Since = 0; brink100Since = 0;
                     brinkTier1Fired = false; brinkTier2Fired = false; brinkTier3Fired = false;
-                    triggerRegimeShiftNewsAnnouncement("ANTI-PEACE", {
+                    triggerRegimeShiftNewsAnnouncement(newRegime, {
                         byTension: tensionTriggered,
                         byImbalance: imbalanceTriggered,
                         score: normScore,
@@ -3096,7 +3101,7 @@
             if (flavorEl) {
                 flavorEl.innerText = flavorText;
                 if (activeRegimeNewsBanner && now < activeRegimeNewsExpires) {
-                    flavorEl.style.color = (currentRegime === "ANTI-PEACE") ? "#ff003c" : "#00ff88";
+                    flavorEl.style.color = (currentRegime === "ANTI-PEACE") ? "#ff003c" : (currentRegime === "GUILTY REGIME" ? "#ffdd00" : "#00ff88");
                     flavorEl.style.textShadow = (currentRegime === "ANTI-PEACE") ? "0 0 10px rgba(255,0,60,0.8)" : "0 0 10px rgba(0,255,136,0.8)";
                 } else {
                     flavorEl.style.color = "#8899aa";
@@ -3129,6 +3134,13 @@
                     statusBadge.style.borderColor = "#ff003c";
                     statusBadge.style.textShadow = "0 0 10px #ff003c";
                     statusBadge.style.boxShadow = "0 0 12px rgba(255,0,60,0.6)";
+                } else if (currentRegime === "GUILTY REGIME") {
+                    statusBadge.innerHTML = "⚖️ GUILTY REGIME <span style=\"color:#ffff00; margin:0 5px;\">•</span> SELF PROJECTORY";
+                    statusBadge.style.background = "#1a1204";
+                    statusBadge.style.color = "#ffdd00";
+                    statusBadge.style.borderColor = "#ffdd00";
+                    statusBadge.style.textShadow = "0 0 10px #ffdd00";
+                    statusBadge.style.boxShadow = "0 0 12px rgba(255,221,0,0.6)";
                 } else {
                     statusBadge.innerHTML = '🕊️ LOOKING FOR PEACE <span style="color:#00ffff; margin:0 5px;">•</span> TRYNA FIND PEACE';
                     statusBadge.style.background = "#031a0e";

@@ -5081,6 +5081,7 @@ startStream();
   let pulsationRecognizing = false; // recognition window open -> silence path pauses
   let silenceCountUp = 0;       // seconds counted in the current analyzer-quiet stretch
   let silenceCountTimer = null; // interval handle for the spoken count-up
+  let silenceCountChainTimer = null; // one-shot timer chaining number -> number
 
   // Marathon silence timer: while the analyzer is quiet, TTS counts up
   // 1, 2, 3... one number per second, until sound returns. Browser TTS
@@ -5108,33 +5109,47 @@ startStream();
     } catch (e) {}
     try { if (typeof bgAudio !== 'undefined' && bgAudio) bgAudio.pause(); } catch (e) {}
     try { if (typeof audioPlayer !== 'undefined' && audioPlayer) audioPlayer.pause(); } catch (e) {}
-    var sayCurrent = function () {
+    var sayingNow = false;
+    var lastCountAt = 0;
+    var sayNext = function () {
+      if (!window.__countUpActive || silenceCountTimer === null) return;
+      if (sayingNow) return;                 // never speak over the current number
+      silenceCountUp += 1;                   // advance only when the previous number finished
+      sayingNow = true;
+      lastCountAt = Date.now();
       try {
-        if (!('speechSynthesis' in window)) return;
+        if (!('speechSynthesis' in window)) { sayingNow = false; return; }
         var u = new SpeechSynthesisUtterance('listen ' + String(silenceCountUp));
         u.rate = 1.0; u.pitch = 0.8; u.volume = 0.9;
-        u.onend = function () {
-          // If we were cancelled mid-utterance, say the number again.
-          if (window.__countUpActive && silenceCountTimer !== null) sayCurrent();
+        var finish = function () {
+          if (!sayingNow) return;
+          sayingNow = false;
+          // wait ~1s after the number ends, then say the NEXT number exactly once
+          try { clearTimeout(silenceCountChainTimer); } catch (e) {}
+          silenceCountChainTimer = setTimeout(sayNext, 1000);
         };
+        u.onend = finish;
         u.onerror = function () {
-          if (window.__countUpActive && silenceCountTimer !== null) {
-            setTimeout(function () { if (window.__countUpActive) sayCurrent(); }, 120);
-          }
+          // speech engine dropped it: retry the SAME number, never skip ahead
+          sayingNow = false;
+          try { clearTimeout(silenceCountChainTimer); } catch (e) {}
+          silenceCountChainTimer = setTimeout(sayNext, 250);
         };
         window.speechSynthesis.speak(u);
-      } catch (e) {}
+      } catch (e) { finish(); }
     };
     silenceCountTimer = setInterval(function () {
-      silenceCountUp += 1;
-      sayCurrent();
-    }, 1000);
+      // watchdog: if the engine swallowed a number entirely, recover the chain
+      if (!sayingNow && (Date.now() - lastCountAt) > 2500) { sayNext(); }
+    }, 500);
+    sayNext();
   }
   function stopSilenceCountUp() {
     if (silenceCountTimer !== null) {
       clearInterval(silenceCountTimer);
       silenceCountTimer = null;
     }
+    try { clearTimeout(silenceCountChainTimer); } catch (e) {}
     silenceCountUp = 0;
     window.__countUpActive = false;
     try {

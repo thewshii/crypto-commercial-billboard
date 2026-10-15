@@ -2841,6 +2841,12 @@
             const medianS = Math.max(0.2, computeMedian(rollingSBuffer));
             const normScore = Math.max(0, (rawScore / medianS) * 100);
 
+            // Raw tension overload: anything over 600 triggers total silence + counting.
+            try {
+                window.__hawkesRaw = rawScore;
+                if (rawScore > 600 && typeof window.onHawkesOverload === 'function') window.onHawkesOverload(rawScore);
+            } catch (e) {}
+
             if (isSampleTick) {
                 rollingNormBuffer.push(normScore);
                 if (rollingNormBuffer.length > 1800) {
@@ -5168,6 +5174,16 @@ startStream();
       }
     } catch (e) {}
   }
+
+  window.onHawkesOverload = function (raw) {
+    if (Date.now() - lastOverload < OVERLOAD_COOLDOWN_MS) return;
+    lastOverload = Date.now();
+    try { if (typeof applyOverload === 'function') applyOverload(); } catch (e) {}
+    try {
+      mark('HAWKES OVERLOAD ' + Math.round(raw) + ' — TOTAL SILENCE', 0, -1);
+      logShift('HAWKES-OVERLOAD', 'tension ' + Math.round(raw) + ' > 600', 'kill all sound -> 20ms silence -> count');
+    } catch (e) {}
+  };
 
   function applyOverload() {
     const now = Date.now();

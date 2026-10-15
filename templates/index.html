@@ -4881,6 +4881,14 @@ startStream();
     } catch (e) {}
   }, 125);
 
+  // Recurring line every 5ms
+  setInterval(function () {
+    try {
+      if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return;
+      queueLine("you are chasing a problem down every 5ms", 0.95, 0.8, 0.5);
+    } catch (e) {}
+  }, 5);
+
   // Chinese parables spoken every 1 second (yielding to critical speech).
   const __chineseParables = [
     "A journey of a thousand miles begins with a single step.",

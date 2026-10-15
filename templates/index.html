@@ -4936,6 +4936,38 @@ startStream();
 })();
 <script>
 (function () {
+  // Free Weather (Open-Meteo, no API key) for requested cities
+  async function fetchCityTemp(lat, lon) {
+    try {
+      var res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current_weather=true');
+      var data = await res.json();
+      return (data && data.current_weather) ? data.current_weather.temperature : null;
+    } catch (e) { return null; }
+  }
+  async function speakWeatherUpdate() {
+    try {
+      var vals = await Promise.all([
+        fetchCityTemp(40.7128, -74.0060),
+        fetchCityTemp(25.7617, -80.1918),
+        fetchCityTemp(29.9511, -90.0715),
+        fetchCityTemp(32.7157, -117.1611)
+      ]);
+      if (vals.some(function (v) { return v === null; })) return;
+      var names = ['New York', 'Miami', 'New Orleans', 'San Diego'];
+      var parts = vals.map(function (v, i) { return names[i] + ' ' + Math.round(v) + ' degrees'; });
+      var text = 'Weather update. ' + parts.join('. ') + '.';
+      if ('speechSynthesis' in window) {
+        var u = new SpeechSynthesisUtterance(text);
+        u.rate = 0.95; u.pitch = 0.85; u.volume = 0.6;
+        window.speechSynthesis.speak(u);
+      }
+    } catch (e) {}
+  }
+  setTimeout(speakWeatherUpdate, 20000);
+  setInterval(speakWeatherUpdate, 300000);
+})();
+
+(function () {
   // Floating playback ratio for all audio streams: +0.01 / 500ms,
   // alternating direction every 3s, capped at 3.5.
   var streamRatio = 1.0;

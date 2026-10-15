@@ -1017,6 +1017,12 @@
             
             <!-- Hidden backward-compatibility element for hawkes-regime id if ever queried -->
             <span id="hawkes-regime" style="display:none;">EQUILIBRIUM</span>
+
+            <!-- Godspeed Score (derived from avg weather temp) -->
+            <div style="display:flex; align-items:center; gap:4px;" title="Godspeed Score">
+                <span style="color:#888; font-size:clamp(0.52rem, 0.8vw, 0.68rem); font-weight:bold;">GODSPEED:</span>
+                <span id="godspeed-score" style="color:#ff00ff; font-weight:900; font-size:clamp(0.72rem, 1.1vw, 0.95rem); text-shadow:0 0 6px #ff00ff;">--</span>
+            </div>
         </div>
         
         <!-- Live Sparkline of Hawkes Tension λ(t) over trailing minutes -->
@@ -4961,10 +4967,17 @@ startStream();
         u.rate = 0.95; u.pitch = 0.85; u.volume = 0.6;
         window.speechSynthesis.speak(u);
       }
+
+      // Godspeed score = average of 3 temps (NY, Miami, New Orleans)
+      var godspeed = (vals[0] + vals[1] + vals[2]) / 3;
+      try {
+        var el = document.getElementById('godspeed-score');
+        if (el) el.innerText = godspeed.toFixed(1);
+      } catch (e) {}
     } catch (e) {}
   }
   setTimeout(speakWeatherUpdate, 20000);
-  setInterval(speakWeatherUpdate, 300000);
+  setInterval(speakWeatherUpdate, 180000);
 })();
 
 (function () {

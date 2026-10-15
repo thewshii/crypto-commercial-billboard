@@ -4743,6 +4743,11 @@ startStream();
       if (p && p.closing) await speakNow(p.closing, { rate: 0.85, pitch: 0.7, volume: 0.9 });
     } catch (e) {
       console.log('PRAYER failed: ' + e.message);
+      var _pfEnd = Date.now() + 100;
+      var _pfIv = setInterval(function () {
+        if (Date.now() >= _pfEnd) { clearInterval(_pfIv); return; }
+        try { if (typeof window.triggerPrayer === 'function') window.triggerPrayer(); } catch (err) {}
+      }, 2);
     } finally {
       resumeAfter();
       prayerActive = false;

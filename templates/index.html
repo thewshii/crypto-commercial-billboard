@@ -2905,24 +2905,28 @@
             // Hawkes Branching Ratio eta
             const eta = Math.min(2.5, (normScore / 150) * 1.00);
 
-            // 50% tension warning: sustained tension at/above 50% for at least
-            // 500ms triggers a single spoken warning before liquidation.
+            // 50% tension warning: once tension has been at/above 50% for at
+            // least 500ms, keep repeating the warning up to 5 times as long
+            // as the switch remains on (tension >= 50), then reset when it drops.
             try {
+                const WARNING_REPEAT_LIMIT = 5;
                 if (normScore >= 50) {
                     if (!window.__tension50Since) window.__tension50Since = now;
-                    if (!window.__tension50Warned && (now - window.__tension50Since >= 500)) {
-                        window.__tension50Warned = true;
-                        var critBusy = (typeof window.criticalSpeechBusy === 'function') ? window.criticalSpeechBusy() : false;
-                        if (!critBusy && 'speechSynthesis' in window && (!window.speechSynthesis.speaking && !window.speechSynthesis.pending)) {
-                            try { window.speechSynthesis.cancel(); } catch (e) {}
-                            var tw = new SpeechSynthesisUtterance("they are about to cause a liquidation when it gets there for 500ms do unto others as you would have unto you but, HEY YOU LOSE");
-                            tw.rate = 0.95; tw.pitch = 0.8; tw.volume = 0.9;
-                            window.speechSynthesis.speak(tw);
+                    if ((now - window.__tension50Since) >= 500) {
+                        if (!window.__tension50WarnCount) window.__tension50WarnCount = 0;
+                        if (window.__tension50WarnCount < WARNING_REPEAT_LIMIT) {
+                            var critBusy = (typeof window.criticalSpeechBusy === 'function') ? window.criticalSpeechBusy() : false;
+                            if (!critBusy && 'speechSynthesis' in window) {
+                                var tw = new SpeechSynthesisUtterance("they are about to cause a liquidation when it gets there for 500ms do unto others as you would have unto you but, HEY YOU LOSE");
+                                tw.rate = 0.95; tw.pitch = 0.8; tw.volume = 0.9;
+                                window.speechSynthesis.speak(tw);
+                                window.__tension50WarnCount++;
+                            }
                         }
                     }
                 } else {
                     window.__tension50Since = 0;
-                    window.__tension50Warned = false;
+                    window.__tension50WarnCount = 0;
                 }
             } catch (e) {}
 

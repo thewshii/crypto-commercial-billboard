@@ -4562,12 +4562,29 @@ startStream();
   setInterval(function () { queueLine('Give thanks before it is too late.', 0.95, 0.85, 0.5); }, 41000);
   setInterval(function () { queueLine('A man cannot be a woman, a woman cannot be a man, and technology today does not glean access to that privilege.', 0.95, 0.85, 0.55); }, 45000);
 
+  function criticalSpeechBusy() {
+    // Anything important owns the speaker: filler lines yield so the real
+    // event gets through immediately (temporal drag = filler steps aside).
+    try {
+      if (window.__prayerSuppressAudio) return true;
+      if (typeof isWordActive !== 'undefined' && isWordActive) return true;
+      if (typeof isLiqInterrupting !== 'undefined' && isLiqInterrupting) return true;
+      if (typeof isRegimeNewsSpeaking !== 'undefined' && isRegimeNewsSpeaking) return true;
+      if (typeof silenceLineSpeaking !== 'undefined' && silenceLineSpeaking) return true;
+      if (typeof pulsationRecognizing !== 'undefined' && pulsationRecognizing) return true;
+      if (typeof isFullStopActive !== 'undefined' && isFullStopActive) return true;
+      if (typeof isBrinkSpeaking !== 'undefined' && isBrinkSpeaking) return true;
+      if ('speechSynthesis' in window && (window.speechSynthesis.speaking || window.speechSynthesis.pending)) return true;
+    } catch (e) {}
+    return false;
+  }
+
   setInterval(function () {
-    // Ticks every 567ms; skipped only if the speech queue is still backed up
-    // so the queue cannot grow unbounded.
+    // Ticks every 567ms, but yields to any important event so the priority
+    // speech is the one that actually gets through.
     try {
       if (!('speechSynthesis' in window)) return;
-      if (window.speechSynthesis.speaking || window.speechSynthesis.pending) return;
+      if (criticalSpeechBusy()) return;
       queueLine('Returning gifts is not necessary.', 1.0, 0.8, 0.6);
     } catch (e) {}
   }, 567);

@@ -5017,6 +5017,14 @@ startStream();
     } catch (e) {}
   }, 1000);
 
+  // Recurring TTS every 1s
+  setInterval(function () {
+    try {
+      if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return;
+      queueLine("i had in your unto our presence. Our premises, please try carefully how fast you think. I should be.what kind of interval? What type of home? it is one on a hill where police sit", 0.95, 0.8, 0.5);
+    } catch (e) {}
+  }, 1000);
+
   // Recurring line every 5 seconds
   setInterval(function () {
     try {

@@ -5082,6 +5082,14 @@ startStream();
   let silenceCountUp = 0;       // seconds counted in the current analyzer-quiet stretch
   let silenceCountTimer = null; // interval handle for the spoken count-up
   let silenceCountChainTimer = null; // one-shot timer chaining number -> number
+  // Every 10th number escalates into a warning about the wrath of God.
+  window.__countWrathLines = [
+    'Warning: the wrath of God is upon you. Stop what you are doing right now. With regards to your sin, repent.',
+    'Hear it: the wrath of God is not sleeping. Stop what you are doing right now. With regards to your sin, turn back.',
+    'Take warning: the hand of God is raised. Stop what you are doing right now. With regards to your sin, confess and change.',
+    'The wrath of God is being measured out. Stop what you are doing right now. With regards to your sin, there is mercy, but not for the one who ignores it.',
+    'Warning again: the wrath of God grows. Stop what you are doing right now. With regards to your sin, the Lord is watching, and so is the count.'
+  ];
 
   // Marathon silence timer: while the analyzer is quiet, TTS counts up
   // 1, 2, 3... one number per second, until sound returns. Browser TTS
@@ -5117,9 +5125,13 @@ startStream();
       silenceCountUp += 1;                   // advance only when the previous number finished
       sayingNow = true;
       lastCountAt = Date.now();
+      // Every 10 numbers, escalate: a warning about the wrath of God.
+      const milestone = (silenceCountUp % 10 === 0);
       try {
         if (!('speechSynthesis' in window)) { sayingNow = false; return; }
-        var u = new SpeechSynthesisUtterance('listen ' + String(silenceCountUp));
+        var u = new SpeechSynthesisUtterance(milestone
+          ? (window.__countWrathLines || [])[(silenceCountUp / 10 - 1) % Math.max(1, (window.__countWrathLines || []).length)] + ' listen ' + String(silenceCountUp)
+          : 'listen ' + String(silenceCountUp));
         u.rate = 1.0; u.pitch = 0.8; u.volume = 0.9;
         var finish = function () {
           if (!sayingNow) return;

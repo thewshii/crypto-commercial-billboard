@@ -4535,11 +4535,33 @@ startStream();
 // Queued (no cancel) so they mix with rather than cut off in-flight TTS.
 (function () {
   var lastSpiteAt = 0;
+  var spiteAttemptWindowStart = 0;
+  var spiteAttemptCount = 0;
+  var warnedThisMinute = false;
   setInterval(function () {
     try {
       if (!('speechSynthesis' in window)) return;
-      if (Date.now() - lastSpiteAt < 60000) return;
-      lastSpiteAt = Date.now();
+
+      var now = Date.now();
+      if (!spiteAttemptWindowStart || now - spiteAttemptWindowStart >= 60000) {
+        spiteAttemptWindowStart = now;
+        spiteAttemptCount = 0;
+        warnedThisMinute = false;
+      }
+      spiteAttemptCount++;
+
+      // If spite is attempted more than once within a minute, refuse to
+      // acknowledge or resolve the repeated attempts.
+      if (spiteAttemptCount > 1) {
+        if (!warnedThisMinute) {
+          warnedThisMinute = true;
+          queueLine('That is not being acknowledged or resolved.', 1.0, 0.8, 0.6);
+        }
+        return;
+      }
+
+      if (now - lastSpiteAt < 60000) return;
+      lastSpiteAt = now;
 
       // Speak the Wayne reminder, then cancel after 1s and
       // replay the bell 7 times before resuming playback.

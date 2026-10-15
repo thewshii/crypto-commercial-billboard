@@ -3297,9 +3297,9 @@
         let isFetchingBedrock = false;
 
         async function fetchBedrockNewscast(force = false) {
-            if (isFetchingBedrock) return;
+            if (isFetchingBedrock) return { ok: false, error: "busy" };
             const now = Date.now();
-            if (!force && (now - lastBedrockFetchTime < 75000)) return;
+            if (!force && (now - lastBedrockFetchTime < 75000)) return { ok: false, error: "throttled" };
 
             isFetchingBedrock = true;
             try {
@@ -3326,15 +3326,25 @@
                     body: JSON.stringify(payload)
                 });
 
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && data.newscast) {
-                        applyBedrockNewscastToSlides(data.newscast);
-                        lastBedrockFetchTime = now;
-                    }
+                if (!res.ok) {
+                    let detail = res.status + " " + res.statusText;
+                    try { const j = await res.json(); if (j && (j.error || j.message)) detail = j.error || j.message; } catch (e) {}
+                    throw new Error(detail);
                 }
+                const data = await res.json();
+                if (data && data.newscast) {
+                    applyBedrockNewscastToSlides(data.newscast);
+                    lastBedrockFetchTime = now;
+                }
+                window.__bedrockLastError = null;
+                return { ok: true };
             } catch (err) {
-                console.log("[BEDROCK] Fetch error:", err);
+                const msg = (err && err.message) ? err.message : String(err);
+                window.__bedrockLastError = msg;
+                console.error("[BEDROCK] Fetch error:", err);
+                const btn = document.getElementById("ai-scan-btn");
+                if (btn) { btn.innerText = "⚠️ SCAN FAILED"; btn.style.borderColor = "#ff3355"; btn.style.color = "#ff3355"; }
+                return { ok: false, error: msg };
             } finally {
                 isFetchingBedrock = false;
             }
@@ -3361,20 +3371,34 @@
                 btn.style.borderColor = "#ffdd00";
                 btn.style.color = "#ffdd00";
             }
-            await fetchBedrockNewscast(true);
-            if (btn) {
-                btn.innerText = "🎙️ AI NEWS";
-                btn.style.borderColor = "#00e5ff";
-                btn.style.color = "#00e5ff";
-            }
-            // Advance directly to the Bedrock slide to broadcast immediately
-            const bIdx = slides.findIndex(s => s.type === "bedrock");
-            if (bIdx !== -1) {
-                currentSlide = bIdx;
-                if (!isLiqInterrupting) {
-                    if (slideTimer) clearTimeout(slideTimer);
-                    window.speechSynthesis.cancel();
-                    renderSlide();
+            const result = await fetchBedrockNewscast(true);
+            if (result && result.ok) {
+                if (btn) {
+                    btn.innerText = "🎙️ AI NEWS";
+                    btn.style.borderColor = "#00e5ff";
+                    btn.style.color = "#00e5ff";
+                }
+                // Advance directly to the Bedrock slide to broadcast immediately
+                const bIdx = slides.findIndex(s => s.type === "bedrock");
+                if (bIdx !== -1) {
+                    currentSlide = bIdx;
+                    if (!isLiqInterrupting) {
+                        if (slideTimer) clearTimeout(slideTimer);
+                        window.speechSynthesis.cancel();
+                        renderSlide();
+                    }
+                }
+            } else {
+                if (btn) {
+                    const msg = (result && result.error) ? result.error : "scan failed";
+                    btn.innerText = "⚠️ " + msg.toUpperCase().slice(0, 16);
+                    btn.style.borderColor = "#ff3355";
+                    btn.style.color = "#ff3355";
+                    setTimeout(function () {
+                        btn.innerText = "🎙️ AI NEWS";
+                        btn.style.borderColor = "#00e5ff";
+                        btn.style.color = "#00e5ff";
+                    }, 2800);
                 }
             }
         }
@@ -6513,6 +6537,12 @@ function connectAudio() {
     setInterval(() => { if (M) { binHz = M.ctx.sampleRate / FFT_SIZE; buildBands(); buildColumns(); } }, 3000);
     requestAnimationFrame(frame);
   }
+  // Expose audio unlock/mic controls invoked by inline toolbar handlers.
+  // (They are declared inside this IIFE, so they must be published on window
+  // for the buttons' onclick attributes to resolve.)
+  window.connectAudio = connectAudio;
+  window.toggleMicInput = toggleMicInput;
+
   window.audioWeights = null;
   fetch('audio_weights.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j) window.audioWeights = j; }).catch(function () {});
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();

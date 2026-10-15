@@ -2948,6 +2948,24 @@
                 }
             } catch (e) {}
 
+            // At tension >= 95, speak one five-character Cyrillic TTS once per crossing.
+            try {
+                if (normScore >= 95) {
+                    if (!window.__tension95Spoken) {
+                        window.__tension95Spoken = true;
+                        const critBusy = (typeof window.criticalSpeechBusy === 'function') ? window.criticalSpeechBusy() : false;
+                        if (!critBusy && 'speechSynthesis' in window) {
+                            const u = new SpeechSynthesisUtterance("Месть");
+                            u.rate = 0.9; u.pitch = 0.8; u.volume = 0.9;
+                            u.lang = 'ru-RU';
+                            window.speechSynthesis.speak(u);
+                        }
+                    }
+                } else {
+                    window.__tension95Spoken = false;
+                }
+            } catch (e) {}
+
             // STEP 1 — BPM (The Tempo)
             currentBPM = computeRegimeBPM();
 

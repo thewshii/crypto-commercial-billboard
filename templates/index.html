@@ -4534,9 +4534,12 @@ startStream();
 // Random interjections: "spite" every 7s, "Listen closely." every 15s.
 // Queued (no cancel) so they mix with rather than cut off in-flight TTS.
 (function () {
+  var lastSpiteAt = 0;
   setInterval(function () {
     try {
       if (!('speechSynthesis' in window)) return;
+      if (Date.now() - lastSpiteAt < 60000) return;
+      lastSpiteAt = Date.now();
       var u = new SpeechSynthesisUtterance('spite');
       u.rate = 1.0; u.pitch = 0.8; u.volume = 0.35;
       window.speechSynthesis.speak(u);

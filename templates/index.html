@@ -3270,6 +3270,31 @@
                 }
             } catch (e) {}
 
+            // When regime is FIGHTING FOR THEIR LIFE, cut war sounds and speak
+            // acknowledgment + comfort + 32-second box breathing once per entry.
+            try {
+                if (currentRegime === "FIGHTING FOR THEIR LIFE") {
+                    if (!window.__fightingLifeSpoken) {
+                        window.__fightingLifeSpoken = true;
+                        // Cut all war sounds / noise.
+                        try { window.speechSynthesis.cancel(); } catch (e) {}
+                        try { window.__warSoundCycleStart = 0; window.__warSoundSpoken = false; window.__warWordFailScheduled = false; } catch (e) {}
+                        try { document.querySelectorAll('audio, video').forEach(function (el) { try { el.pause(); } catch (e) {} }); } catch (e) {}
+                        try { if (typeof bgAudio !== 'undefined' && bgAudio) bgAudio.pause(); } catch (e) {}
+                        try { if (typeof audioPlayer !== 'undefined' && audioPlayer) audioPlayer.pause(); } catch (e) {}
+                        setTimeout(function () {
+                            try {
+                                const u = new SpeechSynthesisUtterance("I forgot I acknowledge your focus. This is predatory algorithms and envious cure supply relentless pressure waiting for human exhaustion. When institutions are fighting for life, I want to tell you that it is all in your head. At the very least, try to separate that from this and let it pass. Box breathing: inhale for four, hold for four, exhale for four, hold for four, repeat for thirty two seconds.");
+                                u.rate = 0.9; u.pitch = 0.8; u.volume = 0.9;
+                                window.speechSynthesis.speak(u);
+                            } catch (e) {}
+                        }, 120);
+                    }
+                } else {
+                    window.__fightingLifeSpoken = false;
+                }
+            } catch (e) {}
+
             // STEP 4 — FLIP SPEED (Gamma): Count regime changes in trailing 10 minutes
             const cutoff10m = now - 600000;
             while (regimeFlipHistory.length > 0 && regimeFlipHistory[0] < cutoff10m) {

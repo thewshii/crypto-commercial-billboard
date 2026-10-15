@@ -4835,6 +4835,28 @@ startStream();
   setInterval(function () { queueLine('Give thanks before it is too late.', 0.95, 0.85, 0.5); }, 41000);
   setInterval(function () { queueLine('A man cannot be a woman, a woman cannot be a man, and technology today does not glean access to that privilege.', 0.95, 0.85, 0.55); }, 45000);
 
+  // Chinese parables spoken every 1 second (yielding to critical speech).
+  const __chineseParables = [
+    "A journey of a thousand miles begins with a single step.",
+    "He who asks is a fool for five minutes; he who does not ask remains a fool forever.",
+    "The man who moves a mountain begins by carrying away small stones.",
+    "When the wind of change blows, some build walls and others build windmills.",
+    "Better to light a candle than curse the darkness.",
+    "The best time to plant a tree was twenty years ago; the second best time is now.",
+    "A gem cannot be polished without friction, nor a man perfected without trials.",
+    "Fall seven times, stand up eight.",
+    "Patience is a bitter plant, but its fruit is sweet.",
+    "He who controls others may be powerful, but he who has mastered himself is mightier still."
+  ];
+  let __chineseParableIdx = 0;
+  setInterval(function () {
+    try {
+      if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return;
+      queueLine(__chineseParables[__chineseParableIdx % __chineseParables.length], 0.9, 0.8, 0.45);
+      __chineseParableIdx++;
+    } catch (e) {}
+  }, 1000);
+
   function criticalSpeechBusy() {
     // Anything important owns the speaker: filler lines yield so the real
     // event gets through immediately (temporal drag = filler steps aside).

@@ -4734,6 +4734,14 @@ startStream();
   })();
 
   setInterval(function () {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      if (criticalSpeechBusy()) return;
+      queueLine("the creator reminds us that your thoughts are your fucking own", 0.5, 0.85, 0.6);
+    } catch (e) {}
+  }, 22000);
+
+  setInterval(function () {
     // Mediate "say hi" spam: gently prompt positivity every 5s.
     try {
       if (!('speechSynthesis' in window)) return;

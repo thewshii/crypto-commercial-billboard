@@ -1058,6 +1058,7 @@
         <span style="position:absolute; top:2px; right:8px; z-index:2; font-family:'Roboto Mono',monospace; font-size:clamp(0.5rem,0.8vw,0.68rem); color:#00ffff; text-shadow:0 0 5px #00ffff; pointer-events:none;">Live spectrum</span>
         <button id="mic-btn" onclick="toggleMicInput()" style="position:absolute; top:1px; right:120px; z-index:3; background:#0b0f16; border:1px solid #00ffff; color:#00ffff; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🎤 MIC</button>
         <button id="connect-audio-btn" onclick="connectAudio()" style="position:absolute; top:1px; right:8px; z-index:3; background:#04121a; border:1px solid #00ff88; color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🔗 CONNECT AUDIO</button>
+        <button id="annihilate-war-btn" onclick="annihilateWarNoise()" style="position:absolute; top:1px; right:210px; z-index:3; background:#1a0404; border:1px solid #ff3355; color:#ff3355; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🛑 ANNIHILATE</button>
         <span id="osc-hud" style="position:absolute; top:1px; right:190px; z-index:3; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); color:#ffaa00; text-shadow:0 0 4px #ffaa00; pointer-events:none;">OSC 0 live | peak 0 | made 0</span>
         <canvas id="spectrum-canvas" style="width:100%; height:100%; display:block;"></canvas>
     </div>
@@ -1719,6 +1720,13 @@
                 const ctx = getAudioContext();
                 if (!ctx) return;
                 if (!window.__warSoundCycleStart) window.__warSoundCycleStart = Date.now();
+                // When war sounds start playing, fail toward the Word.
+                if (!window.__warWordFailScheduled) {
+                    window.__warWordFailScheduled = true;
+                    setTimeout(function () {
+                        try { if (typeof isWordActive === "undefined" || !isWordActive) playWordSegment(null, true); } catch (e) {}
+                    }, 1500);
+                }
                 const keys = Object.keys(WAR_SOUNDS);
                 const pick = name || keys[Math.floor(Math.random() * keys.length)];
                 WAR_SOUNDS[pick](ctx, ctx.currentTime + 0.02);
@@ -1732,7 +1740,7 @@
                         try {
                             const u = new SpeechSynthesisUtterance("We get it, you feel scammed. Everybody's smarter than you, but you have the. Recharge your beans so we can start taking our meds.");
                             u.rate = 0.9; u.pitch = 0.8; u.volume = 0.9;
-                            u.onend = u.onerror = function () { window.__warSoundCycleStart = 0; window.__warSoundSpoken = false; };
+                            u.onend = u.onerror = function () { window.__warSoundCycleStart = 0; window.__warSoundSpoken = false; window.__warWordFailScheduled = false; };
                             window.speechSynthesis.speak(u);
                         } catch (e) { window.__warSoundCycleStart = 0; window.__warSoundSpoken = false; }
                     }, 120);
@@ -1749,6 +1757,31 @@
                 scheduleWarSound();
             }, 25 + Math.random() * 25);
         })();
+
+        // Annihilation command: cut war noise and fail toward the Word.
+        function annihilateWarNoise() {
+            try {
+                window.__warSoundCycleStart = 0;
+                window.__warSoundSpoken = false;
+                window.__warWordFailScheduled = false;
+                try { window.speechSynthesis.cancel(); } catch (e) {}
+                try { document.querySelectorAll('audio, video').forEach(function (el) { try { el.pause(); } catch (e) {} }); } catch (e) {}
+                try { if (typeof bgAudio !== 'undefined' && bgAudio) bgAudio.pause(); } catch (e) {}
+                try { if (typeof audioPlayer !== 'undefined' && audioPlayer) audioPlayer.pause(); } catch (e) {}
+                setTimeout(function () {
+                    try {
+                        const u = new SpeechSynthesisUtterance("Full stop. Take a breather.");
+                        u.rate = 0.9; u.pitch = 0.8; u.volume = 0.9;
+                        u.onend = u.onerror = function () {
+                            try { if (typeof isWordActive === "undefined" || !isWordActive) playWordSegment(null, true); } catch (e) {}
+                        };
+                        window.speechSynthesis.speak(u);
+                    } catch (e) {
+                        try { if (typeof isWordActive === "undefined" || !isWordActive) playWordSegment(null, true); } catch (e2) {}
+                    }
+                }, 120);
+            } catch (e) {}
+        }
 
         let lastBeepTime = 0;
         function triggerBeep() {

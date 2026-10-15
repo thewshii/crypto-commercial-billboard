@@ -3201,6 +3201,25 @@
                 flavorText = activeRegimeNewsBanner;
             }
 
+            // If anti-peace persists > 1.5s, speak the truth about sin once.
+            try {
+                if (currentRegime === "ANTI-PEACE") {
+                    if (!window.__antiPeaceTruthStart) window.__antiPeaceTruthStart = now;
+                    if (!window.__antiPeaceTruthSpoken && (now - window.__antiPeaceTruthStart >= 1500)) {
+                        window.__antiPeaceTruthSpoken = true;
+                        const critBusy = (typeof window.criticalSpeechBusy === 'function') ? window.criticalSpeechBusy() : false;
+                        if (!critBusy && 'speechSynthesis' in window) {
+                            const u = new SpeechSynthesisUtterance("Tell the truth about Sin. that people commit little things they consider micro sins or like they have a contract with god or something but they dont really..");
+                            u.rate = 0.9; u.pitch = 0.8; u.volume = 0.9;
+                            window.speechSynthesis.speak(u);
+                        }
+                    }
+                } else {
+                    window.__antiPeaceTruthStart = 0;
+                    window.__antiPeaceTruthSpoken = false;
+                }
+            } catch (e) {}
+
             // STEP 4 — FLIP SPEED (Gamma): Count regime changes in trailing 10 minutes
             const cutoff10m = now - 600000;
             while (regimeFlipHistory.length > 0 && regimeFlipHistory[0] < cutoff10m) {

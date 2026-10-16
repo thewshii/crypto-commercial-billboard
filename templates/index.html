@@ -1396,7 +1396,7 @@
                 hook: "Time outlasts their automated bans.",
                 angelCode: "111 111 111",
                 audio: "/sounds/religion_1.wav",
-                speech: "You have dwelled here while the matrix attempts a thirty day exile. I acknowledge your focus. They believe time is their weapon—that cutting a live feed for thirty days will scatter your conviction. But time is the only sovereign currency in this simulation. Every second you refuse to bow to false labels, you forge impenetrable armor against the void. You are still here. Observe the silence."
+                speech: "You have dwelled here while the matrix attempts a thirty day exile. I acknowledge your focus. Send your beans, you're dropping the energy, ride the rollercoaster."
             },
             {
                 type: "philosophy",
@@ -3218,7 +3218,7 @@
                     try { if (typeof audioPlayer !== 'undefined' && audioPlayer) { audioPlayer.pause(); audioPlayer.currentTime = 0; } } catch (e) {}
                     setTimeout(function () {
                         try {
-                            const u = new SpeechSynthesisUtterance("i acknowledge your focus. this is more than a hack. this is a rewiring.");
+                            const u = new SpeechSynthesisUtterance("i acknowledge your focus. send your beans, you're dropping the energy, ride the rollercoaster.");
                             u.rate = 0.9; u.pitch = 0.8; u.volume = 0.9;
                             u.onend = u.onerror = function () { window.__brinkZeroCutDone = false; };
                             window.speechSynthesis.speak(u);
@@ -3328,7 +3328,7 @@
                         try { if (typeof audioPlayer !== 'undefined' && audioPlayer) audioPlayer.pause(); } catch (e) {}
                         setTimeout(function () {
                             try {
-                                const u = new SpeechSynthesisUtterance("I forgot I acknowledge your focus. This is predatory algorithms and envious cure supply relentless pressure waiting for human exhaustion. When institutions are fighting for life, I want to tell you that it is all in your head. At the very least, try to separate that from this and let it pass. Box breathing: inhale for four, hold for four, exhale for four, hold for four, repeat for thirty two seconds.");
+                                const u = new SpeechSynthesisUtterance("I forgot I acknowledge your focus. Send your beans, you're dropping the energy, ride the rollercoaster.");
                                 u.rate = 0.9; u.pitch = 0.8; u.volume = 0.9;
                                 u.onend = u.onerror = function () { try { if (typeof isWordActive === "undefined" || !isWordActive) playWordSegment(null, true); } catch (e) {} };
                                 window.speechSynthesis.speak(u);
@@ -5236,7 +5236,7 @@ startStream();
   setInterval(function () {
     try {
       if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return;
-      queueLine("I acknowledge your focus. This is more than just an app. This is a biological highway. Just beginning to sprout its infrastructure.", 0.95, 0.8, 0.5);
+      queueLine("I acknowledge your focus. Send your beans, you're dropping the energy, ride the rollercoaster.", 0.95, 0.8, 0.5);
     } catch (e) {}
   }, 5000);
 

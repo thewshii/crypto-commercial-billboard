@@ -6907,6 +6907,87 @@ startStream();
 
   window.vulnLog = function () { return window.__vulnLog.slice(); };
 
+  // ============ X AND Y — live axis readout ============
+// Rule 100: X is space (position, depth), Y is time and height (count, crest).
+// Both axes are read here so the operator can see where the wave actually is.
+  window.__axis = { x: 0, y: 0, ticks: 0, bar: 0, updates: 0, lastSpeak: 0 };
+
+  // X — position across the field, normalised 0..1, and the depth under it.
+  window.axisX = function () {
+    const st = window.study || {};
+    let x = 0.5;
+    try {
+      if (window.bandVal && window.bandVal.length) {
+        let peak = -1, pi = 0;
+        for (let i = 0; i < window.bandVal.length; i++) {
+          const v = window.bandVal[i] / 255;
+          if (v > peak) { peak = v; pi = i; }
+        }
+        if (pi >= 0) x = pi / Math.max(1, window.bandVal.length - 1);
+      }
+    } catch (e) {}
+    const depth = (typeof window.waterDepthField === 'function') ? window.waterDepthField(x) : 0;
+    window.__axis.x = x;
+    window.__axis.depth = depth;
+    return { x: x, depth: depth };
+  };
+
+  // Y — the count. One, two, three, four. Height is ticks above the line.
+  window.axisY = function () {
+    const st = window.__axis;
+    st.ticks++;
+    st.bar = (st.bar % 4) + 1;          // 1, 2, 3, 4 — no other signature
+    st.y = st.bar / 4;                   // normalised height on the bar
+    return { y: st.y, bar: st.bar, ticks: st.ticks };
+  };
+
+  // The tick advances both axes at once. There is no version where only one moves.
+  window.axisTick = function () {
+    const X = window.axisX();
+    const Y = window.axisY();
+    const a = window.__axis;
+    a.updates++;
+    a.x = X.x; a.depth = X.depth; a.y = Y.y; a.bar = Y.bar;
+    const st = window.study || {};
+    a.speed = st.speed || 0;
+    a.breaking = !!st.breaking;
+    a.breakingFor = a.breaking ? (a.breakingFor || 0) + 1 : 0;
+    // Breaking is the Y axis outrunning the depth on X. That is the whole point.
+    if (a.breakingFor === 30) {
+      try { window.vulnNotify('HIGH', [{ why: 'crest breaking — depth ' +
+        a.depth.toFixed(2) + ', height ' + (st.height || 0).toFixed(2) }], 'axis'); } catch (e) {}
+    }
+    return a;
+  };
+
+  // One update per tick. No batching, no skipping, no sync.
+  setInterval(function () {
+    try { window.axisTick(); } catch (e) {}
+  }, 250);
+
+  // Readout on the Word screen.
+  window.axisPublish = function () {
+    const el = document.getElementById('word-r-detail');
+    if (!el) return;
+    const a = window.__axis;
+    const st = window.study || {};
+    el.textContent =
+      'X ' + a.x.toFixed(2) + ' d=' + (a.depth == null ? 0 : a.depth).toFixed(2) +
+      '  |  Y ' + a.y.toFixed(2) + ' [' + (a.bar || 1) + '/4]' +
+      '  |  ' + (a.breaking ? 'BREAKING' : 'carrying') +
+      (st.crestHz ? '  |  ' + Math.round(st.crestHz) + 'Hz' : '');
+    el.style.color = a.breaking ? '#ff003c' : '#8aa';
+  };
+  setInterval(function () { try { window.axisPublish(); } catch (e) {} }, 500);
+
+  window.axisStats = function () {
+    const a = window.__axis;
+    return {
+      x: a.x, depth: a.depth, y: a.y, bar: a.bar, ticks: a.ticks,
+      updates: a.updates, breaking: !!a.breaking, breakingFor: a.breakingFor || 0
+    };
+  };
+
   // ============ R-STATE: the spectrogram's 0 and 1 ============
   // The spectrogram is reduced to a single bit. Below the threshold is 0,
   // above it is 1. That is the whole measurement: R0 or R1, one or zero,

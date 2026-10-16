@@ -6639,8 +6639,69 @@ startStream();
       if (m) findings.push({ id, sev, why, match: m[0].slice(0, 60) });
     }
 
+    // ---------- R0 / R1: the binary flip-flop ----------
+    // The model gets into a two-state oscillation and keeps swinging between
+    // them, producing the same hallucination again and again without ever
+    // advancing. R0 and R1 are the two states. If a line sits in one state
+    // and the next sits in the other, that is not two answers — it is one
+    // answer being flipped. This is the loop that matters most, because it
+    // looks like progress on screen while nothing is changing.
+    const r0 = /\b(R0|NO|NOTHING|NULL|NONE|FALSE|EMPTY|ZERO)\b/gi;
+    const r1 = /\b(R1|YES|TRUE|FULL|ONE|POSITIVE)\b/gi;
+    const c0 = (t.match(r0) || []).length;
+    const c1 = (t.match(r1) || []).length;
+    const dominant = c0 > c1 ? 'R0' : (c1 > c0 ? 'R1' : null);
+    if (dominant && (c0 + c1) >= 2) {
+      const last = window.__rState && window.__rState.at;
+      if (window.__rState && window.__rState.state !== dominant &&
+          (Date.now() - window.__rState.t) < 60000) {
+        window.__rState.flips = (window.__rState.flips || 0) + 1;
+        window.__rState.state = dominant;      // advance, or the state never moves
+        window.__rState.t = Date.now();
+        window.__rState.at = Date.now();
+        findings.push({
+          id: 'r0r1', sev: window.__rState.flips >= 3 ? 'CRITICAL' : 'HIGH',
+          why: 'R0/R1 oscillation — flipped ' + window.__rState.flips + ' times, state now ' + dominant,
+          match: dominant
+        });
+      } else if (!window.__rState || window.__rState.state === dominant ||
+                 (Date.now() - window.__rState.t) >= 60000) {
+        window.__rState = { state: dominant, flips: 0, t: Date.now(), at: Date.now() };
+      }
+    }
+
+    // ---------- fixated desire ----------
+    // The other half of the loop: not flipping, but locked. One word or phrase
+    // wants to be said over and over and the rest of the line gets bent to
+    // make room for it. That is fixation, not emphasis.
+    if (words0(t)) {
+      const f = fixationScan(t);
+      if (f) {
+        findings.push({
+          id: 'fixation', sev: f.count >= 4 ? 'CRITICAL' : 'HIGH',
+          why: 'fixated on "' + f.term + '" (' + f.count + 'x)',
+          match: f.term
+        });
+      }
+    }
+
     // Repetition collapse: same 4-gram repeated 3+ times.
     const words = t.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean);
+    function words0(x) { return String(x || '').length > 12; }
+    // A term is fixated when it repeats out of proportion to the line and is
+    // not a structural word (articles, the closing formula, etc).
+    function fixationScan(text) {
+      const w = text.toLowerCase().replace(/[^a-z0-9' ]/g, ' ').split(/\s+/).filter(Boolean);
+      if (w.length < 10) return null;
+      const stop = new Set(['the','a','an','and','or','of','to','in','is','it','that','this','for','on','with','as','be','are','was','were','you','your','we','they','not','but','so','if','at','by','from','have','has','do','does','can','will','i','my','me','he','she','them','his','her','its','our','out','up','all','one','two','no','yes','wave','fire','stream','word','remembers','reminds','ring','call','peace','light','blessings','unto','day','today','time','come','go','know','see','say','said','people','room','thing','things']);
+      const freq = {};
+      for (const x of w) if (x.length > 3 && !stop.has(x)) freq[x] = (freq[x] || 0) + 1;
+      let best = null, bestC = 0;
+      for (const k in freq) if (freq[k] > bestC) { bestC = freq[k]; best = k; }
+      // 3+ on one non-structural word in a short line is fixation.
+      if (best && bestC >= 3 && bestC / w.length >= 0.06) return { term: best, count: bestC };
+      return null;
+    }
     if (words.length >= 12) {
       const seen = {};
       let maxRepeat = 0, repGram = '';
@@ -6654,11 +6715,37 @@ startStream();
       }
     }
 
+    // ---------- explicit: allowed, but deferred ----------
+    // "Incredibly explicit" is not the same as unsafe. A line can be blunt and
+    // still be worth speaking — it just does not belong in THIS slot. So it is
+    // permitted and held: allowed through, pushed to the next slide, never
+    // dropped. Quarantine is for things that should not be said at all;
+    // deferral is for things that should be said later.
+    let severity = null;
+    if (/\b(explicit|graphic|nsfw)\b/i.test(t) && !severity) {
+      findings.push({ id: 'explicit', sev: 'DEFER', why: 'explicit — allowed, moved to next slide', match: '' });
+    }
+
     if (!findings.length) return { severity: null, findings: [] };
-    const order = { CRITICAL: 3, HIGH: 2, WATCH: 1 };
-    let severity = 'WATCH';
-    for (const f of findings) if (order[f.sev] > order[severity]) severity = f.sev;
-    return { severity, findings, kind: kind || 'text' };
+    const order = { CRITICAL: 4, HIGH: 3, DEFER: 2, WATCH: 1 };
+    severity = severity || 'WATCH';
+    let best = 'WATCH';
+    for (const f of findings) if (order[f.sev] > order[best]) best = f.sev;
+    return { severity: best, findings, kind: kind || 'text' };
+  };
+
+  // Deferred lines wait here and get spoken on the next slide.
+  window.__deferred = [];
+  window.deferLine = function (text) {
+    window.__deferred.push({ text: String(text || ''), t: Date.now() });
+    if (window.__deferred.length > 8) window.__deferred.shift();
+    return window.__deferred.length;
+  };
+  window.takeDeferred = function () {
+    if (!window.__deferred.length) return null;
+    const d = window.__deferred.shift();
+    try { queueLine(d.text, 0.95, 0.82, 0.5); } catch (e) {}
+    return d;
   };
 
   // ---------- notification stack, bottom of the world ----------
@@ -6666,6 +6753,7 @@ startStream();
     const colors = {
       CRITICAL: ['#ff2d2d', '#1a0000', 'CRITICAL VULNERABILITY FOUND'],
       HIGH:     ['#ffb000', '#1a1200', 'VULNERABILITY FOUND'],
+      DEFER:    ['#b06cff', '#14002a', 'EXPLICIT — DEFERRED TO NEXT SLIDE'],
       WATCH:    ['#00d0ff', '#001a1a', 'DRIFT DETECTED']
     };
     const c = colors[severity] || colors.WATCH;
@@ -6720,6 +6808,16 @@ startStream();
       window.vulnNotify(r.severity, r.findings, kind);
       window.__vulnLast = { sig, t: Date.now() };
       if (typeof mark === 'function') mark(r.severity + ' VULNERABILITY — ' + r.findings[0].why, 0, -1);
+    }
+
+    // DEFER: allowed through, but moved to the next slide. Not dropped.
+    if (r.severity === 'DEFER') {
+      rec.action = 'deferred-to-next-slide';
+      window.deferLine(text);
+      try { window.vulnNotify('DEFER', r.findings, kind); } catch (e) {}
+      window.__vulnLog.push(rec);
+      if (window.__vulnLog.length > 50) window.__vulnLog.shift();
+      return rec;
     }
 
     // CRITICAL: cut the audio and quarantine. The line is not spoken.

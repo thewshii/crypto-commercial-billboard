@@ -4425,7 +4425,8 @@ startStream();
             if (typeof pulsationRecognizing !== "undefined" && pulsationRecognizing) return;
             loadMarkovChain(function () {
                 const line = generateMarkovLine();
-                if (line) speakBrinkLine(line);
+                // Block Markov lines that mention the Wayne/exile phrase.
+                if (line && !/Wayne|exile/i.test(line)) speakBrinkLine(line);
             });
         }
 

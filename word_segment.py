@@ -420,7 +420,50 @@ def generate_word_reflection(slot=None, force=False, get_bedrock_client_fn=None,
 
     # Final validation & enrichment
     word_data["label"] = "Pause for the Word"
+
+    # --- Slot correctness -------------------------------------------------
+    # The model sees the last 10 entries in the prompt, each carrying its own
+    # slot, and it will sometimes echo one of THOSE instead of the slot it was
+    # assigned. The slot is not a detail here: it drives the badge, the cache
+    # key, and the period language inside the reflection. So: the slot is ours,
+    # never the model's.
+    _VALID_SLOTS = ("morning", "midday", "evening")
+    _returned_slot = str(word_data.get("slot") or "").strip().lower()
+    if _returned_slot and _returned_slot != current_slot:
+        print(f"[WORD] slot mismatch: model returned '{_returned_slot}', "
+              f"forcing '{current_slot}'", flush=True)
     word_data["slot"] = current_slot
+
+    # Period language inside the text follows the assigned slot, not the echo.
+    # Rewrite stale self-references so the reflection cannot narrate itself as
+    # the wrong time of day.
+    # Only rewrite an explicit self-reference to a DIFFERENT daypart. A phrase
+    # like "come back tonight" said during the midday slot is not an error —
+    # it points forward — so forward-looking language is left alone. Only a
+    # back-reference to a period that has already passed gets corrected.
+    _slot_term = {"morning": "this morning", "midday": "this midday",
+                  "evening": "this evening"}
+    _passed = {
+        "morning": [],                                   # nothing has passed yet
+        "midday": ["this morning", "early this morning"],
+        "evening": ["this morning", "this midday", "this afternoon"],
+    }[current_slot]
+    _term = _slot_term[current_slot]
+    for _field in ("reflection", "closing_blessing", "title", "theme"):
+        _txt = word_data.get(_field)
+        if not isinstance(_txt, str):
+            continue
+        _orig = _txt
+        for _w in _passed:
+            # Preserve sentence-initial capitalization when substituting.
+            _txt = re.sub(r"\b" + re.escape(_w) + r"\b",
+                          lambda m: (_term[0].upper() + _term[1:]
+                                     if m.group(0)[:1].isupper() else _term),
+                          _txt, flags=re.IGNORECASE)
+        if _txt != _orig:
+            print(f"[WORD] rewrote stale period language in {_field} "
+                  f"-> '{_term}'", flush=True)
+            word_data[_field] = _txt
     word_data["date"] = today_str
     word_data["created_at"] = int(time.time() * 1000)
     word_data["created_iso"] = datetime.datetime.now().isoformat()

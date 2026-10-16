@@ -5388,6 +5388,68 @@ startStream();
     return false;
   }
 
+  // ===================== SMOKE — GAME-WORLD PHYSICS (FIXED) =====================
+  // Not a cloud. A queue. World clock counts to four: 1, 2, 3, 4, 1, 2, 3, 4.
+  // No syncopation, no async, no parallel. Each tick is EXACTLY one action.
+  window.SMOKE_RISE = 2.2;          // height per tick of age
+  window.SMOKE_FADE = 0.02;         // opacity decrement per tick of age
+  window.SMOKE_MAX_LIVE = 260;      // live particle count cap (density)
+  window.__smokeTick = 0;           // world clock: 1,2,3,4 repeating
+  window.__smokeCount = 0;          // live particle count = density
+  window.__smokeEmitting = false;
+  window.__smokeClearing = false;
+  window.__smokeQueue = [];         // birth_tick per particle
+
+  // age = current_tick - birth_tick; height = age * rise; opacity = fade(age)
+  function smokeParticleState(p) {
+    const age = window.__smokeTick - p.birth;
+    return {
+      x: p.x,
+      y: p.y - age * window.SMOKE_RISE,
+      age: age,
+      height: age * window.SMOKE_RISE,
+      opacity: Math.max(0, 1 - age * window.SMOKE_FADE)
+    };
+  }
+
+  function windowSmokeEmit(x, y) { window.__smokeEmitting = true; window.__smokeClearing = false; window.__smokeEmitX = x; window.__smokeEmitY = y; }
+  function windowSmokeClear() { window.__smokeEmitting = false; window.__smokeClearing = true; }
+
+  // ONE tick. EXACTLY one action: +1 while emitting, -1 (oldest first) while clearing.
+  function smokeTick() {
+    window.__smokeTick = window.__smokeTick % 4 + 1; // 1,2,3,4,1,2,3,4
+    const q = window.__smokeQueue;
+    if (window.__smokeEmitting) {
+      if (q.length < window.SMOKE_MAX_LIVE) {
+        q.push({ birth: window.__smokeTick, x: window.__smokeEmitX || 0, y: window.__smokeEmitY || 0 });
+      }
+    } else if (window.__smokeClearing) {
+      if (q.length) q.shift();   // oldest first, never a batch
+    }
+    window.__smokeCount = q.length;
+    return window.__smokeTick;
+  }
+
+  // Draw the emergent cloud from the count. Nothing moves except by the tick advancing.
+  function drawSmoke(ctx) {
+    if (!ctx) return;
+    for (let i = 0; i < window.__smokeQueue.length; i++) {
+      const s = smokeParticleState(window.__smokeQueue[i]);
+      if (s.opacity <= 0) continue;
+      ctx.globalAlpha = s.opacity * 0.5;
+      ctx.fillStyle = '#c9d1d9';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 3 + s.age * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  window.smokeTick = smokeTick;
+  window.smokeEmit = windowSmokeEmit;
+  window.smokeClear = windowSmokeClear;
+  window.drawSmoke = drawSmoke;
+
   // ===================== STORY TIME SYSTEM =====================
   // Fires only when the room is calm — after a wave settles, no active outburst,
   // no Word segment, no Brink segment running. Max once per hour. Lowest priority:

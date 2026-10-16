@@ -1,0 +1,25 @@
+{
+  "name": "crypto",
+  "version": "1.0.0",
+  "description": "A high-speed **Solana PumpPortal & DexScreener Paper Trading Bot** running directly in **Termux on Android**, featuring **Machine Learning rug detection via NumPy**, on-chain bonding curve analysis, and **loud, massive text visuals designed for live streaming on Bigo Live**.",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thewshii/crypto-commercial-billboard.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/thewshii/crypto-commercial-billboard/issues"
+  },
+  "homepage": "https://github.com/thewshii/crypto-commercial-billboard#readme",
+  "devDependencies": {
+    "playwright": "^1.64.0",
+    "puppeteer-core": "^25.13.0"
+  }
+}

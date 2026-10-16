@@ -1,0 +1,59 @@
+--- a/templates/index.html
++++ b/templates/index.html
+@@ -4939,7 +4939,7 @@
+   let howlBin = -1, howlCount = 0, howlActive = false, howlLastSeen = 0, howlHz = 0;
+   let silenceSince = 0, silenceFired = false;
+   let silenceLineSpeaking = false; // Silence-path line (Neuralyzer/comfort) in flight -> count-up pauses
+-  let comfortIdx = 0; // 0 -> first-mover comfort, 1 -> women's comfort, 2 -> meditation question, cycles each silence episode
++  let comfortIdx = 0; // 0 -> first-mover, 1 -> women's, 2 -> meditation question, 3 -> give back / redeemed; cycles each silence episode
+   // Pulsation: same frequencies wobbling back and forth in a small band
+   let pulsationPeaks = []; // ring buffer of recent peak bins
+   const PULSATION_FRAMES = 45; // ~0.75s at 60fps
+@@ -5116,12 +5116,13 @@
+         const u = new SpeechSynthesisUtterance('Neuralyzer flash. The last few seconds never happened. Clean slate.');
+         u.rate = 1.0; u.pitch = 0.6; u.volume = 0.9;
+         // Chain a comfort after the wipe lands: cycle first-mover /
+-        // women's comfort / meditation question each silence episode.
++        // women's / meditation / give-back each silence episode.
+         u.onend = function () {
+           if (comfortIdx === 0) speakFirstMoverComfort();
+           else if (comfortIdx === 1) speakWomenComfort();
+-          else speakMeditationQuestion();
+-          comfortIdx = (comfortIdx + 1) % 3;
++          else if (comfortIdx === 2) speakMeditationQuestion();
++          else speakGiveBackRedeemed();
++          comfortIdx = (comfortIdx + 1) % 4;
+         };
+         u.onerror = function () { silenceLineSpeaking = false; };
+         window.speechSynthesis.speak(u);
+@@ -5137,6 +5138,30 @@
+       try {
+         fetch("/api/speak", {
+           method: "POST",
++          headers: { "Content-Type": "application/json" },
++          body: JSON.stringify({ text: text })
++        }).catch(() => {});
++      } catch (e) {}
++      if ('speechSynthesis' in window) {
++        const u = new SpeechSynthesisUtterance(text);
++        u.rate = 0.92; u.pitch = 0.6; u.volume = 0.9;
++        u.onend = function () { silenceLineSpeaking = false; };
++        u.onerror = function () { silenceLineSpeaking = false; };
++        window.speechSynthesis.speak(u);
++      } else {
++        silenceLineSpeaking = false;
++      }
++    } catch (e) { silenceLineSpeaking = false; }
++  }
++
++  // Give back / redeemed: you were given so much — give back, and be
++  // redeemed. Fourth rotation in the silence-comfort cycle.
++  function speakGiveBackRedeemed() {
++    try {
++      const text = "You were given so much. Give back, give back, and be redeemed.";
++      try {
++        fetch("/api/speak", {
++          method: "POST",
+           headers: { "Content-Type": "application/json" },
+           body: JSON.stringify({ text: text })
+         }).catch(() => {});

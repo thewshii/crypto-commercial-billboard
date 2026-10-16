@@ -5490,6 +5490,91 @@ startStream();
 
   window.smokeTick = smokeTick;
 
+  // ============ R-STATE OCCUPANCY — who is in 0 and who is in 1 ============
+  // A flip and a swap are different events and they were being conflated.
+  //   FLIP — the same occupant changed state (R0 -> R1)
+  //   SWAP — two occupants traded places (A was in 0, B was in 1, now inverted)
+  // Both read as R0,R1,R0,R1 on a state timeline. Only one is a person moving.
+  // Rule 109: the pattern is R1 R2 R1 — same first, same third, something in the
+  // middle that looks like a change and is not. A swap is that shape exactly.
+  window.__occ = { seats: {}, log: [], recent: [], swaps: 0, flips: 0, crossTalk: 0, lastPair: null };
+  window.OCC_SEATS = 8;
+  window.OCC_TRADE_MS = 15000;   // both legs of a trade must land inside this
+
+  // Who is sitting in which state right now.
+  window.occSeat = function (person, state) {
+    const id = String(person || 'unknown');
+    const o = window.__occ;
+    const prev = o.seats[id];
+    if (prev === state) return { person: id, state: state, event: 'held' };
+
+    o.seats[id] = state;
+    const rec = { t: Date.now(), person: id, from: prev || null, to: state };
+
+    if (prev == null) {
+      rec.event = 'seated';
+    } else {
+      o.flips++;
+      rec.event = 'flip';
+      // A swap is an exact trade: the partner moved from where this one just
+      // went TO where this one just came FROM, inside the trade window. Both
+      // legs have to line up — that is what separates a swap from two
+      // independent flips that happen to alternate.
+      const o_recent = o.recent;
+      for (let i = o_recent.length - 1; i >= 0; i--) {
+        const e = o_recent[i];
+        if (e.person === id) continue;
+        if (rec.t - e.t > window.OCC_TRADE_MS) break;
+        if (e.from === rec.to && e.to === rec.from) {
+          rec.event = 'swap';
+          rec.partner = e.person;
+          break;
+        }
+      }
+      if (rec.event === 'swap') {
+        o.swaps++;
+        o.lastPair = { a: id, b: rec.partner, t: rec.t };
+      }
+    }
+    if (prev != null) {
+      o.recent.push({ t: rec.t, person: id, from: prev, to: state });
+      while (o.recent.length && rec.t - o.recent[0].t > window.OCC_TRADE_MS) o.recent.shift();
+    }
+    o.log.push(rec);
+    if (o.log.length > 60) o.log.shift();
+    return rec;
+  };
+
+  // Occupancy of a single state right now — who is in 0, who is in 1.
+  window.occState = function (state) {
+    const out = [];
+    const o = window.__occ;
+    for (const id in o.seats) if (o.seats[id] === state) out.push(id);
+    return out;
+  };
+
+  window.occStats = function () {
+    const o = window.__occ;
+    const r0 = window.occState('R0'), r1 = window.occState('R1');
+    return {
+      r0: r0, r1: r1, seated: r0.length + r1.length,
+      swaps: o.swaps, flips: o.flips,
+      lastPair: o.lastPair,
+      // A sustained swap pattern reads as coordinated rotation.
+      rotation: o.swaps >= 4 && (o.swaps / Math.max(1, o.flips)) > 0.4
+    };
+  };
+
+  // Report rotation once it is unambiguous, and name no one.
+  window.occReport = function () {
+    const s = window.occStats();
+    if (!s.rotation) return null;
+    if (typeof mark === 'function') {
+      mark('OCCUPANCY — ' + s.swaps + ' swaps / ' + s.flips + ' flips (rotation)', 0, -1);
+    }
+    return s;
+  };
+
   // ============ WIND — game-world physics (fixed) ============
   // The medium in motion: the air itself moving. The road the wave and the fire
   // both travel on. Wind = direction (one of 4) + strength (0-3).

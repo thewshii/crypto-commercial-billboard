@@ -5388,6 +5388,76 @@ startStream();
     return false;
   }
 
+  // ===================== STORY TIME SYSTEM =====================
+  // Fires only when the room is calm — after a wave settles, no active outburst,
+  // no Word segment, no Brink segment running. Max once per hour. Lowest priority:
+  // fills calm, never cuts another segment.
+  window.__storyTimeEpisode = 0;
+  window.__storyTimeLastFire = 0;
+  window.__storyTimeFiring = false;
+  window.__storyTimeMinInterval = 60 * 60 * 1000; // 1 hour
+
+  function isRoomCalmForStory() {
+    try {
+      if (typeof isWordActive !== 'undefined' && isWordActive) return false;
+      if (typeof isLiqInterrupting !== 'undefined' && isLiqInterrupting) return false;
+      if (typeof isRegimeNewsSpeaking !== 'undefined' && isRegimeNewsSpeaking) return false;
+      if (typeof silenceLineSpeaking !== 'undefined' && silenceLineSpeaking) return false;
+      if (typeof pulsationRecognizing !== 'undefined' && pulsationRecognizing) return false;
+      if (typeof isFullStopActive !== 'undefined' && isFullStopActive) return false;
+      if (typeof isBrinkSpeaking !== 'undefined' && isBrinkSpeaking) return false;
+      if ('speechSynthesis' in window && (window.speechSynthesis.speaking || window.speechSynthesis.pending)) return false;
+      if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return false;
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function storyTimeEpisodeText(ep) {
+    if (ep === 1) {
+      return "Story time. Before there was light, there was sound. The Sonigad hummed, and the hum became a wave. The wave rolled through the dark and gave it shape — up and down, high and low, a road for everything to travel on. Then came his younger brother, Pyrogad — hot, bright, and tired of being second. \"Why should the wave go first?\" he said. \"Fire is brighter. Fire is stronger. I should lead.\" So they raced. Pyrogad leapt ahead — and burned in one spot, eating himself, going nowhere. Fire cannot travel without a wave to carry it. The Sonigad didn't laugh. Didn't shame him. He opened the wave and said: \"Ride.\" Pyrogad climbed on, and the wave carried the fire everywhere. That was the first dawn — light riding on sound. Brothers still. Rivals still. But now he knows: the wave goes first. Speak steady before you burn hot. Wave before fire.";
+    }
+    const approaches = ["louder", "faster", "hotter", "brighter", "alone"];
+    const approach = approaches[(ep - 2) % approaches.length];
+    const suffixes = {
+      "louder": "He shouted so loud the wave shook, but sound carried farther than noise.",
+      "faster": "He raced ahead so fast he outran his own flame, but the wave arrived first anyway.",
+      "hotter": "He burned so hot he turned to ash before he moved an inch, while the wave stayed cool.",
+      "brighter": "He blinded everyone with his glare, but light needs a medium to travel through.",
+      "alone": "He tried to go without anyone, without anything — but even solitude needs a medium to echo in."
+    };
+    return "Story time. Pyrogad tried to be first by being " + approach + ". He stepped ahead of the wave, confident in his own heat and light. But " + suffixes[approach] + " The Sonigad watched, then opened the wave and said: \"Ride.\" Pyrogad hesitated, then stepped onto the wave, and it carried him farther than he ever went alone. The wave goes first. Speak steady before you burn hot. Wave before fire.";
+  }
+
+  function speakStoryTime() {
+    if (window.__storyTimeFiring) return;
+    if (!isRoomCalmForStory()) return;
+    const now = Date.now();
+    if (now - window.__storyTimeLastFire < window.__storyTimeMinInterval) return;
+    window.__storyTimeEpisode++;
+    const text = storyTimeEpisodeText(window.__storyTimeEpisode);
+    window.__storyTimeFiring = true;
+    window.__storyTimeLastFire = now;
+    try {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 0.88; u.pitch = 0.88; u.volume = 0.7;
+        u.onend = u.onerror = function () { window.__storyTimeFiring = false; };
+        window.speechSynthesis.speak(u);
+      }
+    } catch (e) {
+      window.__storyTimeFiring = false;
+    }
+  }
+
+  // Check every 10 seconds — yields to critical speech, never cuts another segment
+  setInterval(function () {
+    try {
+      if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return;
+      speakStoryTime();
+    } catch (e) {}
+  }, 10000);
+
   setInterval(function () {
     // Ticks every 567ms, but yields to any important event so the priority
     // speech is the one that actually gets through.

@@ -7325,6 +7325,83 @@ window.onHawkesOverload = function (raw) {
     } catch (e) { return null; }
   };
 
+  // ============ TRANSMISSION INTERRUPTION ============
+  // Cut everything, hold silence, then the stream restarts. Same discipline
+  // as the ATT S dropout: total audio drop, one beat, then back.
+  window.TI_BEATS = [
+    "Hold. There is an interruption to the transmission.",
+    "This is not the end of the stream. This is a pause in it.",
+    "The signal returns on its own. Nothing needs to be done."
+  ];
+  window.__tiActive = false;
+  window.__tiCount = 0;
+
+  function tiDropAllAudio() {
+    try { window.speechSynthesis.cancel(); } catch (e) {}
+    try { document.querySelectorAll('audio, video').forEach(function (el) { try { el.pause(); el.currentTime = 0; } catch (e) {} }); } catch (e) {}
+    try { if (typeof bgAudio !== 'undefined' && bgAudio) { bgAudio.pause(); bgAudio.currentTime = 0; } } catch (e) {}
+    try { if (typeof audioPlayer !== 'undefined' && audioPlayer) { audioPlayer.pause(); audioPlayer.currentTime = 0; } } catch (e) {}
+    try { if (typeof audioCtx !== 'undefined' && audioCtx && audioCtx.state === 'running') audioCtx.suspend(); } catch (e) {}
+  }
+
+  function tiResumeAudio() {
+    try { if (typeof audioCtx !== 'undefined' && audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } catch (e) {}
+    try { if (typeof bgAudio !== 'undefined' && bgAudio && bgAudio.paused) bgAudio.play().catch(function () {}); } catch (e) {}
+  }
+
+  function tiOverlay(show, beat) {
+    try {
+      let el = document.getElementById('ti-overlay');
+      if (show) {
+        if (!el) {
+          el = document.createElement('div');
+          el.id = 'ti-overlay';
+          el.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;' +
+            'justify-content:center;background:rgba(0,0,0,.94);color:#ffdd00;' +
+            'font:600 clamp(14px,3.2vw,26px)/1.5 ui-monospace,Menlo,Consolas,monospace;' +
+            'text-align:center;letter-spacing:.08em;padding:24px;';
+          document.body.appendChild(el);
+        }
+        el.innerHTML = '<div><div style="opacity:.5;font-size:.7em;letter-spacing:.3em;margin-bottom:14px">' +
+          'TRANSMISSION INTERRUPTION</div><div id="ti-beat"></div></div>';
+        var b = document.getElementById('ti-beat');
+        if (b) b.textContent = beat || '';
+      } else if (el) {
+        el.remove();
+      }
+    } catch (e) {}
+  }
+
+  // Fire the sequence: drop, one beat of silence, a short spoken line, then back.
+  window.transmissionInterruption = function (opts) {
+    if (window.__tiActive) return false;
+    const o = opts || {};
+    const holdMs = o.holdMs || 2600;      // silence before the line
+    const afterMs = o.afterMs || 900;     // silence after the line
+    const speak = o.speak !== false;
+    window.__tiActive = true;
+    window.__tiCount = (window.__tiCount || 0) + 1;
+    tiDropAllAudio();
+    tiOverlay(true, o.label || '');
+    setTimeout(function () {
+      if (!speak) { tiResume(); return; }
+      const text = o.text || window.TI_BEATS[(window.__tiCount - 1) % window.TI_BEATS.length];
+      try {
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 0.85; u.pitch = 0.7; u.volume = 0.85;
+        u.onend = u.onerror = function () { setTimeout(tiResume, afterMs); };
+        window.speechSynthesis.speak(u);
+      } catch (e) { setTimeout(tiResume, afterMs); }
+    }, holdMs);
+    return true;
+
+    function tiResume() {
+      tiOverlay(false);
+      tiResumeAudio();
+      setTimeout(function () { window.__tiActive = false; }, 600);
+    }
+  };
+
   // ============ WATER — the same wave, re-sliced across space ============
   // Same math, different medium. y(t) is the wave at one place over time;
   // y(x) is the wave at one time over place. Same y = A*sin(kx - wt + phi) —

@@ -7706,6 +7706,257 @@ window.onHawkesOverload = function (raw) {
     } catch (e) { return window.study; }
   };
 
+  // ---------- spectrogram recording: RSI, MOM, VEL ----------
+  // These are read off the live chart indicators. They get recorded into a
+  // series so the study can run algorithms and geometric checks on them.
+  window.__studySeries = { rsi: [], mom: [], vel: [], spikeHz: [], t: [] };
+  window.STUDY_LEN = 240;          // keep the last 240 samples
+
+  window.__studyReadStat = function (id, fallback) {
+    try {
+      const el = document.getElementById(id);
+      if (!el) return fallback;
+      const v = parseFloat(String(el.innerText || '').replace(/[^0-9.\-]/g, ''));
+      return isNaN(v) ? fallback : v;
+    } catch (e) { return fallback; }
+  };
+
+  window.studyRecord = function (extra) {
+    const s = window.__studySeries;
+    const push = function (arr, v) { arr.push(v); if (arr.length > window.STUDY_LEN) arr.shift(); };
+    push(s.rsi, window.__studyReadStat('stat-rsi', 50));
+    push(s.mom, window.__studyReadStat('stat-mom', 0));
+    push(s.vel, window.__studyReadStat('stat-vel', 0));
+    push(s.spikeHz, extra && extra.hz ? extra.hz : 0);
+    push(s.t, Date.now());
+    return s;
+  };
+
+  // ---------- the algorithms ----------
+  // Wilder's RSI recomputed over the recorded series, so the study agrees with
+  // the chart instead of trusting the DOM text.
+  window.studyRSI = function (period) {
+    const p = period || 14;
+    const v = window.__studySeries.rsi;
+    if (v.length < p + 1) return 50;
+    let g = 0, l = 0;
+    for (let i = 1; i <= p; i++) { const d = v[i] - v[i - 1]; if (d > 0) g += d; else l += Math.abs(d); }
+    let ag = g / p, al = l / p;
+    for (let i = p + 1; i < v.length; i++) {
+      const d = v[i] - v[i - 1];
+      ag = (ag * (p - 1) + (d > 0 ? d : 0)) / p;
+      al = (al * (p - 1) + (d < 0 ? Math.abs(d) : 0)) / p;
+    }
+    if (al === 0) return 100;
+    return 100 - 100 / (1 + ag / al);
+  };
+
+  // Geometric patterns.
+  const PHI = 1.6180339887;
+
+  window.studyGeometry = function () {
+    const s = window.__studySeries;
+    const r = s.rsi;
+    const out = { golden: false, ratio: 0, spacing: [], fib: false, turns: 0 };
+
+    // Golden ratio between the last two swings.
+    const swings = window.studySwings(r);
+    out.turns = swings.length;
+    // Golden ratio between consecutive swing AMPLITUDES, not just the last two.
+    // Three swings give two ratios, which is enough to call a pattern.
+    if (swings.length >= 3) {
+      const a1 = swings[swings.length - 3].amp;
+      const a2 = swings[swings.length - 2].amp;
+      const a3 = swings[swings.length - 1].amp;
+      out.ratios = [a1 > 0.001 ? a2 / a1 : 0, a2 > 0.001 ? a3 / a2 : 0];
+      out.golden = out.ratios.some(rr =>
+        Math.abs(rr - PHI) < 0.08 || Math.abs(rr - 1 / PHI) < 0.08);
+      if (!out.golden) out.ratio = out.ratios[1];
+    }
+    if (swings.length >= 2) {
+      const a = swings[swings.length - 2].amp;
+      const b = swings[swings.length - 1].amp;
+      if (a > 0.001) {
+        out.ratio = b / a;
+        out.golden = Math.abs(out.ratio - PHI) < 0.08 || Math.abs(out.ratio - 1 / PHI) < 0.08;
+      }
+    }
+    // Spacing between successive extrema — Fibonacci check.
+    out.spacing = window.studySpacing(r);
+    if (out.spacing.length >= 3) {
+      const last = out.spacing.slice(-3);
+      const c = last[0] + last[1];
+      out.fib = Math.abs(last[2] - c) <= Math.max(2, c * 0.12);
+    }
+    return out;
+  };
+
+  // Local extrema with a prominence threshold, so noise-floor wiggle does not
+  // register as a swing. A swing must clear its neighbours by at least
+  // `minProm` (a fraction of the series range) or it is not counted.
+  window.studySwings = function (arr, minProm) {
+    const raw = arr || [];
+    if (raw.length < 3) return [];
+
+    // Light smoothing first. Without it, sample-to-sample jitter registers as
+    // a turn on every other sample and the geometry is meaningless.
+    const K = 5;
+    const a = raw.map((_, i) => {
+      let s = 0, n = 0;
+      for (let j = Math.max(0, i - K); j <= Math.min(raw.length - 1, i + K); j++) { s += raw[j]; n++; }
+      return s / n;
+    });
+
+    let lo = Infinity, hi = -Infinity;
+    for (let i = 0; i < a.length; i++) { if (a[i] < lo) lo = a[i]; if (a[i] > hi) hi = a[i]; }
+    const range = hi - lo;
+    // Threshold as a fraction of the RANGE, not of sample-to-sample variance.
+    const prom = minProm != null ? minProm : Math.max(1e-9, range * 0.38);
+
+    // Minimum separation between accepted extrema, as a fraction of the series
+    // length. This, not amplitude, is what stops jitter registering as a turn.
+    const dist = Math.max(2, Math.floor(a.length * 0.08));
+
+    // Prominence test: from the candidate, walk outward on BOTH sides and keep
+    // the most extreme point found on each side. The swing is measured
+    // against the lowest valley (for a peak) or highest crest (for a trough),
+    // so it spans the whole move rather than only the first few samples.
+    const out = [];
+    for (let i = 1; i < a.length - 1; i++) {
+      if (a[i] >= a[i - 1] && a[i] > a[i + 1]) {                 // candidate peak
+        let valley = a[i], found = false;
+        for (let j = i - 1; j >= 0; j--) {
+          if (a[j] < a[i] - prom) found = true;
+          if (found && a[j] < valley) valley = a[j];
+        }
+        for (let j = i + 1; j < a.length; j++) {
+          if (a[j] < a[i] - prom) found = true;
+          if (found && a[j] < valley) valley = a[j];
+        }
+        if (found && a[i] - valley > prom) out.push({ i: i, kind: 'peak', amp: a[i] - valley });
+      } else if (a[i] <= a[i - 1] && a[i] < a[i + 1]) {          // candidate trough
+        let crest = a[i], found = false;
+        for (let j = i - 1; j >= 0; j--) {
+          if (a[j] > a[i] + prom) found = true;
+          if (found && a[j] > crest) crest = a[j];
+        }
+        for (let j = i + 1; j < a.length; j++) {
+          if (a[j] > a[i] + prom) found = true;
+          if (found && a[j] > crest) crest = a[j];
+        }
+        if (found && crest - a[i] > prom) out.push({ i: i, kind: 'trough', amp: crest - a[i] });
+      }
+    }
+
+    // Non-maximum suppression on a distance window: a rounded turn produces a
+    // cluster of adjacent candidates, so keep only the strongest one within
+    // `dist` samples of the last accepted extremum. Alternating peak/trough
+    // is enforced so consecutive same-kind candidates never stack up.
+    out.sort((x, y) => x.i - y.i);
+    const kept = [];
+    for (const s of out) {
+      const last = kept[kept.length - 1];
+      if (last && s.kind === last.kind) {
+        if (s.amp > last.amp) kept[kept.length - 1] = s;
+        continue;
+      }
+      if (last && (s.i - last.i) < dist) {
+        if (s.amp > last.amp) kept[kept.length - 1] = s;
+        continue;
+      }
+      kept.push(s);
+    }
+    return kept;
+  };
+
+  // Index distance between successive extrema.
+  window.studySpacing = function (arr, minProm) {
+    const sw = window.studySwings(arr, minProm);
+    const out = [];
+    for (let i = 1; i < sw.length; i++) out.push(sw[i].i - sw[i - 1].i);
+    return out;
+  };
+
+  // Divergence: price-side and rhythm-side disagreeing. Here we compare the
+  // RSI series against the momentum series for a sign split.
+  window.studyDivergence = function () {
+    const s = window.__studySeries;
+    const n = Math.min(s.rsi.length, s.mom.length);
+    if (n < 20) return null;
+    let agree = 0;
+    for (let i = n - 20; i < n; i++) {
+      const dr = s.rsi[i] - s.rsi[i - 1];
+      const dm = s.mom[i] - s.mom[i - 1];
+      if (dr * dm < 0) agree++;
+    }
+    const ratio = agree / 20;
+    return { disagree: agree, ratio: ratio, divergent: ratio > 0.55 };
+  };
+
+  // ---------- the study decision ----------
+  // It studies when it decides to. Quiet floor + cooldown, then a full pass.
+  window.__studyLast = 0;
+  window.__studyInterval = 15000;   // at most once every 15s
+  window.__studyQuietFloor = 0.18;  // don't study over a loud room
+  window.__studyRuns = 0;
+
+  window.studyDecide = function () {
+    try {
+      const s = window.__studySeries;
+      if (!s.rsi.length) return null;
+      const now = Date.now();
+      if (now - window.__studyLast < window.__studyInterval) return null;
+
+      // quiet floor: mean spectral energy decides whether it studies
+      let mean = 0;
+      if (window.bandVal && window.bandVal.length) {
+        for (let i = 0; i < window.bandVal.length; i++) mean += window.bandVal[i] / 255;
+        mean /= window.bandVal.length;
+      }
+      if (mean > window.__studyQuietFloor) return null;   // wait for calm
+
+      window.__studyLast = now;
+      window.__studyRuns++;
+
+      const st = window.study || {};
+      const result = {
+        n: window.__studyRuns,
+        t: now,
+        samples: s.rsi.length,
+        rsi: Math.round(window.studyRSI(14) * 100) / 100,
+        rsiScreen: Math.round((s.rsi[s.rsi.length - 1] || 0) * 100) / 100,
+        geometry: window.studyGeometry(),
+        divergence: window.studyDivergence(),
+        crestHz: st.crestHz, depth: st.depth, height: st.height,
+        breaking: st.breaking, reach: st.reach,
+        surface: st.surface, floor: st.floor
+      };
+      window.__studyResults = window.__studyResults || [];
+      window.__studyResults.push(result);
+      if (window.__studyResults.length > 50) window.__studyResults.shift();
+      if (typeof mark === 'function') {
+        mark('STUDY ' + result.n + ' — RSI ' + result.rsi +
+             (result.geometry.golden ? ' GOLDEN' : '') +
+             (result.divergence && result.divergence.divergent ? ' DIVERGENT' : '') +
+             (result.breaking ? ' BREAKING' : ''), 0, -1);
+      }
+      console.log('STUDY', JSON.stringify(result));
+      return result;
+    } catch (e) { return null; }
+  };
+
+  // Record the chart indicators into the study series. One sample per second
+  // is plenty for geometric work and keeps the buffer short.
+  setInterval(function () {
+    try {
+      const hz = (window.study && window.study.crestHz) || 0;
+      window.studyRecord({ hz: hz });
+    } catch (e) {}
+  }, 1000);
+
+  // Study on a cadence. It decides whether to actually run.
+  setInterval(function () { window.studyDecide(); }, 2000);
+
   // The 5ms tick.
   setInterval(function () { window.studyFn(); }, 5);
 

@@ -1054,7 +1054,7 @@
     </div>
 
     <!-- Live spectrum strip (page audio output only; no microphone) -->
-    <div id="spectrum-strip" style="position:relative; width:100%; height:clamp(46px,7vh,64px); background:#04060a; border-bottom:1px solid #1a2330;">
+    <div id="spectrum-strip" style="position:relative; width:100%; height:clamp(46px,7vh,64px); background:#04060a; border-bottom:1px solid #1a2330; display:none;" data-gate-hidden="1">
         <span style="position:absolute; top:2px; right:8px; z-index:2; font-family:'Roboto Mono',monospace; font-size:clamp(0.5rem,0.8vw,0.68rem); color:#00ffff; text-shadow:0 0 5px #00ffff; pointer-events:none;">Live spectrum</span>
         <button id="mic-btn" onclick="toggleMicInput()" style="position:absolute; top:1px; right:120px; z-index:3; background:#0b0f16; border:1px solid #00ffff; color:#00ffff; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🎤 MIC</button>
         <button id="connect-audio-btn" onclick="connectAudio()" style="position:absolute; top:1px; right:8px; z-index:3; background:#04121a; border:1px solid #00ff88; color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🔗 CONNECT AUDIO</button>
@@ -7367,7 +7367,7 @@ function connectAudio() {
     d.id = 'audio-gate';
     d.style.cssText = 'position:fixed;inset:0;z-index:10050;background:rgba(0,0,0,0.82);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;cursor:pointer;font-family:"Press Start 2P",monospace;color:#00ff88;text-shadow:0 0 12px #00ff88;text-align:center;padding:20px;';
     d.innerHTML = '<div style="font-size:clamp(14px,3.5vw,26px);">🔊 TAP TO START AUDIO</div><div style="font-size:clamp(8px,1.6vw,12px);color:#00ffff;text-shadow:0 0 8px #00ffff;">music • voice • sound effects</div>';
-    const go = () => { if (gateFired) return; gateFired = true; unlock(); d.remove(); };
+    const go = () => { if (gateFired) return; gateFired = true; unlock(); d.remove(); const strip = document.getElementById('spectrum-strip'); if (strip && strip.dataset.gateHidden) { strip.style.display = ''; strip.dataset.gateHidden = '0'; } };
     let gateFired = false;
     // Firefox/desktop: 'click' is the trusted activation it requires for
     // getUserMedia; pointerdown alone can be treated as non-activation.

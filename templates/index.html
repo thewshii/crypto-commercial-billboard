@@ -1751,6 +1751,11 @@
         // Random battlefield ambience: one sound every 7-20 seconds, never during The Word
         (function scheduleWarSound() {
             setTimeout(() => {
+                if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) {
+                    // Protect active TTS from being overlapped by war SFX.
+                    scheduleWarSound();
+                    return;
+                }
                 if (!window.__warSoundSpoken) {
                     if (typeof isWordActive === "undefined" || !isWordActive) playWarSound();
                 }

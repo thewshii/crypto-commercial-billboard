@@ -7576,12 +7576,24 @@ function connectAudio() {
       setTimeout(function () {
         try {
           const text = "This is an experiment of generation of time. Do you want to be the new generation? What is the origin of the word generation? Do you think you fully incorporated incorporated? In your day.";
-          const u = new SpeechSynthesisUtterance(text);
-          u.rate = 0.95; u.pitch = 0.9; u.volume = 1.0;
-          u.onend = u.onerror = function () {
+          // ATT S sequence: jealousy address -> the re-do -> the experiment.
+          // Each utterance waits for the previous one to finish. One step at a time.
+          const resume = function () {
             try { if (typeof audioCtx !== 'undefined' && audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } catch (e) {}
           };
-          window.speechSynthesis.speak(u);
+          const step = function (say, rate, pitch, next) {
+            try {
+              const u = new SpeechSynthesisUtterance(say);
+              u.rate = rate; u.pitch = pitch; u.volume = 1.0;
+              u.onend = u.onerror = function () { try { next(); } catch (e) { resume(); } };
+              window.speechSynthesis.speak(u);
+            } catch (e) { try { next(); } catch (e2) { resume(); } }
+          };
+          step("I admire your jealousy. Your wickedness has come to a stop.", 0.88, 0.82, function () {
+            step("That's not what I meant.", 0.9, 0.86, function () {
+              step(text, 0.95, 0.9, resume);
+            });
+          });
         } catch (e) {}
       }, 120);
     } catch (e) {}

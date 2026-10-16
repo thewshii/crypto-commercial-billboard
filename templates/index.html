@@ -1724,6 +1724,21 @@
                 const ctx = getAudioContext();
                 if (!ctx) return;
                 if (!window.__warSoundCycleStart) window.__warSoundCycleStart = Date.now();
+                if (!window.__warSoundCount) window.__warSoundCount = 0;
+                if (!window.__warSoundCountReset || Date.now() - window.__warSoundCountReset > 30000) {
+                    window.__warSoundCount = 0;
+                    window.__warSoundCountReset = Date.now();
+                }
+                window.__warSoundCount++;
+                // Breaking news: too many war sounds/bombs in a short window.
+                if (!window.__warBreakingNewsPlayed && window.__warSoundCount >= 5) {
+                    window.__warBreakingNewsPlayed = true;
+                    try { window.__warWordFailScheduled = false; } catch (e) {}
+                    const text = "Breaking news: Are there countries they did not even know existed? Things are falling out of the sky. Bombs hitting them from above, people appearing in front of them with guns. Nobody was hurt. The sky is the story.";
+                    try { if (typeof activeRegimeNewsBanner !== 'undefined') activeRegimeNewsBanner = text; } catch (e) {}
+                    try { if (typeof isWordActive === "undefined" || !isWordActive) speakPhrase(text); } catch (e) {}
+                    setTimeout(function () { window.__warBreakingNewsPlayed = false; }, 300000);
+                }
                 // When war sounds start playing, fail toward the Word.
                 if (!window.__warWordFailScheduled) {
                     window.__warWordFailScheduled = true;

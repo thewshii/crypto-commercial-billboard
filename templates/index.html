@@ -5159,6 +5159,8 @@ startStream();
   window.prevTTSLine = prevTTSLine;
   window.nextTTSLine = nextTTSLine;
 
+  // Follow acknowledgment — steady welcome, no name, no call out, no ask.
+  setInterval(function () { queueLine('Hey, I\'m following you.', 0.95, 0.8, 0.5); }, 45000);
   setInterval(function () { queueLine('This cap does not fit.', 1.0, 0.8, 0.5); }, 45000);  setInterval(function () { queueLine('This is not rashing.', 1.0, 0.8, 0.5); }, 45000);  setInterval(function () { queueLine('Give thanks before it is too late.', 0.95, 0.85, 0.5); }, 45000);  setInterval(function () { queueLine('A man cannot be a woman, a woman cannot be a man, and technology today does not glean access to that privilege.', 0.95, 0.85, 0.55); }, 45000);
 
   // Recurring timed line (5s)
@@ -5984,8 +5986,154 @@ startStream();
         const st = (window.__brinkBurst = window.__brinkBurst || { start: 0 });
         if (!st.start || ctx.now - st.start > 60000) { st.start = ctx.now; return false; }
         return (ctx.now - st.start) > 17000;
-      } }
+      } },
+    // ===== FOLLOW DECISION — hard-coded =====
+    // HEART (corpus text, the toxicity log) decides. SIGNAL (raw spectrogram,
+    // intensity only) NEVER decides follow; it only gates attention.
+    { name: 'follow-never-decide-on-signal', enabled: true, kinds: ['FOLLOW.decide'],
+      deny: (ctx) => {
+        const d = (ctx && ctx.detail) || {};
+        // SIGNAL alone is arousal, not character. A decision needs HEART.
+        if (!d.heart || d.heart.length < 3) return true;
+        return false;
+      } },
+    // One decision per 4-count bar, one person per bar, most-recent-speaker first.
+    { name: 'follow-one-per-bar', enabled: true, kinds: ['FOLLOW.decide'], cooldownMs: 4000 }
   ];
+
+  // ======================= FOLLOW DECISION ENGINE =======================
+  // P(change) is a probability of change, NOT a toxicity score.
+  // Start 0.50, fixed deltas, clamp [0.05, 0.95]. FOLLOW iff >= 0.60.
+  const FOLLOW_THRESHOLD = 0.60;
+  const FOLLOW_MIN_UTTERANCES = 3;
+  const FOLLOW_CLAMP_LO = 0.05;
+  const FOLLOW_CLAMP_HI = 0.95;
+  const FOLLOW_P_START = 0.50;
+  const FOLLOW_STALE_MS = 60 * 60 * 1000;   // no utterances in last hour
+  const FOLLOW_BAR_MS = 4000;               // one 4-count bar
+  window.__followBars = (window.__followBars || 0) + 1;
+
+  // HEART: log one utterance for a person. toxicity is the INPUT (a label
+  // attached by the classifier); P(change) is what we compute from it.
+  window.followHeart = function (person, toxic, opts) {
+    const id = String(person || 'unknown');
+    const log = (window.__followHearts = window.__followHearts || {});
+    if (!log[id]) log[id] = { utterances: [], leveling: [], last: 0 };
+    const rec = log[id];
+    rec.utterances.push({ t: Date.now(), toxic: !!toxic, soft: !!(opts && opts.soft) });
+    if (rec.utterances.length > 200) rec.utterances.splice(0, rec.utterances.length - 200);
+    rec.last = Date.now();
+    // Note a leveling response toward this person.
+    if (opts && opts.leveled) rec.leveling.push({ t: Date.now(), n: rec.utterances.length });
+    return rec;
+  };
+
+  // SIGNAL: intensity only. It gates attention; it never decides.
+  window.followSignal = function (person, energy) {
+    const id = String(person || 'unknown');
+    const sig = (window.__followSignals = window.__followSignals || {});
+    const rec = sig[id] || (sig[id] = { burst: false, energy: 0 });
+    rec.energy = Math.max(rec.energy * 0.9, Number(energy) || 0);
+    rec.burst = rec.energy >= 0.6;          // high-energy burst -> check HEART next
+    return rec;
+  };
+
+  function followMean(u) { return u.length ? u.reduce((a, b) => a + (b.toxic ? 1 : 0), 0) / u.length : 0; }
+
+  function followClamp(v) { return Math.max(FOLLOW_CLAMP_LO, Math.min(FOLLOW_CLAMP_HI, v)); }
+
+  // Compute P(change) from HEART only.
+  window.followP = function (person) {
+    const id = String(person || 'unknown');
+    const rec = (window.__followHearts || {})[id];
+    if (!rec || rec.utterances.length < FOLLOW_MIN_UTTERANCES) {
+      return { p: FOLLOW_P_START, decided: false, reason: 'fewer-than-3-utterances' };
+    }
+    const u = rec.utterances;
+    const n = u.length;
+    let p = FOLLOW_P_START;
+    const why = [];
+
+    // -0.10 no logged utterances in the last hour (stale)
+    if (Date.now() - (u[n - 1] || {}).t > FOLLOW_STALE_MS) { p -= 0.10; why.push('stale-0.10'); }
+
+    // -0.15 flat-hostile: last 5 all hostile, no softening
+    const last5 = u.slice(-5);
+    if (last5.length === 5 && last5.every(x => x.toxic)) { p -= 0.15; why.push('flat-hostile-0.15'); }
+
+    // +0.15 last 3 trend softer than the 3 before (improving trajectory)
+    if (n >= 6) {
+      const prev = u.slice(-6, -3), recent = u.slice(-3);
+      if (followMean(recent) < followMean(prev)) { p += 0.15; why.push('improving-0.15'); }
+    }
+
+    // +0.15 softened within 2 utterances after a leveling response (responsive)
+    // -0.15 escalated after leveling responses (anti-responsive)
+    for (const lv of rec.leveling || []) {
+      const after = u.slice(lv.n, lv.n + 2);
+      if (!after.length) continue;
+      if (after.every(x => !x.toxic)) { p += 0.15; why.push('responsive-0.15'); }
+      else if (after.every(x => x.toxic)) { p -= 0.15; why.push('anti-responsive-0.15'); }
+    }
+
+    // +0.10 high variance — swings calm <-> hostile (volatile = movable)
+    if (n >= 4) {
+      const vals = u.slice(-8).map(x => (x.toxic ? 1 : 0));
+      const mean = followMean(u.slice(-8));
+      const variance = vals.reduce((a, b) => a + (b - mean) * (b - mean), 0) / vals.length;
+      if (variance > 0.2) { p += 0.10; why.push('volatile-0.10'); }
+    }
+
+    return { p: followClamp(p), decided: true, why, threshold: FOLLOW_THRESHOLD };
+  };
+
+  // The decision. Never a toxicity score. FOLLOW = leveling attention only.
+  window.followDecide = function (person) {
+    const id = String(person || 'unknown');
+    const r = window.followP(id);
+    if (!r.decided) return { person: id, follow: false, ...r, gate: 'insufficient-utterances' };
+
+    // SIGNAL gates attention: a burst means "check HEART", which we did. A
+    // quiet signal needs no check. Either way SIGNAL never changes the outcome.
+    const sig = (window.__followSignals || {})[id] || { burst: false, energy: 0 };
+    const follow = r.p >= FOLLOW_THRESHOLD;
+    const out = {
+      person: id, follow, p: r.p, threshold: FOLLOW_THRESHOLD, why: r.why,
+      gate: sig.burst ? 'signal-burst-checked-heart' : 'signal-quiet'
+    };
+    if (follow) {
+      const f = (window.__followList = window.__followList || {});
+      f[id] = { since: Date.now(), p: r.p };
+    }
+    return out;
+  };
+
+  window.followIsFollowing = function (person) {
+    return !!(window.__followList || {})[String(person || '')];
+  };
+
+  // Ticking the bar: one decision per 4-count bar, most-recent-speaker first.
+  window.followTick = function () {
+    const order = (window.__followOrder = window.__followOrder || []);
+    const person = order[order.length - 1];
+    if (!person) return null;
+    const d = window.followDecide(person);
+    // Route the decision through the arbiter so the hard-coded rules govern it.
+    if (!judge('FOLLOW.decide', JSON.stringify({ heart: ((window.__followHearts || {})[person] || {}).utterances || [], p: d.p }))) {
+      return { person, follow: false, blocked: true, gate: 'rule-denied' };
+    }
+    console.log('FOLLOW ' + (d.follow ? 'FOLLOW' : 'PASS') + ' p=' + (d.p != null ? d.p.toFixed(2) : 'n/a') + ' [' + (d.gate || '') + '] :: ' + person);
+    return d;
+  };
+
+  // One decision per 4-count bar. Layer 2 notes the pass; no special attention.
+  setInterval(function () { try { window.followTick(); } catch (e) {} }, FOLLOW_BAR_MS);
+
+  window.followNoteSpeaker = function (person) {
+    const order = (window.__followOrder = window.__followOrder || []);
+    order.push(String(person));
+    if (order.length > 50) order.splice(0, order.length - 50);
+  };
 
   function caller() {
     const lines = (new Error().stack || '').split('\n').slice(1);

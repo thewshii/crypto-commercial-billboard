@@ -5067,6 +5067,7 @@ startStream();
       if (window.__cancelStormActive && window.__cancelStormUntil && Date.now() < window.__cancelStormUntil) return;
       if (!('speechSynthesis' in window)) return;
       ttsReadoutPush(text, { rate: rate, pitch: pitch, volume: volume, voice: 'en-NG', fn: 'queueLine' });
+      ttsRemembers('queueLine', text, { rate: rate, pitch: pitch, volume: volume });
       var u = new SpeechSynthesisUtterance(text);
       // Prefer Nigerian-English pronunciation where a matching voice exists.
       try { u.lang = 'en-NG'; } catch (e) {}
@@ -5121,6 +5122,7 @@ startStream();
     try {
       if (!('speechSynthesis' in window)) return;
       ttsReadoutPush(text, { rate: rate, pitch: pitch, volume: volume, voice: 'en-US', fn: 'queueLineFemale' });
+      ttsRemembers('queueLineFemale', text, { rate: rate, pitch: pitch, volume: volume });
       var u = new SpeechSynthesisUtterance(text);
       try { u.lang = 'en-US'; } catch (e) {}
       try {
@@ -5144,6 +5146,7 @@ startStream();
     try {
       if (!('speechSynthesis' in window)) return;
       ttsReadoutPush(text, { rate: rate, pitch: pitch, volume: volume, voice: 'en-US', fn: 'queueLineMale' });
+      ttsRemembers('queueLineMale', text, { rate: rate, pitch: pitch, volume: volume });
       var u = new SpeechSynthesisUtterance(text);
       try { u.lang = 'en-US'; } catch (e) {}
       // Prefer a distinctly male voice if available.
@@ -5605,6 +5608,70 @@ startStream();
       popped: h.popped, behind: window.hierBehind(99),
       depth: window.HIERARCHY.length
     };
+  };
+
+  // ============ PER-INSTANCE MEMORY — each TTS keeps its own array ============
+// Every TTS instance gets a memory array. Not shared. Each one remembers what
+// it registered itself — the lines it spoke, when, and what came back.
+//
+// It does not remember other instances' memories. That separation is the point:
+// three voices that share one buffer are one voice. Rule 104 already needs them
+// to be separable, and this is that requirement made structural.
+  window.TTS_MEM_CAP = 60;      // each instance keeps its last 60 entries
+
+  window.__ttsMem = {};         // fn name -> array
+
+  window.ttsMemory = function (fn) {
+    const name = fn || 'unknown';
+    if (!window.__ttsMem[name]) window.__ttsMem[name] = [];
+    return window.__ttsMem[name];
+  };
+
+  // One instance registers one thing it said. One entry. No batching.
+  window.ttsRemembers = function (fn, text, meta) {
+    const m = (meta || {});
+    const arr = window.ttsMemory(fn);
+    arr.push({
+      t: Date.now(),
+      text: String(text || ''),
+      rate: m.rate == null ? 0.95 : m.rate,
+      pitch: m.pitch == null ? 0.82 : m.pitch,
+      volume: m.volume == null ? 0.5 : m.volume,
+      mood: m.mood || '',
+      spokeAt: m.spokeAt || 'tts'
+    });
+    if (arr.length > window.TTS_MEM_CAP) arr.shift();
+    // Mark the live instance as having actually used its memory.
+    if (m.mood) window.__ttsLastMood = m.mood;
+    return arr.length;
+  };
+
+  // What this instance last registered. Used to avoid repeating itself.
+  window.ttsLastSaid = function (fn) {
+    const arr = window.ttsMemory(fn);
+    return arr.length ? arr[arr.length - 1] : null;
+  };
+
+  // Has this instance said this exact line before? Same instance only.
+  window.ttsHasSaid = function (fn, text) {
+    const t = String(text || '');
+    return window.ttsMemory(fn).some(function (e) { return e.text === t; });
+  };
+
+  // Pick a line this instance has NOT said. Filter the pool, then choose.
+  // Returns null when the instance has exhausted everything it knows.
+  window.ttsUnsaid = function (fn, pool) {
+    const fresh = (pool || []).filter(function (t) { return !window.ttsHasSaid(fn, t); });
+    if (!fresh.length) return null;
+    return fresh[Math.floor(Math.random() * fresh.length)];
+  };
+
+  window.ttsMemStats = function () {
+    const m = window.__ttsMem;
+    const out = {};
+    let total = 0;
+    for (const k in m) { out[k] = m[k].length; total += m[k].length; }
+    return { perInstance: out, total: total, cap: window.TTS_MEM_CAP };
   };
 
   // ============ LICENSING — four positions, not two ============
@@ -7724,12 +7791,17 @@ startStream();
 
     const pool = window.R_TALK_LINES[k] || window.R_TALK_LINES.R0;
     if (!pool.length) return null;       // belt and braces
-    const text = pool[Math.floor(Math.random() * pool.length)];
+    // Prefer a line this instance has not said. Once every line is spent,
+    // say nothing rather than fall back to the same word — the fallback word
+    // is the loop, and the loop is what the U-state fix was for.
+    let text = null;
+    if (typeof window.ttsUnsaid === 'function') text = window.ttsUnsaid('rTalk', pool);
+    if (!text) return null;
     window.__rTalkAt = now;
     window.__rTalkCount++;
     // Counted and ceilinged exactly like every other utterance.
     if (typeof window.speakTimed === 'function') {
-      return window.speakTimed(text, { rate: 0.9, pitch: k === 'R1' ? 0.88 : 0.76, volume: 0.5, voice: 'r' });
+      return window.speakTimed(text, { rate: 0.9, pitch: k === 'R1' ? 0.88 : 0.76, volume: 0.5, voice: 'r', mood: k });
     }
     try { queueLine(text, 0.9, 0.76, 0.5); return { text: text }; } catch (e) { return null; }
   };
@@ -7845,6 +7917,9 @@ startStream();
       pitch: o.pitch == null ? 0.82 : o.pitch,
       volume: o.volume == null ? 0.5 : o.volume,
       voice: o.voice || 'timed', fn: 'speakTimed'
+    });
+    window.ttsRemembers('speakTimed', text, {
+      rate: o.rate, pitch: o.pitch, volume: o.volume, mood: o.mood
     });
     const rec = window.playWatchStart(text, o.voice);
     try {

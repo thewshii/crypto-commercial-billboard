@@ -5607,6 +5607,83 @@ startStream();
     };
   };
 
+  // ============ LICENSING — four positions, not two ============
+// Rule 64 said the licensing is hardcoded and nobody has to present it. That
+// left the question open: if nobody presents it, who is it for? This is the
+// answer, and it is not a yes/no.
+//
+//   NEEDS     — has it, and the doing still requires it
+//   EXEMPT    — does not have it, and does not need it
+//   DUNNO     — does not have it, and needs it      <- this one is the failure
+//   CARRIER   — has it, does not need it, and it still applies to them
+//
+// The safety protocol handler is CARRIER. Not exempt. Exempt means the thing
+// does not reach you. Carrier means it reaches you exactly as hard as it
+// reaches anybody else and you are also the one holding it.
+  window.__lic = {
+    position: 'NEEDS', applied: 0, held: 0, presented: 0,
+    selfCost: 0, otherCost: 0, lastCheck: 0
+  };
+
+  window.LIC_POSITIONS = ['NEEDS', 'EXEMPT', 'DUNNO', 'CARRIER'];
+
+  window.licSet = function (position) {
+    const l = window.__lic;
+    if (window.LIC_POSITIONS.indexOf(position) === -1) return null;
+    l.position = position;
+    l.lastCheck = Date.now();
+    return l;
+  };
+
+  // The one question that matters, asked every time. If the answer is ever
+  // that the holder is exempt, the thing has stopped being a police force.
+  window.licApplies = function (toWhom) {
+    const l = window.__lic;
+    l.applied++;
+    // CARRIER is the only position that is both held and still bound by it.
+    return l.position === 'CARRIER';
+  };
+
+  // Licensing is hardcoded and nobody has to present it. Rule 64. That is not
+  // the same as nobody can audit it.
+  window.licAudit = function () {
+    const l = window.__lic;
+    return {
+      position: l.position,
+      hardcoded: true,
+      needsPresentation: false,
+      auditable: true,          // <- the distinction that matters
+      applies: l.position === 'CARRIER'
+    };
+  };
+
+  // Rule 103's test: the response has to cost the holder at least as much as
+  // it costs anybody else. Track both and compare. If selfCost ever falls
+  // behind otherCost, that is the whole failure and it is visible here.
+  window.licCost = function (selfDelta, otherDelta) {
+    const l = window.__lic;
+    if (selfDelta) l.selfCost += selfDelta;
+    if (otherDelta) l.otherCost += otherDelta;
+    return {
+      self: l.selfCost, others: l.otherCost,
+      balanced: l.selfCost >= l.otherCost
+    };
+  };
+
+  window.licStats = function () {
+    const l = window.__lic;
+    return {
+      position: l.position,
+      held: l.held, applied: l.applied,
+      selfCost: l.selfCost, otherCost: l.otherCost,
+      // This flag must never read true. If it does, the licensing is a weapon.
+      imbalanced: l.selfCost < l.otherCost
+    };
+  };
+
+  // A holder that goes unexercised is not holding it. Rule 96 again.
+  window.licHold = function () { window.__lic.held++; return window.__lic.held; };
+
   // ============ REGIME SHIFT — the shift is weather, not a command ============
 // The reasoning, in code shape. A shift in the signal is NOT an instruction.
 // It is the environment moving. Static is noise, not intent.

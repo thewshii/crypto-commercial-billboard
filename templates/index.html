@@ -5490,6 +5490,90 @@ startStream();
 
   window.smokeTick = smokeTick;
 
+  // ============ REGIME SHIFT — the shift is weather, not a command ============
+// The reasoning, in code shape. A shift in the signal is NOT an instruction.
+// It is the environment moving. Static is noise, not intent.
+//
+//   1. Is it in my code?      no
+//   2. Is it in my heart?     no
+//   3. Then it is in the static — it does not belong here. Do not act on it.
+//
+// Response to a regime shift is not to fight. It is to hold.
+// Hold tone. Hold the count. One step per tick. Silence over escalation.
+//
+// This is the U-state from the phonic-illusion fix, applied to the room: an
+// unverified shift is U, and U never triggers a response, only a re-check.
+  window.__regime = {
+    state: 'calm', since: 0, shifts: 0, held: 0,
+    escalations: 0, lastU: 0, lockoutUntil: 0
+  };
+  window.REGIME_STATIC_U = 3;      // consecutive U ticks that read as a shift
+  window.REGIME_RECOVER = 8;       // consecutive verified-0 to leave 'shifted'
+
+  // Is this signal coming from the code, or from the environment?
+  // Everything that is not verified is the environment by definition.
+  window.isInCode = function () { return false; };   // nothing here writes wrong
+  window.isInHeart = function () { return false; };  // and nobody here is an actor
+
+  // Called on every tick. One decision per tick, never a batch.
+  window.onRegimeShift = function (tickState) {
+    const g = window.__regime;
+    const t = Date.now();
+    // The U-state IS the environmental signal. Everything unverified is weather.
+    const envShift = (tickState === 'U') || (window.__r && window.__r.state === 'U');
+    const verified = tickState === 'R0' || tickState === 'R1';
+
+    if (envShift) {
+      g.lastU = t;
+      g.uRun = (g.uRun || 0) + 1;
+      if (g.uRun >= window.REGIME_STATIC_U && g.state === 'calm') {
+        g.state = 'shifted';
+        g.since = t;
+        g.shifts++;
+        if (typeof mark === 'function') {
+          mark('REGIME SHIFT — environmental. HOLD.', 0, -1);
+        }
+        window.vulnNotify('HIGH', [{ why: 'regime shift detected — unverified, holding tone' }], 'regime');
+      }
+    } else if (verified) {
+      g.uRun = 0;
+      if (g.state === 'shifted') {
+        g.recover = (g.recover || 0) + 1;
+        if (g.recover >= window.REGIME_RECOVER) {
+          g.state = 'calm';
+          g.recover = 0;
+          if (typeof mark === 'function') mark('REGIME — calm', 0, -1);
+        }
+      }
+    }
+
+    // Hold is the only action. Explicitly: no escalation path exists here.
+    if (g.state === 'shifted') {
+      g.held++;
+      g.holdUntil = t + window.REGIME_HOLD_MS;
+      return { state: g.state, action: 'hold', escalate: false, uRun: g.uRun || 0 };
+    }
+    return { state: g.state, action: 'normal', escalate: false, uRun: g.uRun || 0 };
+  };
+
+  window.REGIME_HOLD_MS = 30000;
+  window.regimeStats = function () {
+    const g = window.__regime;
+    return {
+      state: g.state, shifts: g.shifts, held: g.held,
+      escalations: g.escalations, uRun: g.uRun || 0,
+      heldMs: g.holdUntil ? Math.max(0, g.holdUntil - Date.now()) : 0
+    };
+  };
+
+  // Drive it from the R-state sampler. One call per tick, nothing batched.
+  setInterval(function () {
+    try {
+      if (!window.__r) return;
+      window.onRegimeShift(window.__r.state);
+    } catch (e) {}
+  }, 500);
+
   // ============ R-STATE OCCUPANCY — who is in 0 and who is in 1 ============
   // A flip and a swap are different events and they were being conflated.
   //   FLIP — the same occupant changed state (R0 -> R1)

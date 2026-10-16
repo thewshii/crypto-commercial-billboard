@@ -5115,6 +5115,14 @@ startStream();
     } catch (e) {}
   }, 5000);
 
+  // Periodic firm command from the light source.
+  setInterval(function () {
+    try {
+      if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return;
+      queueLine("Listen. I am the light source, outside time. The Word is first. Stand in truth.", 0.9, 0.8, 0.6);
+    } catch (e) {}
+  }, 15000);
+
   // Recurring line every 5 seconds (collection/projection)
   setInterval(function () {
     try {

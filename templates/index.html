@@ -7591,7 +7591,9 @@ function connectAudio() {
           };
           step("I admire your jealousy. Your wickedness has come to a stop.", 0.88, 0.82, function () {
             step("That's not what I meant.", 0.9, 0.86, function () {
-              step(text, 0.95, 0.9, resume);
+              step(text, 0.95, 0.9, function () {
+                step("We get it. You feel stacked, are you seeing shadows? You ghost.", 0.86, 0.78, resume);
+              });
             });
           });
         } catch (e) {}

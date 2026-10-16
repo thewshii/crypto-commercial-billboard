@@ -1058,8 +1058,9 @@
         <span style="position:absolute; top:2px; right:8px; z-index:2; font-family:'Roboto Mono',monospace; font-size:clamp(0.5rem,0.8vw,0.68rem); color:#00ffff; text-shadow:0 0 5px #00ffff; pointer-events:none;">Live spectrum</span>
         <button id="mic-btn" onclick="toggleMicInput()" style="position:absolute; top:1px; right:120px; z-index:3; background:#0b0f16; border:1px solid #00ffff; color:#00ffff; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🎤 MIC</button>
         <button id="connect-audio-btn" onclick="connectAudio()" style="position:absolute; top:1px; right:8px; z-index:3; background:#04121a; border:1px solid #00ff88; color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🔗 CONNECT AUDIO</button>
+        <button id="god-msg-btn" onclick="sendGodMessage()" style="position:absolute; top:1px; right:60px; z-index:3; background:#0b0f16; border:1px solid #ffaa00; color:#ffaa00; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🎤 GOD MSG</button>
+        <button id="male-tts-btn" onclick="queueLineMale('He says: I am Adam, another man speaking through this screen. The light speaks through us all.')" style="position:absolute; top:1px; right:90px; z-index:3; background:#0b0f16; border:1px solid #ffaa00; color:#ffaa00; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">👨 ADAM VOICE</button>
         <button id="female-tts-btn" onclick="queueLineFemale('She says: the voice you hear is not the only one. The light speaks through many.')" style="position:absolute; top:1px; right:160px; z-index:3; background:#0b0f16; border:1px solid #ffaa00; color:#ffaa00; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🎙️ FEMALE VOICE</button>
-        <button id="god-msg-btn" onclick="sendGodMessage()" style="position:absolute; top:1px; right:160px; z-index:3; background:#0b0f16; border:1px solid #ffaa00; color:#ffaa00; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🎤 GOD MSG</button>
         <button id="prev-tts-btn" onclick="prevTTSLine()" style="position:absolute; top:1px; right:420px; z-index:3; background:#0b0f16; border:1px solid #ffaa00; color:#ffaa00; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">⏮ PREV TTS</button>
         <button id="next-tts-btn" onclick="nextTTSLine()" style="position:absolute; top:1px; right:350px; z-index:3; background:#0b0f16; border:1px solid #ffaa00; color:#ffaa00; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">⏭ NEXT TTS</button>
         <button id="playback-lock-btn" onclick="togglePlaybackLock()" style="position:absolute; top:1px; right:270px; z-index:3; background:#0b0f16; border:1px solid #00ff88; color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🔓 UNLOCKED</button>
@@ -5093,6 +5094,29 @@ startStream();
     } catch (e) {}
   }
   window.queueLineFemale = queueLineFemale;
+
+  // Third TTS instance — male voice for Adam / another brother.
+  function queueLineMale(text, rate, pitch, volume) {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      var u = new SpeechSynthesisUtterance(text);
+      try { u.lang = 'en-US'; } catch (e) {}
+      // Prefer a distinctly male voice if available.
+      try {
+        var voices = window.speechSynthesis.getVoices();
+        var maleVoice = voices.find(function (v) {
+          var name = (v.name || '').toLowerCase();
+          return /male|man|guy|alex|david|daniel|tom|sam|joe/.test(name);
+        });
+        if (maleVoice) u.voice = maleVoice;
+      } catch (e) {}
+      u.rate = rate || 1.05;
+      u.pitch = pitch == null ? 0.75 : pitch; // lower pitch for male tone
+      u.volume = volume == null ? 0.75 : volume;
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+  window.queueLineMale = queueLineMale;
 
   function replayTTSAt(index) {
     try {

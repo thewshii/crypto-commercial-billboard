@@ -450,6 +450,62 @@ def generate_word_reflection(slot=None, force=False, get_bedrock_client_fn=None,
               f"forcing '{current_slot}'", flush=True)
     word_data["slot"] = current_slot
 
+    # --- Stacked planes: the last good slot answers for a refusal ----------
+    # If the model returns something it will not actually say — a refusal, a
+    # disclaimer, a non-answer, or a placeholder — we do not speak that. We
+    # take the last known-good slot instead: the planes stack, one in front of
+    # the other, and the front plane is the one that already passed.
+    def _is_refusal(d):
+        """True if this text is something the stream will not put on air."""
+        blob = " ".join([
+            str(d.get("reflection") or ""),
+            str(d.get("closing_blessing") or ""),
+            str(d.get("title") or ""),
+        ]).lower()
+        if len(blob.strip()) < 80:
+            return True
+        markers = (
+            "i cannot", "i can't", "i'm sorry", "i am sorry", "i apologize",
+            "as an ai", "language model", "i'm unable", "i am unable",
+            "i won't be able", "i will not be able", "not able to provide",
+            "cannot provide", "cannot fulfill", "cannot comply",
+            "i must decline", "i have to decline", "decline to",
+            "against my", "my guidelines", "my instructions", "my programming",
+            "consult", "seek professional", "please note that i",
+            "i do not have", "i don't have personal",
+        )
+        for m in markers:
+            if m in blob:
+                return True
+        # A reflection that asks for direction is a stall, not an answer.
+        if re.search(r"what do i say|who do i speak to|how do i handle", blob):
+            return True
+        return False
+
+    if _is_refusal(word_data):
+        prev = None
+        for entry in reversed(logs):
+            if entry.get("reflection") and not _is_refusal(entry):
+                prev = entry
+                break
+        if prev:
+            print(f"[WORD] refusal detected — stacking previous good slot "
+                  f"('{prev.get('title','')[:40]}') for {current_slot}", flush=True)
+            stacked = dict(prev)
+            stacked["source"] = "stacked_previous_slot"
+            stacked["stacked_from"] = prev.get("slot")
+            stacked["stacked_title"] = prev.get("title")
+            # The slot is still ours. Only the words are carried.
+            stacked["slot"] = current_slot
+            stacked["stacked"] = True
+            word_data = stacked
+        else:
+            print(f"[WORD] refusal detected and no good previous slot — "
+                  f"curated fallback for {current_slot}", flush=True)
+            word_data = select_curated_fallback(current_slot, theme, logs)
+            word_data["slot"] = current_slot
+            word_data["source"] = "refusal_fallback"
+
     # Period language inside the text follows the assigned slot, not the echo.
     # Rewrite stale self-references so the reflection cannot narrate itself as
     # the wrong time of day.

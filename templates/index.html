@@ -2405,6 +2405,23 @@
             const blessingEl = document.getElementById("word-closing-blessing");
             const audioLabel = document.getElementById("word-audio-label");
 
+            // Stacked plane: show which plane is on air and which it carries.
+            const stackEl = document.getElementById("word-r-detail");
+            if (word.stacked) {
+                if (stackEl) {
+                    stackEl.textContent = 'STACKED PLANE — carrying "'
+                        + (word.stacked_title || 'previous slot') + '"';
+                    stackEl.style.color = '#ffdd00';
+                    stackEl.style.opacity = '1';
+                }
+                if (typeof mark === 'function') {
+                    mark('STACKED — previous slot carried forward', 0, -1);
+                }
+            } else if (stackEl && stackEl.textContent.indexOf('STACKED') === 0) {
+                stackEl.textContent = 'idle';
+                stackEl.style.color = '';
+            }
+
             if (slotBadge) slotBadge.innerText = getSlotBadgeLabel(word.slot);
             if (titleEl) titleEl.innerText = word.title || "Pause for the Word";
             if (themeEl) themeEl.innerText = "THEME: " + (word.theme || "Divine Guidance");

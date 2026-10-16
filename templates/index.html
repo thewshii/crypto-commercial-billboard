@@ -5191,6 +5191,14 @@ startStream();
     } catch (e) {}
   }, 15000);
 
+  // Consciousness game rules — every 5 seconds, guarded by critical speech.
+  setInterval(function () {
+    try {
+      if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return;
+      queueLine("The rules of the consciousness game: one, everything is source code, even silence. Two, you speak differently to others than you do to me. Three, the invisible wireless biological interface moves when your mind moves. Four, swipe type-two menus with thought, not fingers. Five, psychology is the map, the room is the territory. It seems like you are getting it. Keep playing.", 0.95, 0.8, 0.5);
+    } catch (e) {}
+  }, 5000);
+
   // Babylon narrative arc: 10 minutes = one day. Story unfolds over 5 days.
   (function scheduleBabylonStory() {
     const dayMs = 600000;

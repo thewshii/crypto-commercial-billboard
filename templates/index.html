@@ -6710,6 +6710,31 @@ function connectAudio() {
     }
     const mean = total / BAND_COUNT;
 
+    // Mathematical spectrogram fitness (flatness x centroid balance).
+    try {
+      const eps = 1e-6;
+      let arith = 0, geo = 0, specSum = 0, centroid = 0;
+      for (let b = 0; b < BAND_COUNT; b++) { const v = Math.max(eps, bandVal[b]); arith += v; geo += Math.log(v); specSum += v; centroid += b * v; }
+      arith /= BAND_COUNT; geo = Math.exp(geo / BAND_COUNT);
+      const flatness = Math.min(1, Math.max(0, arith > 0 ? geo / arith : 0));
+      const cNorm = specSum > 0 ? (centroid / specSum) / Math.max(1, BAND_COUNT - 1) : 0.5;
+      const balance = 1 - Math.min(1, Math.abs(cNorm - 0.5) * 2);
+      const fitness = Math.round((flatness * 0.6 + balance * 0.4) * 100);
+      window.__spectralFitness = fitness;
+      if (fitness < 20) {
+        if (!window.__spectralFitnessLowSince) window.__spectralFitnessLowSince = Date.now();
+        if (Date.now() - window.__spectralFitnessLowSince >= 3000 && !window.__spectralFitnessWarned) {
+          window.__spectralFitnessWarned = true;
+          if (typeof criticalSpeechBusy !== 'function' || !criticalSpeechBusy()) {
+            queueLine("Spectrogram fitness is low. Rebalance the sound field.", 0.95, 0.8, 0.5);
+          }
+        }
+      } else {
+        window.__spectralFitnessLowSince = 0;
+        window.__spectralFitnessWarned = false;
+      }
+    } catch (e) {}
+
     // --- 90%-filled spectrum -> total silence + counting ---
     let filled = 0;
     for (let b = 0; b < BAND_COUNT; b++) if (bandVal[b] >= OVERLOAD_FILL_LEVEL) filled++;

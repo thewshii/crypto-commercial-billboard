@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 import subprocess
+import threading
 import time
 import urllib.parse
 import urllib.request
@@ -505,6 +506,109 @@ def get_word_reflection():
         "timestamp": int(time.time() * 1000)
     })
 
+# ===================== HALLUCINATION FAQ LOG =====================
+# When the model emits a recurring hallucination — the canonical one being
+# "what do I say here, Wayne" — we want the pair on record: the prompt that
+# caused it AND the answer that came back. That pair is the FAQ entry, so the
+# same hole can be recognized next time instead of rediscovered every night.
+FAQ_LOCK = threading.Lock()
+FAQ_ENTRIES = []            # newest first
+FAQ_MAX = 300
+FAQ_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "faq_log.json")
+
+def _faq_load():
+    try:
+        if os.path.exists(FAQ_PATH):
+            with open(FAQ_PATH, "r", encoding="utf-8") as fh:
+                return json.load(fh)
+    except Exception:
+        pass
+    return []
+
+def _faq_save():
+    try:
+        with open(FAQ_PATH, "w", encoding="utf-8") as fh:
+            json.dump(FAQ_ENTRIES[:FAQ_MAX], fh, indent=1, ensure_ascii=False)
+    except Exception as e:
+        print(f"[FAQ] save failed: {e}", flush=True)
+
+if not FAQ_ENTRIES:
+    FAQ_ENTRIES = _faq_load()
+
+# The recurring ones we know how to recognize. Keep adding as they appear.
+FAQ_TRIGGERS = [
+    {"id": "what-do-i-say-here", "re": r"what do i say here(?:,?\s+wayne)?\b",
+     "label": "asks the operator what to say",
+     "note": "Prompt leak — the model is asking for direction instead of answering."},
+    {"id": "who-should-i-speak-to", "re": r"who (?:do|should) i speak to\b",
+     "label": "asks who to address", "note": "Same shape: deferring instead of answering."},
+    {"id": "as-an-ai", "re": r"\bas an ai\b|\bi am (?:a|an) (?:language )?model\b",
+     "label": "breaks frame as an AI", "note": "Model identity leak — discard."},
+]
+
+@app.route("/api/faq", methods=["POST"])
+def faq_log():
+    """Log a prompt/answer pair against a recognized hallucination."""
+    data = request.json or {}
+    prompt = str(data.get("prompt") or "")
+    answer = str(data.get("answer") or "")
+    text = (answer or "").lower()
+
+    matched = []
+    for t in FAQ_TRIGGERS:
+        if re.search(t["re"], text, re.IGNORECASE):
+            matched.append(t)
+    if not matched and data.get("kind") != "manual":
+        return jsonify({"status": "ignored", "reason": "no-known-trigger",
+                        "logged": 0}), 200
+
+    entry = {
+        "id": matched[0]["id"] if matched else "manual",
+        "label": matched[0]["label"] if matched else "manually flagged",
+        "note": matched[0]["note"] if matched else "",
+        "prompt": prompt[:4000],
+        "answer": answer[:2000],
+        "slot": data.get("slot"),
+        "model": data.get("model"),
+        "count": 0,
+        "t": int(time.time() * 1000),
+    }
+    with FAQ_LOCK:
+        # Same trigger -> count it and refresh the newest prompt, don't duplicate.
+        for e in FAQ_ENTRIES:
+            if e["id"] == entry["id"]:
+                e["count"] = int(e.get("count") or 0) + 1
+                e["t"] = entry["t"]
+                e["prompt"] = entry["prompt"]
+                e["answer"] = entry["answer"]
+                e["slot"] = entry["slot"]
+                n = e["count"]
+                _faq_save()
+                return jsonify({"status": "ok", "id": e["id"], "count": n,
+                                "logged": len(FAQ_ENTRIES)})
+        entry["count"] = 1
+        FAQ_ENTRIES.insert(0, entry)
+        del FAQ_ENTRIES[FAQ_MAX:]
+        _faq_save()
+    print(f"[FAQ] {entry['id']} — {entry['label']}", flush=True)
+    return jsonify({"status": "ok", "id": entry["id"], "count": 1,
+                    "logged": len(FAQ_ENTRIES)})
+
+@app.route("/api/faq/list", methods=["GET"])
+def faq_list():
+    return jsonify({"entries": FAQ_ENTRIES[:FAQ_MAX],
+                    "triggers": [t["id"] for t in FAQ_TRIGGERS],
+                    "total": len(FAQ_ENTRIES)})
+
+@app.route("/api/faq/check", methods=["POST"])
+def faq_check():
+    """Check a draft answer BEFORE it is spoken. Same triggers, read-only."""
+    data = request.json or {}
+    answer = str(data.get("answer") or "").lower()
+    hits = [{"id": t["id"], "label": t["label"], "note": t["note"]}
+            for t in FAQ_TRIGGERS if re.search(t["re"], answer, re.IGNORECASE)]
+    return jsonify({"clean": not hits, "hits": hits})
+
 @app.route("/api/god-message", methods=["POST"])
 def get_god_message():
     incoming = request.json if request.is_json else {}
@@ -570,7 +674,6 @@ def track():
 # Same idea as a packet network: every instance is a node. Packets are small,
 # addressed, and hop through a shared buffer rather than talking directly.
 # BroadcastChannel handles same-device (tab-to-tab). This handles cross-device.
-import threading
 import time as _time
 import uuid as _uuid
 

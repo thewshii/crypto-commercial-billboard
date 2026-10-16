@@ -6751,6 +6751,65 @@ startStream();
 
   window.vulnLog = function () { return window.__vulnLog.slice(); };
 
+  // ---------- HALLUCINATION FAQ LOG ----------
+  // The recurring one is the model asking the operator what to say:
+  // "what do I say here, Wayne". We log the PROMPT and the ANSWER as a pair,
+  // so the hole that produced it is on record and gets recognized next time
+  // instead of rediscovered. Also checks before speaking.
+  window.__lastPrompt = '';        // the prompt that produced the last answer
+  window.faqSetPrompt = function (p) { window.__lastPrompt = String(p || ''); };
+
+  window.faqLog = async function (answer, opts) {
+    try {
+      const r = await fetch('/api/faq', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: (opts && opts.prompt) || window.__lastPrompt,
+          answer: answer,
+          slot: opts && opts.slot,
+          model: opts && opts.model,
+          kind: (opts && opts.kind) || 'auto'
+        })
+      });
+      const j = await r.json();
+      if (j.status === 'ok') {
+        if (typeof mark === 'function') mark('FAQ LOGGED — ' + j.id + ' x' + j.count, 0, -1);
+        window.vulnNotify('HIGH', [{ why: j.id + ' logged (x' + j.count + ')' }], 'faq');
+      }
+      return j;
+    } catch (e) { return null; }
+  };
+
+  // Read-only check. Returns true if the answer is clean.
+  window.faqCheck = async function (answer) {
+    try {
+      const r = await fetch('/api/faq/check', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answer: answer })
+      });
+      const j = await r.json();
+      if (!j.clean) {
+        window.vulnNotify('CRITICAL', j.hits.map(h => ({ why: h.label })), 'faq-check');
+        window.faqLog(answer, { kind: 'auto' });
+        if (typeof mark === 'function') mark('FAQ TRIGGER — ' + j.hits[0].id, 0, -1);
+      }
+      return j;
+    } catch (e) { return { clean: true, hits: [] }; }
+  };
+
+  // Speak a line only if it passes the vulnerability scan AND the FAQ check.
+  window.speakClean = function (text, rate, pitch, volume) {
+    if (!text) return false;
+    const v = window.vulnScan(text, 'tts');
+    if (v && v.severity === 'CRITICAL') return false;   // quarantined
+    // Synchronous local check first, then log async so we never block the speak.
+    const local = window.scanVulnerability(text, 'tts');
+    const hit = (local.findings || []).some(f => ['loop'].indexOf(f.id) >= 0);
+    window.faqLog(text);
+    window.faqCheck(text);
+    try { queueLine(text, rate, pitch, volume); return true; } catch (e) { return false; }
+  };
+
   // ---------- Detector state ----------
   let howlBin = -1, howlCount = 0, howlActive = false, howlLastSeen = 0, howlHz = 0;
   let silenceSince = 0, silenceFired = false;

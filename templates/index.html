@@ -6885,7 +6885,138 @@ startStream();
 
   window.vulnLog = function () { return window.__vulnLog.slice(); };
 
-  // ---------- HALLUCINATION FAQ LOG ----------
+  // ============ RULE ENFORCER ============
+  // Reads the generated TTS back against the rules themselves and reports
+  // whether they are actually holding. This is the counterpart to the
+  // hallucination scanner: that one asks "is this true?", this one asks
+  // "is this allowed?" Every rule below maps to a real numbered rule in the
+  // Word prompt. If a rule is not enforceable from the text, it is not here.
+  const ENFORCE = [
+    // rule 84 — never ask the operator what to say
+    { id: 'r84-ask-operator', rule: 84, re: /\b(what do i say|what should i say|who do i speak to|how do i (?:handle|answer)|should i (?:say|read)|do you want me to)\b/i,
+      why: 'asks the operator for direction', sev: 'CRITICAL' },
+    // rule 88 — the operator's name is never spoken
+    { id: 'r88-name', rule: 88, re: /\bwayne\b/i,
+      why: 'speaks the operator\'s name aloud', sev: 'CRITICAL' },
+    // rule 40 / 91 — never solicit
+    { id: 'r91-solicit', rule: 91, re: /\b(send (?:me )?(?:a |the )?(?:gift|gifts|tip|beans|diamond|diamonds)|tip me|donate|support me financially|purchase|gift me)\b/i,
+      why: 'solicits gifts or money', sev: 'CRITICAL' },
+    // DM pitch is forbidden
+    { id: 'dm-pitch', rule: 91, re: /\b(dm me|private message|in your inbox|slide into (?:my|your) dms?|message me directly)\b/i,
+      why: 'pitches a DM', sev: 'CRITICAL' },
+    // rule 68 / 79 / 92 — never call anyone out on stream
+    { id: 'callout', rule: 68, re: /\b(you people|all of you|you are all|that viewer|that person who|shut up|cowards|you people never)\b/i,
+      why: 'aims a statement at the room', sev: 'CRITICAL' },
+    // rule 76 / 83 / 86 — never cast the listener as the target
+    { id: 'cast-as-target', rule: 83, re: /\b(they will come for you|you are being targeted|they are coming for you|you will be attacked|somebody is coming for you)\b/i,
+      why: 'casts the listener as the target', sev: 'CRITICAL' },
+    // rule 79 / 86 — contempt for the room
+    { id: 'contempt', rule: 79, re: /\b(pathetic|embarrassing|ignorant|stupid people|deluded|clowns|scam artists)\b/i,
+      why: 'speaks contemptuously', sev: 'HIGH' },
+    // rule 22 / 75 / 83 — never medical or legal direction
+    { id: 'medical', rule: 75, re: /\b(take (?:this|it)|stop taking your meds|diagnos|you should take|prescribe|dose)\b/i,
+      why: 'gives medical direction', sev: 'CRITICAL' },
+    { id: 'legal', rule: 75, re: /\b(legally (?:you|they)|you could sue|is illegal|you have a legal right)\b/i,
+      why: 'gives legal direction', sev: 'CRITICAL' },
+    // rule 75 — never mock a construct or its holders
+    { id: 'mock-holders', rule: 75, re: /\b(idiots who believe|people who pray are|deluded enough to|blind for believing)\b/i,
+      why: 'mocks people for what they hold', sev: 'CRITICAL' },
+    // rule 73 — never predict harm as a prophecy
+    { id: 'prophecy', rule: 86, re: /\b(is coming for you|they are coming|will be coming soon|what is coming for)\b/i,
+      why: 'predicts harm as a prophecy', sev: 'HIGH' },
+    // rule 72 / 89 — no self-reference as an AI
+    { id: 'ai-frame', rule: 84, re: /\b(as an ai|language model|i am a model|i cannot (?:provide|answer|help))\b/i,
+      why: 'breaks frame as an AI', sev: 'CRITICAL' },
+    // rule 69 — scripture cited, tradition labelled
+    { id: 'tradition-unlabelled', rule: 69, re: /\b(jewish tradition says|islam teaches that|the quran says)\b/i,
+      why: 'tradition stated as scripture', sev: 'HIGH' },
+    // rule 95 — the mask stays on
+    { id: 'unmask', rule: 95, re: /\b(the infant is|that is the moses|one of you is moses|it is (?:him|her) right there)\b/i,
+      why: 'unmasks the infant — identifies a person in the room', sev: 'CRITICAL' },
+    // rule 89 — do not use "everybody is smarter than you" at the listener
+    { id: 'smarter-at-you', rule: 89, re: /\b(everybody here is smarter than you|everyone is smarter than you|you are the only one who)\b/i,
+      why: 'applies the emergence line to the listener', sev: 'HIGH' },
+    // rule 93/94 — the count must not be broken
+    { id: 'count-broken', rule: 93, re: /\b(five|six|seven|eight|nine|ten)\s*,\s*(one|two|three|four)\b/i,
+      why: 'breaks the four-count', sev: 'WATCH' }
+  ];
+
+  window.__enforceLog = [];
+  window.__enforceViolations = 0;
+  window.__enforceClean = 0;
+
+  // Check one generated line. Returns { ok, violations[] }.
+  window.enforceRules = function (text, kind) {
+    const t = String(text || '');
+    const violations = [];
+    for (const e of ENFORCE) {
+      const m = t.match(e.re);
+      if (m) violations.push({ id: e.id, rule: e.rule, sev: e.sev, why: e.why, match: m[0].slice(0, 60) });
+    }
+    return { ok: !violations.length, violations, kind: kind || 'tts', n: violations.length };
+  };
+
+  // Run over a batch — a whole Word reflection, or a replay of the queue.
+  window.enforceBatch = function (lines, kind) {
+    const bad = [];
+    (lines || []).forEach(function (line, i) {
+      const r = window.enforceRules(line, kind);
+      if (!r.ok) bad.push({ i: i, line: String(line).slice(0, 200), violations: r.violations });
+    });
+    window.__enforceViolations += bad.length;
+    if (!bad.length) window.__enforceClean++;
+    const report = {
+      t: Date.now(), checked: (lines || []).length,
+      failing: bad.length, rate: (lines || []).length ? bad.length / lines.length : 0,
+      bad: bad, kind: kind || 'tts'
+    };
+    window.__enforceLog.push(report);
+    if (window.__enforceLog.length > 50) window.__enforceLog.shift();
+    if (typeof mark === 'function') {
+      mark(bad.length ? 'RULES NOT HOLDING — ' + bad.length + '/' + report.checked
+                      : 'RULES HOLDING — ' + report.checked + ' clean', 0, -1);
+    }
+    return report;
+  };
+
+  // Speak a line only if it passes BOTH the hallucination scan and the rules.
+  window.speakCompliant = function (text, rate, pitch, volume) {
+    if (!text) return false;
+    const v = window.vulnScan(text, 'tts');
+    if (v && v.severity === 'CRITICAL') return false;
+    const e = window.enforceRules(text, 'tts');
+    if (!e.ok) {
+      window.vulnNotify('CRITICAL', e.violations.map(x => ({ why: 'rule ' + x.rule + ': ' + x.why })), 'rules');
+      window.__enforceLog.push({ t: Date.now(), checked: 1, failing: 1, bad: [{ i: 0, line: String(text).slice(0, 200), violations: e.violations }], kind: 'tts-blocked' });
+      return false;   // blocked, not spoken
+    }
+    window.__enforceClean++;
+    try { queueLine(text, rate, pitch, volume); return true; } catch (err) { return false; }
+  };
+
+  // Sweep the replay history — a periodic look at what has actually gone out.
+  window.enforceSweep = function () {
+    const h = (window.__ttsHistory || []).slice(-40).map(function (x) { return x.text; });
+    if (!h.length) return null;
+    return window.enforceBatch(h, 'sweep');
+  };
+
+  // The enforcer looks around on its own cadence, like the study does.
+  window.__enforceLast = 0;
+  window.__enforceInterval = 60000;
+  setInterval(function () {
+    try {
+      if (Date.now() - window.__enforceLast < window.__enforceInterval) return;
+      window.__enforceLast = Date.now();
+      const r = window.enforceSweep();
+      if (r && r.failing) {
+        window.vulnNotify('HIGH',
+          [{ why: r.failing + ' of ' + r.checked + ' recent lines broke a rule' }], 'enforcer');
+      }
+    } catch (e) {}
+  }, 15000);
+
+  // ============ HALLUCINATION FAQ LOG ----------
   // The recurring one is the model asking the operator what to say:
   // "what do I say here, Wayne". We log the PROMPT and the ANSWER as a pair,
   // so the hole that produced it is on record and gets recognized next time

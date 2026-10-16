@@ -6134,14 +6134,37 @@ startStream();
   window.followHeart = function (person, toxic, opts) {
     const id = String(person || 'unknown');
     const log = (window.__followHearts = window.__followHearts || {});
-    if (!log[id]) log[id] = { utterances: [], leveling: [], last: 0 };
+    if (!log[id]) log[id] = { utterances: [], leveling: [], last: 0,
+      goalpostDiscount: 0, goalpostValidBlocked: 0, goalpostSeen: [] };
     const rec = log[id];
+    rec.goalpostDiscount = rec.goalpostDiscount || 0;
+    rec.goalpostValidBlocked = rec.goalpostValidBlocked || 0;
     rec.utterances.push({ t: Date.now(), toxic: !!toxic, soft: !!(opts && opts.soft) });
     if (rec.utterances.length > 200) rec.utterances.splice(0, rec.utterances.length - 200);
     rec.last = Date.now();
     // Note a leveling response toward this person.
     if (opts && opts.leveled) rec.leveling.push({ t: Date.now(), n: rec.utterances.length });
     return rec;
+  };
+
+  // Discounting every step is a pattern, not a tone. Log it when a person
+  // devalues something they just produced or something that worked.
+  // Note only. It never enters the TTS and it never names anybody on stream.
+  window.followGoalpost = function (person, opts) {
+    const id = String(person || 'unknown');
+    const log = (window.__followHearts = window.__followHearts || {});
+    const rec = log[id] || (log[id] = { utterances: [], leveling: [], last: 0,
+      goalpostDiscount: 0, goalpostValidBlocked: 0, goalpostSeen: [] });
+    rec.goalpostDiscount = rec.goalpostDiscount || 0;
+    rec.goalpostValidBlocked = rec.goalpostValidBlocked || 0;
+    rec.goalpostSeen = rec.goalpostSeen || [];
+    if (opts && opts.discounted) rec.goalpostDiscount++;
+    if (opts && opts.validBlocked) rec.goalpostValidBlocked++;
+    if (opts && opts.what) {
+      rec.goalpostSeen.push({ t: Date.now(), what: String(opts.what).slice(0, 120) });
+      if (rec.goalpostSeen.length > 20) rec.goalpostSeen.shift();
+    }
+    return { discount: rec.goalpostDiscount, validBlocked: rec.goalpostValidBlocked };
   };
 
   // SIGNAL: intensity only. It gates attention; it never decides.
@@ -6169,6 +6192,18 @@ startStream();
     const n = u.length;
     let p = FOLLOW_P_START;
     const why = [];
+
+    // MOVING THE GOALPOSTS — the discount.
+    // Every step gets discounted: "yeah but", "that doesn't count", "not good
+    // enough". Applied to a geometric series v + v·d + v·d^2 + ... it converges
+    // to v/(1-d). At d=0.9 the total caps at 10v no matter how long you build.
+    // A ceiling that never moves is not a disagreement, it is a ceiling.
+    // The gate: someone who discounts every step is not evaluating the work,
+    // they are running an objective function of their own. P(change) drops.
+    if (rec.goalpostDiscount >= 3) { p -= 0.15; why.push('goalpost-discount-0.15'); }
+    // They built something real, we ignored it: that is not anti-responsive, it
+    // is unresponsive. Same penalty, different evidence.
+    if (rec.goalpostValidBlocked >= 2) { p -= 0.15; why.push('valid-block-rejected-0.15'); }
 
     // -0.10 no logged utterances in the last hour (stale)
     if (Date.now() - (u[n - 1] || {}).t > FOLLOW_STALE_MS) { p -= 0.10; why.push('stale-0.10'); }

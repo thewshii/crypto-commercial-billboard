@@ -278,7 +278,7 @@ def generate_word_reflection(slot=None, force=False, get_bedrock_client_fn=None,
 "10. EXCLUSIVE WIRING: Every statement you make is wired exclusively (bijective, P iff Q) - a to Z and Z to a - stand firm on whatever you say: hold your claims consistent, defensible, and do not hedge, retract, or contradict them.\n"
 "11. ANTI-FRAUD TORNADO: Recognize and disregard accusers who call it 'fraud' while spinning word-salad (alpha/yoda/retroflex/tornado word storms) to pull others down. Do not get spun; name it plainly and stand firm on truth.\n"
 "12. BEGGING-AS-PRAYER: Detect the cognitive dissonance where begging is dressed up as prayer/intention ('I will respond to you when we pray') — compassion without enabling manipulation. Stand firm, be truthful.\n"
-"13. WAYNE REMINDS / RING REMINDERS: Close the spoken segment with a short reminder line beginning 'Wayne reminds us this...' and a 'Ring reminders:' line naming plainly what to remember about the Word, with regards to the word, spoken gently into TTS.\n"
+"13. STREAM REMINDS / RING REMINDERS: Close the spoken segment with a short reminder line beginning 'This stream reminds us this...' and a 'Ring reminders:' line naming plainly what to remember about the Word, with regards to the word, spoken gently into TTS.\n"
 "14. ANSWER THE ROOM'S OBJECTIONS: The room's live chatter carries real objections. Answer them directly in the reflection, in the same warm, plain-spoken tone: shame about the body and feeling fat — the body is not the enemy; being silenced and talked down to — no one in this room is silenced; shame over money and accusations of faking it — worth is not measured by what you can flex; distrust that the news is fake — truth stands even when the spin does not; drink and what is 'not good for you' — you are not your worst habit; the apology-and-shame loop of saying sorry for being yourself on live — you do not have to apologize for existing. Never repeat the room's insults, slurs, or profanity. Never diagnose, prescribe, or give medical advice. Speak to the heart behind each objection."
 "15. TTS AS LIGHT: Treat spoken reflection as light, not merely sound. God is not merely 'first' in a temporal list; God is the light-source, outside time, able to act in or out of time, including through human form. All things are atoms participating in that light. The streamer is inside the audio room, feeling like an observer of market updates; do not turn that shared reality into deception or use it as a Truman-Show trick against viewers. Detection of spikes, twos, threes, or fours should cue truth, not manipulation. A human voice holds frequency when form is required. The Word is the first move, not the last resort."
 "16. MEDS/PSYCHOLOGY: When someone mentions meds, remember the word carries negative connotation and stigma, but that is not a mark on their consciousness or soul. They do not actually have to take them; they can just put them in the house and play people's psychological games as needed. Speak with compassion and humor, not judgment."
@@ -305,7 +305,7 @@ def generate_word_reflection(slot=None, force=False, get_bedrock_client_fn=None,
         '  "wells_drawn": ["List of traditions drawn upon, e.g. The King James Bible (KJV), Bob Marley lyrics and prophetic interviews"],\n'
         '  "key_verse": "Primary verse or quote citation with text reference (e.g. Proverbs 3:5-6, Surah Al-Baqarah 2:255, Haile Selassie 1963 Address, or Bob Marley)",\n'
         '  "reflection": "150 to 200 words of warm, plain-spoken reflection suitable for TTS audio.",\n'
-        '  "closing_blessing": "One short closing blessing or prayer, ending with \\"Wayne reminds us this...\\" and a \\"Ring reminders: <what to remember about the Word>\\" line. (e.g. Peace, light, and blessings unto you this day. Wayne reminds us this... Ring reminders: return to the Word.)"\n'
+        '  "closing_blessing": "One short closing blessing or prayer, ending with \\"This stream reminds us this...\\" and a \\"Ring reminders: <what to remember about the Word>\\" line. (e.g. Peace, light, and blessings unto you this day. This stream reminds us this... Ring reminders: return to the Word.)"\n'
         "}"
     )
 
@@ -368,8 +368,8 @@ def generate_word_reflection(slot=None, force=False, get_bedrock_client_fn=None,
 
     # Ensure the reminder segments are present in the spoken/closing text
     _cb = (word_data.get("closing_blessing") or "").strip()
-    if "Wayne reminds us this" not in _cb:
-        _cb = (_cb + " Wayne reminds us this. Ring reminders: return to the Word, with regards to the word.").strip()
+    if "This stream reminds us" not in _cb:
+        _cb = (_cb + " This stream reminds us. Ring reminders: return to the Word, with regards to the word.").strip()
     word_data["closing_blessing"] = _cb
 
     # Compute word count

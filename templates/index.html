@@ -2398,7 +2398,7 @@
 
             // 6. Speak the reflection aloud (Project TTS path + Browser SpeechSynthesis)
             const _cb = word.closing_blessing || '';
-            const _suffix = /Wayne reminds us this/i.test(_cb) ? '' : ' Wayne reminds us this. Ring reminders: stay with the Word, with regards to the word.';
+            const _suffix = /This stream reminds us/i.test(_cb) ? '' : ' This stream reminds us. Ring reminders: stay with the Word, with regards to the word.';
             const spokenText = `${word.title}. ${word.reflection} ${_cb}${_suffix}`;
 
             // Project existing TTS path (/api/speak -> termux-tts-speak)
@@ -2448,7 +2448,7 @@
         function replayWordAudio() {
             if (!currentWordData) return;
             const _cb2 = currentWordData.closing_blessing || '';
-            const _suffix2 = /Wayne reminds us this/i.test(_cb2) ? '' : ' Wayne reminds us this. Ring reminders: stay with the Word, with regards to the word.';
+            const _suffix2 = /This stream reminds us/i.test(_cb2) ? '' : ' This stream reminds us. Ring reminders: stay with the Word, with regards to the word.';
             const spokenText = `${currentWordData.title}. ${currentWordData.reflection} ${_cb2}${_suffix2}`;
             playSacredChime();
             try {
@@ -4963,14 +4963,14 @@ startStream();
       if (now - lastSpiteAt < 60000) return;
       lastSpiteAt = now;
 
-      // 18-second guard for "Wayne reminds us this" playback
-      try { window.__wayneGuardUntil = Date.now() + 18000; } catch (e) {}
-      setTimeout(function () { try { window.__wayneGuardUntil = 0; } catch (e) {} }, 18000);
+      // 18-second guard for "This stream reminds us" playback
+      try { window.__streamGuardUntil = Date.now() + 18000; } catch (e) {}
+      setTimeout(function () { try { window.__streamGuardUntil = 0; } catch (e) {} }, 18000);
 
-      // Speak the Wayne reminder, then cancel after 1s and
+      // Speak the stream reminder, then cancel after 1s and
       // replay the bell 7 times before resuming playback.
       window.speechSynthesis.cancel();
-      var u = new SpeechSynthesisUtterance('Wayne reminds us this');
+      var u = new SpeechSynthesisUtterance('This stream reminds us');
       u.rate = 1.0; u.pitch = spitePitch; u.volume = 0.6;
       window.speechSynthesis.speak(u);
       spitePitch = Math.min(2.0, spitePitch + 1.0);

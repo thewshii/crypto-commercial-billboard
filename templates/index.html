@@ -6012,6 +6012,17 @@ startStream();
   const SPIKE_RELEASE_S = 0.5;
   const SPIKE_COOLDOWN_MS = 1000;
 
+  // --- Random spectrogram spike/occurrence detection (weighted per band) ---
+  // Each band gets a weight; higher = more likely to fire a random spike event.
+  const RANDOM_SPIKE_WEIGHTS = [1, 2, 3, 4, 3, 2, 1, 1]; // per BAND_COUNT band
+  const RANDOM_SPIKE_BASE_CHANCE = 0.003; // per-frame base probability
+  const RANDOM_SPIKE_COOLDOWN_MS = 800;  // don't re-trigger same band too fast
+  const RANDOM_SPIKE_MIN_JUMP = 30;      // min byte jump to count as random spike
+  const RANDOM_SPIKE_MAX_JUMP = 200;     // cap for weighting
+  let lastRandomSpikeBand = new Float64Array(BAND_COUNT);
+  let randomSpikeCount = 0;
+  let randomSpikeTotalWeight = RANDOM_SPIKE_WEIGHTS.reduce((a, b) => a + b, 0);
+
   // --- Spectrum overload: 90% of the bands filled -> total silence, then count ---
   const OVERLOAD_FILL_LEVEL = 110;  // byte level (of 255) that counts as "filled"
   const OVERLOAD_RATIO = 0.90;      // 90% of the bands must be filled
@@ -6942,6 +6953,52 @@ function connectAudio() {
       }
     }
     histPos++;
+
+    // --- Random spectrogram spike / occurrence detection (weighted per band) ---
+    // Checks each band for random jumps using per-band weights; fires a TTS
+    // announcement and visual marker when a random spike occurs.
+    try {
+      const randChance = RANDOM_SPIKE_BASE_CHANCE;
+      for (let b = 0; b < BAND_COUNT; b++) {
+        const weight = RANDOM_SPIKE_WEIGHTS[b] || 1;
+        const bandChance = randChance * (weight / randomSpikeTotalWeight);
+        if (Math.random() < bandChance && now - lastRandomSpikeBand[b] > RANDOM_SPIKE_COOLDOWN_MS) {
+          lastRandomSpikeBand[b] = now;
+          randomSpikeCount++;
+          const hz = Math.sqrt(Math.max(bandStart[b] * binHz, 1) * bandEnd[b] * binHz);
+          const jump = Math.min(Math.max(bandVal[b] - 40, RANDOM_SPIKE_MIN_JUMP), RANDOM_SPIKE_MAX_JUMP);
+          mark('RANDOM SPIKE band ' + (b + 1) + ' ~' + fmtHz(hz) + ' weight ' + weight, hz, b);
+          logShift('RANDOM-SPIKE', 'band ' + (b + 1) + ' ~' + Math.round(hz) + 'Hz weight ' + weight + ' jump ' + Math.round(jump), 'occurrence #' + randomSpikeCount);
+          // TTS announcement (yielding to critical speech)
+          try {
+            if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) { /* skip */ }
+            else if ('speechSynthesis' in window && (!window.speechSynthesis.speaking && !window.speechSynthesis.pending)) {
+              const phrases = [
+                "Random spike detected on band " + (b + 1) + ".",
+                "Spectrogram occurrence at " + Math.round(hz / 1000) + " kilohertz.",
+                "Frequency jump in band " + (b + 1) + ".",
+                "Random spike. " + Math.round(hz) + " hertz.",
+                "Occurrence detected. Band " + (b + 1) + " is active."
+              ];
+              const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+              const u = new SpeechSynthesisUtterance(phrase);
+              u.rate = 0.95; u.pitch = 0.8; u.volume = 0.5;
+              u.lang = 'en-NG';
+              window.speechSynthesis.speak(u);
+            }
+          } catch (e) {}
+          // Brief visual flash on the canvas border
+          try {
+            const cv = document.getElementById('spectrum-canvas');
+            if (cv) {
+              const orig = cv.style.borderColor;
+              cv.style.borderColor = '#ff3355';
+              setTimeout(function () { cv.style.borderColor = orig; }, 150);
+            }
+          } catch (e) {}
+        }
+      }
+    } catch (e) {}
 
     // --- howl: narrow, stationary, loud peak ---
     let pk = 1, pv = 0;

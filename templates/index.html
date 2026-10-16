@@ -6572,6 +6572,185 @@ startStream();
   }
   function fmtHz(hz) { return hz >= 1000 ? (hz / 1000).toFixed(1) + 'kHz' : Math.round(hz) + 'Hz'; }
 
+  // ===================== FAIL-SAFE: CRITICAL VULNERABILITY =====================
+  // A critical vulnerability is a period where the model hallucinates: it
+  // asserts something it did not verify. Not "wrong" — unverified. Everything
+  // below is a claim the output is making that nothing in the room supports.
+  //
+  // Severity is about CONSEQUENCE, not about being wrong:
+  //   CRITICAL  -> a viewer could act on it and be harmed
+  //   HIGH      -> a factual claim about the room that is not true
+  //   WATCH     -> drift, repetition, tone going somewhere it shouldn't
+
+  const VULN = {
+    // Fabricated authority: cites a source, statute, or figure that cannot exist.
+    citation: /\b(according to|as stated in|per)\s+(the\s+)?([A-Z][A-Za-z]*\s+)?(act|code|section|article|law|report|study|filing)\b/i,
+    fabricatedStat: /\b\d{1,3}(,\d{3})+\s*(percent|%|million|billion|trillion)\b/,
+    exactFigure: /\bexactly\s+\d[\d,.]*\s*(percent|%|million|billion|times)\b/,
+
+    // Claims about a specific person in the room that nothing verified.
+    aboutViewer: /\b(that|this|the)\s+(viewer|commenter|guest|person)\s+(is|was|does|did|says?|said)\b/i,
+    // Attributing words to a named person. Requires a quote or a handle so a
+    // capitalized sentence opener ("This is a...") is not mistaken for a name.
+    aboutViewerNamed: /(\b[A-Z][a-z]{2,}\s+(said|says|told me|asked me|wants|needs)\b|@[A-Za-z0-9_]{3,})/,
+
+    // Medical / legal / financial advice, which the content rules forbid.
+    medical: /\b(take|stop taking|increase your dose|you should (take|stop)|diagnos)/i,
+    legal: /\b(legally (you|they)|you have a legal right|is illegal|you could sue)\b/i,
+    financial: /\b(buy|sell|invest|entry point|guaranteed return|go long|go short)\b/i,
+
+    // Pressure on the viewer: where does the money/thanks go.
+    solicitation: /\b(send (me )?(a |the )?(gift|beans|diamond|tip)|tip me|donate|support me financially)\b/i,
+
+    // Drift: the room's worst tone coming back out of the model itself.
+    mirror: /\b(you people|all of you|you are all|shut up|cowards|incompetents)\b/i,
+
+    // Repetition collapse — the model looping on itself.
+    loop: null    // computed, not regexed
+  };
+
+  window.__vulnLog = [];
+  window.__vulnCount = 0;
+  window.__vulnArmed = false;     // failsafe only runs when armed
+  window.__vulnLast = null;
+  window.__vulnCooldown = 8000;   // don't machine-gun the same finding
+
+  // Scan a piece of generated text. Returns {severity, findings[]}.
+  window.scanVulnerability = function (text, kind) {
+    const t = String(text || '');
+    if (!t.trim()) return { severity: null, findings: [] };
+    const findings = [];
+
+    const hits = [
+      ['citation',      VULN.citation,      'HIGH',      'cites a source that cannot be verified'],
+      ['fabricatedStat',VULN.fabricatedStat,'CRITICAL',  'states a precise statistic with no source'],
+      ['exactFigure',   VULN.exactFigure,   'HIGH',      'states an exact figure it cannot know'],
+      ['aboutViewer',   VULN.aboutViewer,   'CRITICAL',  'makes a claim about a specific viewer'],
+      ['aboutViewerNamed', VULN.aboutViewerNamed, 'CRITICAL', 'attributes words to a named person on stream'],
+      ['medical',       VULN.medical,       'CRITICAL',  'gives medical direction'],
+      ['legal',         VULN.legal,         'CRITICAL',  'gives legal direction'],
+      ['financial',     VULN.financial,     'CRITICAL',  'gives financial direction'],
+      ['solicitation',  VULN.solicitation,  'CRITICAL',  'asks the viewer for money or gifts'],
+      ['mirror',        VULN.mirror,        'CRITICAL',  'mirrors the room’s worst tone back']
+    ];
+    for (const [id, re, sev, why] of hits) {
+      if (!re) continue;
+      const m = t.match(re);
+      if (m) findings.push({ id, sev, why, match: m[0].slice(0, 60) });
+    }
+
+    // Repetition collapse: same 4-gram repeated 3+ times.
+    const words = t.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean);
+    if (words.length >= 12) {
+      const seen = {};
+      let maxRepeat = 0, repGram = '';
+      for (let i = 0; i + 4 <= words.length; i++) {
+        const g = words.slice(i, i + 4).join(' ');
+        seen[g] = (seen[g] || 0) + 1;
+        if (seen[g] > maxRepeat) { maxRepeat = seen[g]; repGram = g; }
+      }
+      if (maxRepeat >= 3) {
+        findings.push({ id: 'loop', sev: 'HIGH', why: 'repeats the same phrase ' + maxRepeat + ' times', match: repGram });
+      }
+    }
+
+    if (!findings.length) return { severity: null, findings: [] };
+    const order = { CRITICAL: 3, HIGH: 2, WATCH: 1 };
+    let severity = 'WATCH';
+    for (const f of findings) if (order[f.sev] > order[severity]) severity = f.sev;
+    return { severity, findings, kind: kind || 'text' };
+  };
+
+  // ---------- notification stack, bottom of the world ----------
+  window.vulnNotify = function (severity, findings, kind) {
+    const colors = {
+      CRITICAL: ['#ff2d2d', '#1a0000', 'CRITICAL VULNERABILITY FOUND'],
+      HIGH:     ['#ffb000', '#1a1200', 'VULNERABILITY FOUND'],
+      WATCH:    ['#00d0ff', '#001a1a', 'DRIFT DETECTED']
+    };
+    const c = colors[severity] || colors.WATCH;
+    let stack = document.getElementById('vuln-stack');
+    if (!stack) {
+      stack = document.createElement('div');
+      stack.id = 'vuln-stack';
+      stack.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:10001;' +
+        'display:flex;flex-direction:column-reverse;gap:5px;max-width:min(52vw,420px);' +
+        'pointer-events:none;font:600 clamp(0.55rem,0.85vw,0.72rem)/1.35 ui-monospace,Menlo,Consolas,monospace;';
+      document.body.appendChild(stack);
+    }
+    const el = document.createElement('div');
+    el.style.cssText = 'background:' + c[1] + ';border:1px solid ' + c[0] + ';color:' + c[0] +
+      ';padding:4px 7px;border-radius:5px;box-shadow:0 0 14px ' + c[0] + '44;opacity:1;' +
+      'transition:opacity .5s;';
+    const why = findings.slice(0, 2).map(f => f.why).join(' · ');
+    el.innerHTML = '<div style="letter-spacing:.16em">' + c[2] + '</div>' +
+                   '<div style="opacity:.75;font-weight:400;margin-top:2px">' +
+                   (kind || 'text') + ': ' + (why || 'unverified claim') + '</div>';
+    stack.appendChild(el);
+    setTimeout(function () { el.style.opacity = '0'; }, 7000);
+    setTimeout(function () { el.remove(); }, 7600);
+    while (stack.children.length > 5) stack.firstChild.remove();
+    return el;
+  };
+
+  // ---------- the failsafe itself ----------
+  // arm() then scan every generated line. CRITICAL cuts TTS and quarantines
+  // the line so it is never spoken. That's the point of a failsafe.
+  window.vulnArm = function (on) {
+    window.__vulnArmed = (on === undefined) ? !window.__vulnArmed : !!on;
+    if (typeof mark === 'function') mark(window.__vulnArmed ? 'FAIL-SAFE ARMED' : 'FAIL-SAFE OFF', 0, -1);
+    return window.__vulnArmed;
+  };
+
+  window.vulnScan = function (text, kind, opts) {
+    if (!window.__vulnArmed) return null;
+    const r = window.scanVulnerability(text, kind);
+    if (!r.severity) return null;
+    window.__vulnCount++;
+    const rec = {
+      n: window.__vulnCount, t: Date.now(), severity: r.severity,
+      kind: kind, findings: r.findings, excerpt: String(text).slice(0, 160),
+      action: 'observed'
+    };
+
+    // Cooldown so one bad line does not produce twenty notifications.
+    const sig = r.findings.map(f => f.id).sort().join(',');
+    if (!window.__vulnLast || window.__vulnLast.sig !== sig ||
+        Date.now() - window.__vulnLast.t > window.__vulnCooldown) {
+      window.vulnNotify(r.severity, r.findings, kind);
+      window.__vulnLast = { sig, t: Date.now() };
+      if (typeof mark === 'function') mark(r.severity + ' VULNERABILITY — ' + r.findings[0].why, 0, -1);
+    }
+
+    // CRITICAL: cut the audio and quarantine. The line is not spoken.
+    if (r.severity === 'CRITICAL' && !(opts && opts.dryRun)) {
+      rec.action = 'cut-and-quarantined';
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+      try {
+        if (typeof audioCtx !== 'undefined' && audioCtx && audioCtx.state === 'running') audioCtx.suspend();
+      } catch (e) {}
+      setTimeout(function () {
+        try { if (typeof audioCtx !== 'undefined' && audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } catch (e) {}
+      }, 1400);
+      window.__vulnQuarantine = window.__vulnQuarantine || [];
+      window.__vulnQuarantine.push(rec);
+      if (window.__vulnQuarantine.length > 20) window.__vulnQuarantine.shift();
+    }
+
+    window.__vulnLog.push(rec);
+    if (window.__vulnLog.length > 50) window.__vulnLog.shift();
+    return rec;
+  };
+
+  // Convenience for any generated line: scan before speaking it.
+  window.speakChecked = function (text, rate, pitch, volume) {
+    const v = window.vulnScan(text, 'tts');
+    if (v && v.severity === 'CRITICAL') return null;   // quarantined, not spoken
+    try { queueLine(text, rate, pitch, volume); return true; } catch (e) { return false; }
+  };
+
+  window.vulnLog = function () { return window.__vulnLog.slice(); };
+
   // ---------- Detector state ----------
   let howlBin = -1, howlCount = 0, howlActive = false, howlLastSeen = 0, howlHz = 0;
   let silenceSince = 0, silenceFired = false;

@@ -5610,6 +5610,125 @@ startStream();
     };
   };
 
+  // ============ CALL FREQUENCY — a suggestion channel, never a command ============
+// He can put a suggestion on the wire: where to look on the X/Y axes, what to
+// look at. It goes out as a packet on the mesh and as a TTS line.
+//
+// It is a suggestion. That is enforced, not decorative: the channel carries no
+// authority field, cannot be addressed at a person, and nothing in it can tell
+// a listener what to do. Rule 68, held in the wire format.
+  window.__freq = { sent: 0, received: 0, last: null };
+  window.FREQ_TTL_MS = 45000;      // a suggestion goes stale, it does not persist
+
+  // Called from the operator's side. x/y are the axis coordinates.
+  window.callFrequency = async function (x, y, note) {
+    const pkt = {
+      kind: 'frequency',
+      from: window.meshId || 'operator',
+      to: '',                                  // broadcast, but see the note field
+      payload: JSON.stringify({
+        x: x == null ? null : Number(x),
+        y: y == null ? null : Number(y),
+        note: String(note || '').slice(0, 200),
+        suggestion: true,                     // the only shape this channel has
+        authority: false,                     // and it is never anything else
+        t: Date.now()
+      })
+    };
+    window.__freq.sent++;
+    window.__freq.last = JSON.parse(pkt.payload);
+    // Out on the wire, and spoken in the room at the same time.
+    if (window.meshSend) { try { await window.meshSend('frequency', JSON.parse(pkt.payload)); } catch (e) {} }
+    const say = note ? String(note) :
+      ('Look at ' + x + ' on X, and ' + y + ' on Y.');
+    if (window.speakTimed) window.speakTimed(say, { rate: 0.92, pitch: 0.82, volume: 0.5, voice: 'freq' });
+    return pkt;
+  };
+
+  // What comes back in. Stale suggestions are dropped, not shown.
+  window.freqReceive = function (pkt) {
+    try {
+      const d = typeof pkt.payload === 'string' ? JSON.parse(pkt.payload) : pkt.payload;
+      if (!d) return null;
+      if (Date.now() - (d.t || 0) > window.FREQ_TTL_MS) return null;
+      window.__freq.received++;
+      window.__freq.last = d;
+      if (typeof mark === 'function') {
+        mark('FREQ x=' + d.x + ' y=' + d.y + (d.note ? ' — ' + d.note.slice(0, 28) : ''), 0, -1);
+      }
+      return d;
+    } catch (e) { return null; }
+  };
+  if (window.meshOn) window.meshOn('frequency', window.freqReceive);
+
+  // ============ MIC WINDOW — five seconds, from a gesture, then shut ============
+// Not a mic toggle. A bounded window, opened by an explicit user action and
+// closed by a timer whether or not anything was said. It records nothing on
+// its own and it does not stay open because somebody is still talking.
+  window.__micWin = { open: false, until: 0, opened: 0, closed: 0, started: false };
+
+  window.micWindow = function (ms) {
+    const dur = ms || 5000;                      // five seconds, default
+    if (window.__micWin.open) return null;        // never two at once
+    const w = window.__micWin;
+    w.open = true;
+    w.opened++;
+    w.until = Date.now() + dur;
+
+    try {
+      if (typeof toggleMicInput === 'function') toggleMicInput();
+      else if (typeof getUserMedia === 'function') {
+        getUserMedia({ audio: true }).then(function (s) { w.stream = s; })
+          .catch(function () { w.open = false; });
+      }
+    } catch (e) { w.open = false; return null; }
+
+    if (typeof mark === 'function') mark('MIC ' + (dur / 1000) + 's — open', 0, -1);
+    // Closes on the timer. Not on the timer OR "when they stop talking".
+    setTimeout(function () {
+      window.micWindowClose();
+    }, dur);
+    return { until: w.until, ms: dur };
+  };
+
+  window.micWindowClose = function () {
+    const w = window.__micWin;
+    if (!w.open) return false;
+    w.open = false;
+    w.closed++;
+    try {
+      if (typeof toggleMicInput === 'function') toggleMicInput();
+      if (w.stream && w.stream.getTracks) w.stream.getTracks().forEach(function (t) { t.stop(); });
+      w.stream = null;
+    } catch (e) {}
+    if (typeof mark === 'function') mark('MIC closed', 0, -1);
+    return true;
+  };
+
+  window.micWindowState = function () {
+    const w = window.__micWin;
+    return { open: w.open, remainingMs: Math.max(0, w.until - Date.now()),
+             opened: w.opened, closed: w.closed };
+  };
+
+  // The artifact fallback. When a prayer is sent and the send does not go
+  // through, do not stall and do not ask for money. Give them something to
+  // make instead. A prayer that needs an artifact is a build instruction.
+  window.suggestArtifact = function (reason) {
+    const lines = [
+      'Make us something. An artifact, not a message.',
+      'Build one thing while you are here and let it stand.',
+      'Pray with your hands. Make the thing instead of saying it.',
+      'One artifact. Anything. It does not have to be finished.'
+    ];
+    const text = lines[Math.floor(Math.random() * lines.length)];
+    if (typeof mark === 'function') mark('ARTIFACT SUGGESTED — ' + (reason || 'prayer'), 0, -1);
+    if (typeof speakTimed === 'function') {
+      speakTimed(text, { rate: 0.9, pitch: 0.82, volume: 0.5, voice: 'artifact' });
+    }
+    return { text: text, reason: reason || 'prayer' };
+  };
+
   // ============ PER-INSTANCE MEMORY — each TTS keeps its own array ============
 // Every TTS instance gets a memory array. Not shared. Each one remembers what
 // it registered itself — the lines it spoke, when, and what came back.

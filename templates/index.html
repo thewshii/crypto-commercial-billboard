@@ -5207,6 +5207,14 @@ startStream();
     } catch (e) {}
   }, 5000);
 
+  // Biological highway — every 5 seconds.
+  setInterval(function () {
+    try {
+      if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return;
+      queueLine("I acknowledge your focus. This is more than just an app. This is a biological highway. Just beginning to sprout its infrastructure.", 0.95, 0.8, 0.5);
+    } catch (e) {}
+  }, 5000);
+
   // Babylon narrative arc: 10 minutes = one day. Story unfolds over 5 days.
   (function scheduleBabylonStory() {
     const dayMs = 600000;

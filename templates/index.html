@@ -5453,6 +5453,107 @@ startStream();
   window.smokeClear = windowSmokeClear;
   window.drawSmoke = drawSmoke;
 
+  // ============ OMNI-DIRECTIONAL THOUGHT — chapter series ============
+  // Omni-directional thought, sequential action. Watch every corner at once,
+  // move one step at a time. Layer 2 holds every axis; Layer 1 takes one step.
+  window.OMNI_CHAPTERS = [
+    { n: 1, title: 'The Doctrine',
+      principle: 'Threats arrive from any corner of the axis, at any point. Never guard one direction.',
+      body: 'A threat is a room behavior that pulls tone off-course: harassment, bait, status plays, exit jabs, quiet drain, or the system’s own drift. We watch all directions at once, and we act one step at a time.',
+      speak: 'A threat can come from any corner. So we watch every corner.' },
+    { n: 2, title: 'The Axes',
+      principle: 'Four axes, always live: People (who is here), Speech (what is said, the heart), Signal (how it sounds, volume and energy), Time (when, entry spike, dwell, exit).',
+      body: 'No axis outranks the others. A quiet signal with a hostile heart is still a threat. A loud signal with a calm heart is not. We read four things at once: who, what, how, and when.',
+      speak: 'We read four things at once: who, what, how, and when.' },
+    { n: 3, title: 'Front — direct',
+      principle: 'Direct threats come straight at the host — insults, harassment, demands aimed at us.',
+      body: 'We do not engage, we do not repeat, we redirect to the room’s tone or answer with silence. Never trade fire for fire. What comes at us head-on, we don’t meet head-on. We redirect.',
+      speak: 'What comes at us head-on, we don’t meet head-on. We redirect.' },
+    { n: 4, title: 'Flank — sideways',
+      principle: 'Flank threats pull sideways — bait, provocation, status games, badge and level flexing, authority plays. They do not attack; they try to steer the room off-course.',
+      body: 'We hold tone. We don’t take the bait. Status language is read as signaling, never as character. The room’s course does not change because someone flashed a badge. What pulls sideways, we don’t follow sideways. We hold the course.',
+      speak: 'What pulls sideways, we don’t follow sideways. We hold the course.' },
+    { n: 5, title: 'Behind — edges',
+      principle: 'Edge threats live at the boundaries — exit jabs, mean parting shots on the way out, and quiet drain, dwellers settling in and leeching the peace without a loud word.',
+      body: 'Exit jabs — we let them pass, we never chase. Quiet drain — we hold the tone steady, we don’t feed it, and we let the room’s own steadiness do the leveling. What leaves a sting on the way out, we let go. What drains quiet, we outlast quiet.',
+      speak: 'What leaves a sting on the way out, we let go. What drains quiet, we outlast quiet.' },
+    { n: 6, title: 'Within — the system itself, and synthesis',
+      principle: 'The last corner is inward — the system’s own drift: prompt-mirror (repeating the room’s worst lines back), gain too high (chasing ghosts), thresholds without cross-checks.',
+      body: 'We check every output against this prompt. Thresholds plus cross-checks, never thresholds alone. If an output sounds like the room’s worst corner, it came from drift — we discard it and re-ground in the heart and the prompt. Omni-directional thought, sequential action: Layer 2 holds every axis at once, and Layer 1 takes one step per tick, one, two, three, four. That is how we guard every corner without scattering.',
+      speak: 'We watch every corner — and we move one step at a time. Wave before fire.' }
+  ];
+
+  window.__omniChapter = 0;          // index into OMNI_CHAPTERS, advanced one per fire
+  window.__omniFiring = false;
+  window.__omniLastFire = 0;
+  window.__omniMinInterval = 10 * 60 * 1000; // 10 min between chapters
+  window.__omniBarCount = 0;        // 4-count bar: one chapter step per bar
+
+  function omniChapterText(ch) {
+    const c = ch || window.OMNI_CHAPTERS[window.__omniChapter];
+    if (!c) return '';
+    if (c.n === 6) return 'Omni-directional thought. Chapter six — within. ' + c.principle + ' ' + c.body + ' ' + c.speak;
+    return 'Omni-directional thought. Chapter ' + c.n + ' — ' + c.title + '. ' + c.principle + ' ' + c.body + ' ' + c.speak;
+  }
+
+  // One chapter step per 4-count bar. Sequential action, like smoke.
+  function omniBarStep() {
+    window.__omniBarCount++;
+    if (window.__omniBarCount % 4 !== 0) return null;   // 1,2,3,4 — step on the bar
+    window.__omniChapter = (window.__omniChapter + 1) % window.OMNI_CHAPTERS.length;
+    return window.OMNI_CHAPTERS[window.__omniChapter];
+  }
+
+  function omniSpeakChapter(ch) {
+    if (window.__omniFiring) return false;
+    const text = omniChapterText(ch);
+    if (!text) return false;
+    window.__omniFiring = true;
+    window.__omniLastFire = Date.now();
+    try {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 0.88; u.pitch = 0.85; u.volume = 0.6;
+        u.onend = u.onerror = function () { window.__omniFiring = false; };
+        window.speechSynthesis.speak(u);
+        return true;
+      }
+    } catch (e) {}
+    window.__omniFiring = false;
+    return false;
+  }
+
+  // Drives the series. Advances one chapter per bar, speaks only when calm.
+  window.omniTick = function () {
+    try {
+      if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return null;
+      if (window.__omniFiring) return null;
+      if (Date.now() - window.__omniLastFire < window.__omniMinInterval) return null;
+      const ch = omniBarStep();
+      if (!ch) return null;
+      omniSpeakChapter(ch);
+      return ch;
+    } catch (e) { return null; }
+  };
+
+  window.omniSpeakChapter = omniSpeakChapter;
+  window.omniChapterText = omniChapterText;
+
+  setInterval(function () { try { window.omniTick(); } catch (e) {} }, 4000);
+
+  // Cross-check: any TTS line is compared against the chapters. If an output
+  // mirrors the room's worst corner (prompt-mirror / drift), it is discarded.
+  window.omniCrossCheck = function (text) {
+    const t = String(text || '').toLowerCase();
+    if (!t) return { ok: true };
+    // Never speak a handle/level/badge token back as identity.
+    if (/\b(level|badge|vip|whitelist|rank)\s*\d+\b/.test(t)) {
+      return { ok: false, reason: 'status-language-mirror', chapter: 4 };
+    }
+    return { ok: true };
+  };
+
   // ===================== STORY TIME SYSTEM =====================
   // Fires only when the room is calm — after a wave settles, no active outburst,
   // no Word segment, no Brink segment running. Max once per hour. Lowest priority:

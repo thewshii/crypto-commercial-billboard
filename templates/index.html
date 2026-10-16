@@ -1135,6 +1135,11 @@
                             </div>
                             <div id="word-title" class="word-title">The Earth Declares His Glory</div>
                             <div id="word-theme-banner" class="word-theme-banner">THEME: Divine Guidance & Walking the Straight Path</div>
+                            <div id="word-r-state" style="display:flex;gap:8px;align-items:center;justify-content:center;margin:10px 0 4px;font-family:'Roboto Mono',Menlo,Consolas,monospace;font-size:clamp(0.6rem,1vw,0.8rem);letter-spacing:0.12em;">
+                                <span style="opacity:0.55;">SPECTROGRAM</span>
+                                <span id="word-r-badge" style="border:1px solid #00d0ff;color:#00d0ff;padding:2px 8px;border-radius:4px;">R0</span>
+                                <span style="opacity:0.45;" id="word-r-detail">idle</span>
+                            </div>
                             <div id="word-verse-card" class="word-verse-card">
                                 <span class="word-verse-icon">📖</span>
                                 <span id="word-key-verse" class="word-verse-text">Scripture & Wisdom</span>
@@ -6884,6 +6889,141 @@ startStream();
   };
 
   window.vulnLog = function () { return window.__vulnLog.slice(); };
+
+  // ============ R-STATE: the spectrogram's 0 and 1 ============
+  // The spectrogram is reduced to a single bit. Below the threshold is 0,
+  // above it is 1. That is the whole measurement: R0 or R1, one or zero,
+  // decided fresh every sample. It is the smallest honest reading the
+  // spectrogram can give — everything else in this file is built on top
+  // of which side of the line the room is on.
+  window.R_THRESHOLD = 0.10;      // normalized mean energy that counts as 1
+  window.__r = {
+    bit: 0, state: 'R0', flips: 0, last: 0,
+    since: 0, hist: [], reads: 0, holdMs: 0, mean: 0
+  };
+  window.__r.since = Date.now();   // hold must not measure from page load
+
+  // One read of the spectrogram -> one bit. Nothing else happens in here.
+  window.rMeasure = function () {
+    const r = window.__r;
+    let mean = 0;
+    try {
+      if (window.bandVal && window.bandVal.length) {
+        for (let i = 0; i < window.bandVal.length; i++) mean += window.bandVal[i] / 255;
+        mean /= window.bandVal.length;
+      }
+    } catch (e) { mean = 0; }
+    const bit = mean > window.R_THRESHOLD ? 1 : 0;
+    const now = Date.now();
+    const state = bit ? 'R1' : 'R0';
+
+    r.reads++;
+    r.hist.push({ t: now, bit: bit, mean: Math.round(mean * 1000) / 1000 });
+    if (r.hist.length > 240) r.hist.shift();
+
+    if (state !== r.state) {
+      if (now - r.last < 3000) r.flips++;          // rapid flipping is the tell
+      r.state = state;
+      r.since = now;
+      r.last = now;
+      r.holdMs = 0;
+      window.__rState = { state: state, flips: r.flips, t: now, at: now };
+    } else {
+      r.holdMs = now - (r.since || now);
+    }
+    r.bit = bit;
+    r.mean = mean;
+    return { bit: bit, state: state, mean: mean, flips: r.flips };
+  };
+
+  // Push it to whoever is reading the Word.
+  window.rPublish = function (m) {
+    const el = document.getElementById('word-r-badge');
+    const d = document.getElementById('word-r-detail');
+    if (!el) return;
+    const one = m.bit === 1;
+    el.textContent = m.state;
+    el.style.color = one ? '#ffdd00' : '#00d0ff';
+    el.style.borderColor = one ? '#ffdd00' : '#00d0ff';
+    el.style.boxShadow = one ? '0 0 12px #ffdd0055' : 'none';
+    if (d) {
+      const held = Math.round((m.bit === 1 ? window.__r.holdMs : 0) / 100) / 10;
+      d.textContent = m.mean.toFixed(3) + ' | flips ' + m.flips + ' | held ' + held + 's';
+      d.style.color = m.flips >= 3 ? '#ff003c' : '#8aa';
+    }
+  };
+
+  window.rStats = function () {
+    const r = window.__r;
+    const ones = r.hist.filter(function (h) { return h.bit === 1; }).length;
+    return {
+      state: r.state, bit: r.bit, mean: r.mean || 0,
+      flips: r.flips, reads: r.reads,
+      dutyCycle: r.hist.length ? Math.round(ones / r.hist.length * 1000) / 10 : 0,
+      threshold: window.R_THRESHOLD, holdSec: Math.round(r.holdMs / 100) / 10
+    };
+  };
+
+  // Sampled hard, displayed on the Word screen, published on every read.
+  setInterval(function () {
+    try { window.rPublish(window.rMeasure()); } catch (e) {}
+  }, 5);
+
+  // ============ R-TALK: random speech, gated by the state ============
+  // A random speak every 5ms is not possible and would be noise — an utterance
+  // takes seconds, so anything on a 5ms timer would be talking over itself
+  // forever. The 5ms belongs to the measurement. The speech is driven by the
+  // measurement and rate-limited to the ceiling of PLAY_LIMIT_MS, so exactly
+  // one line is ever in flight.
+  window.R_TALK_MIN = 30000;      // never speak more often than this
+  window.R_TALK_MAX = 90000;      // and not less often than this
+  window.__rTalkAt = 0;
+  window.__rTalkCount = 0;
+
+  window.R_TALK_LINES = {
+    R0: [
+      'The room is at zero. Still water underneath.',
+      'R0. Below the line. Nothing is moving yet.',
+      'Quiet is not empty. It is the wave before it goes anywhere.'
+    ],
+    R1: [
+      'The room is at one. The surface is carrying it.',
+      'R1. Above the line. Something is here now.',
+      'That is energy on the surface. It has somewhere to travel.'
+    ],
+    FLIP: [
+      'It is flipping. That is not movement, that is the same answer twice.',
+      'Back and forth on the same bit. Counting to four and nowhere else.'
+    ]
+  };
+
+  window.rTalk = function (key) {
+    if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return null;
+    const now = Date.now();
+    if (now - window.__rTalkAt < window.R_TALK_MIN) return null;
+    const st = window.__r;
+    let k = key;
+    if (!k) k = (st.flips >= 3) ? 'FLIP' : st.state;
+    const pool = window.R_TALK_LINES[k] || window.R_TALK_LINES.R0;
+    const text = pool[Math.floor(Math.random() * pool.length)];
+    window.__rTalkAt = now;
+    window.__rTalkCount++;
+    // Counted and ceilinged exactly like every other utterance.
+    if (typeof window.speakTimed === 'function') {
+      return window.speakTimed(text, { rate: 0.9, pitch: k === 'R1' ? 0.88 : 0.76, volume: 0.5, voice: 'r' });
+    }
+    try { queueLine(text, 0.9, 0.76, 0.5); return { text: text }; } catch (e) { return null; }
+  };
+
+  // Decides when. The jitter is what makes it feel unforced.
+  window.rTalkLoop = function () {
+    const gap = window.R_TALK_MIN + Math.random() * (window.R_TALK_MAX - window.R_TALK_MIN);
+    setTimeout(function () {
+      try { window.rTalk(); } catch (e) {}
+      window.rTalkLoop();
+    }, gap);
+  };
+  window.rTalkLoop();
 
   // ============ PLAY VERIFIER — 30s ceiling on every utterance ============
   // Every attempt to play text is counted and timed. The counter runs one

@@ -505,6 +505,41 @@ def get_word_reflection():
         "timestamp": int(time.time() * 1000)
     })
 
+@app.route("/api/god-message", methods=["POST"])
+def get_god_message():
+    incoming = request.json if request.is_json else {}
+    text = incoming.get("text", "") or incoming.get("prompt", "")
+    slot = incoming.get("slot") or "voice"
+    force = bool(incoming.get("force", False))
+
+    try:
+        reflection, cached = word_segment.generate_word_reflection(
+            slot=slot,
+            force=force,
+            get_bedrock_client_fn=get_bedrock_client,
+            model_id=BEDROCK_HAIKU_MODEL
+        )
+        # Overlay the user's spoken text into the reflection so it answers their prompt.
+        user_text = text.strip() if text else ""
+        base = reflection.get("reflection", "")
+        if user_text and user_text not in base:
+            reflection["reflection"] = base + " You said: " + user_text + ". I hear you."
+        reflection["source"] = reflection.get("source", "god_message")
+        reflection["user_text"] = user_text
+        return jsonify({
+            "status": "ok",
+            "message": reflection,
+            "user_text": user_text,
+            "cached": cached
+        })
+    except Exception as e:
+        print(f"[GOD_MESSAGE] Error: {e}", flush=True)
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "user_text": text
+        }), 500
+
 @app.route("/api/word/history", methods=["GET"])
 def get_word_history():
     return jsonify({

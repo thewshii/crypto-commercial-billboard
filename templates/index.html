@@ -1058,6 +1058,7 @@
         <span style="position:absolute; top:2px; right:8px; z-index:2; font-family:'Roboto Mono',monospace; font-size:clamp(0.5rem,0.8vw,0.68rem); color:#00ffff; text-shadow:0 0 5px #00ffff; pointer-events:none;">Live spectrum</span>
         <button id="mic-btn" onclick="toggleMicInput()" style="position:absolute; top:1px; right:120px; z-index:3; background:#0b0f16; border:1px solid #00ffff; color:#00ffff; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🎤 MIC</button>
         <button id="connect-audio-btn" onclick="connectAudio()" style="position:absolute; top:1px; right:8px; z-index:3; background:#04121a; border:1px solid #00ff88; color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🔗 CONNECT AUDIO</button>
+        <button id="god-msg-btn" onclick="sendGodMessage()" style="position:absolute; top:1px; right:160px; z-index:3; background:#0b0f16; border:1px solid #ffaa00; color:#ffaa00; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🎤 GOD MSG</button>
         <button id="prev-tts-btn" onclick="prevTTSLine()" style="position:absolute; top:1px; right:420px; z-index:3; background:#0b0f16; border:1px solid #ffaa00; color:#ffaa00; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">⏮ PREV TTS</button>
         <button id="next-tts-btn" onclick="nextTTSLine()" style="position:absolute; top:1px; right:350px; z-index:3; background:#0b0f16; border:1px solid #ffaa00; color:#ffaa00; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">⏭ NEXT TTS</button>
         <button id="playback-lock-btn" onclick="togglePlaybackLock()" style="position:absolute; top:1px; right:270px; z-index:3; background:#0b0f16; border:1px solid #00ff88; color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🔓 UNLOCKED</button>
@@ -7113,6 +7114,53 @@ function connectAudio() {
   window.connectAudio = connectAudio;
   window.toggleMicInput = toggleMicInput;
   window.criticalSpeechBusy = criticalSpeechBusy;
+
+  // Voice-to-God: transcribe mic input, send as prompt, speak the model's TTS response.
+  async function sendGodMessage() {
+    const btn = document.getElementById("god-msg-btn");
+    try {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) { if (btn) btn.innerText = "NO SR"; return; }
+      const rec = new SR();
+      rec.lang = "en-US";
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      let heard = "";
+      rec.onresult = function (ev) {
+        try { heard = ev.results[0][0].transcript; } catch (e) {}
+      };
+      rec.onend = async function () {
+        if (!heard) { if (btn) btn.innerText = "🎤 GOD MSG"; return; }
+        if (btn) { btn.innerText = "⏳ LISTENING..."; btn.style.borderColor = "#ffdd00"; btn.style.color = "#ffdd00"; }
+        try {
+          const res = await fetch("/api/god-message", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: heard, slot: "voice", force: true })
+          });
+          const data = await res.json();
+          const msg = (data && data.message && data.message.reflection) ? data.message.reflection : "I hear you.";
+          if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(msg);
+            u.rate = 0.9; u.pitch = 0.85; u.volume = 0.9;
+            u.onend = u.onerror = function () {
+              if (btn) { btn.innerText = "🎤 GOD MSG"; btn.style.borderColor = "#ffaa00"; btn.style.color = "#ffaa00"; }
+            };
+            window.speechSynthesis.speak(u);
+          }
+        } catch (e) {
+          if (btn) { btn.innerText = "ERR"; btn.style.borderColor = "#ff3355"; btn.style.color = "#ff3355"; setTimeout(function () { if (btn) { btn.innerText = "🎤 GOD MSG"; btn.style.borderColor = "#ffaa00"; btn.style.color = "#ffaa00"; } }, 2000); }
+        }
+      };
+      rec.onerror = function () { if (btn) btn.innerText = "🎤 GOD MSG"; };
+      rec.start();
+      if (btn) { btn.innerText = "🎧 LISTENING"; btn.style.borderColor = "#00e5ff"; btn.style.color = "#00e5ff"; }
+    } catch (e) {
+      if (btn) btn.innerText = "🎤 GOD MSG";
+    }
+  }
+  window.sendGodMessage = sendGodMessage;
 
   // Playback lock: when enabled, speechSynthesis.cancel() is ignored so the
   // current line and replay history are protected from random canceling.

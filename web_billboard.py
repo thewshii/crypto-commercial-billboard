@@ -566,6 +566,122 @@ def track():
     print(f"[TRACKING] Affiliate link clicked: {data.get('url')}", flush=True)
     return {"status": "ok"}
 
+# ===================== MESH — instances transmitting to each other =====================
+# Same idea as a packet network: every instance is a node. Packets are small,
+# addressed, and hop through a shared buffer rather than talking directly.
+# BroadcastChannel handles same-device (tab-to-tab). This handles cross-device.
+import threading
+import time as _time
+import uuid as _uuid
+
+MESH_LOCK = threading.Lock()
+MESH_NODES = {}          # node_id -> {last_seen, name, meta}
+MESH_PACKETS = []        # ring buffer of recent packets
+MESH_MAX_PACKETS = 500
+MESH_TTL_MS = 8000       # a packet that nobody collects in 8s is gone
+MESH_STALE_MS = 30000    # a node that has not checked in for 30s is dropped
+
+def _mesh_reap():
+    """Drop expired packets and nodes nobody has heard from."""
+    now = _time.time()
+    with MESH_LOCK:
+        MESH_PACKETS[:] = [p for p in MESH_PACKETS
+                           if (now - p["t"]) * 1000 < MESH_TTL_MS]
+        for nid in list(MESH_NODES.keys()):
+            if (now - MESH_NODES[nid]["last_seen"]) * 1000 > MESH_STALE_MS:
+                del MESH_NODES[nid]
+
+def _mesh_reject(payload):
+    """Cap payload size and strip anything we will not forward."""
+    if payload is None:
+        return None
+    if len(payload) > 4096:            # packets are small by design
+        return None
+    try:
+        text = payload if isinstance(payload, str) else json.dumps(payload)
+        json.loads(text)                # must be valid JSON to be forwarded
+    except Exception:
+        return None
+    return text
+
+@app.route("/api/mesh/join", methods=["POST"])
+def mesh_join():
+    """Register an instance as a node. Returns its id."""
+    data = request.json or {}
+    node_id = str(data.get("node_id") or _uuid.uuid4().hex[:12])
+    with MESH_LOCK:
+        MESH_NODES[node_id] = {
+            "last_seen": _time.time(),
+            "name": str(data.get("name") or "")[:64],
+            "meta": data.get("meta") if isinstance(data.get("meta"), dict) else {},
+        }
+    _mesh_reap()
+    return jsonify({"node_id": node_id, "nodes": len(MESH_NODES), "ttl_ms": MESH_TTL_MS})
+
+@app.route("/api/mesh/heartbeat", methods=["POST"])
+def mesh_heartbeat():
+    """Keep-alive. Also the study tick: returns what changed since last call."""
+    data = request.json or {}
+    node_id = str(data.get("node_id") or "")
+    with MESH_LOCK:
+        if node_id in MESH_NODES:
+            MESH_NODES[node_id]["last_seen"] = _time.time()
+        else:
+            MESH_NODES[node_id] = {"last_seen": _time.time(), "name": "", "meta": {}}
+    _mesh_reap()
+    return jsonify({"ok": True, "nodes": len(MESH_NODES)})
+
+@app.route("/api/mesh/send", methods=["POST"])
+def mesh_send():
+    """Put a packet on the wire. Broadcast if no recipient, else addressed."""
+    data = request.json or {}
+    payload = _mesh_reject(data.get("payload"))
+    if payload is None:
+        return jsonify({"ok": False, "error": "invalid-or-too-large"}), 400
+    pkt = {
+        "id": _uuid.uuid4().hex[:10],
+        "from": str(data.get("from") or ""),
+        "to": str(data.get("to") or ""),      # "" = broadcast
+        "kind": str(data.get("kind") or "text")[:32],
+        "payload": payload,
+        "t": _time.time(),
+    }
+    with MESH_LOCK:
+        MESH_NODES.setdefault(pkt["from"], {"last_seen": _time.time(), "name": "", "meta": {}})
+        MESH_NODES[pkt["from"]]["last_seen"] = _time.time()
+        MESH_PACKETS.append(pkt)
+        if len(MESH_PACKETS) > MESH_MAX_PACKETS:
+            del MESH_PACKETS[:len(MESH_PACKETS) - MESH_MAX_PACKETS]
+    return jsonify({"ok": True, "id": pkt["id"], "buffered": len(MESH_PACKETS)})
+
+@app.route("/api/mesh/poll", methods=["GET", "POST"])
+def mesh_poll():
+    """Collect packets addressed to this node. They are consumed once read."""
+    data = request.json or {} if request.method == "POST" else request.args
+    node_id = str(data.get("node_id") or "")
+    since = float(data.get("since") or 0)
+    with MESH_LOCK:
+        got = [p for p in MESH_PACKETS
+               if p["id"] != data.get("exclude")
+               and p["from"] != node_id
+               and p["to"] in ("", node_id)
+               and p["t"] > since]
+        for p in got:                     # consume
+            try:
+                MESH_PACKETS.remove(p)
+            except ValueError:
+                pass
+    return jsonify({"packets": got, "now": _time.time()})
+
+@app.route("/api/mesh/nodes", methods=["GET"])
+def mesh_nodes():
+    _mesh_reap()
+    with MESH_LOCK:
+        return jsonify({"nodes": [
+            {"id": nid, "name": n["name"], "last_seen": n["last_seen"]}
+            for nid, n in MESH_NODES.items()
+        ]})
+
 @app.route("/moon")
 @app.route("/moondev")
 def moon_redirect():

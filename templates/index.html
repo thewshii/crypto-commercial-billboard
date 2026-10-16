@@ -7325,6 +7325,152 @@ window.onHawkesOverload = function (raw) {
     } catch (e) { return null; }
   };
 
+  // ============ MESH — instances transmitting to each other ============
+  // Every instance is a node. Packets are small, addressed, and hop through a
+  // shared buffer instead of talking directly — same shape as Wi-Fi or
+  // Bluetooth. Two transports, one API:
+  //   BroadcastChannel -> tab to tab, same device, instant, no server
+  //   /api/mesh/*      -> across devices, through the relay
+  window.meshId = null;
+  window.meshSince = 0;
+  window.meshLog = [];        // last 100 packets seen
+  window.meshHandlers = {};   // kind -> fn(packet)
+  window.meshBC = null;
+
+  try {
+    if ('BroadcastChannel' in window) {
+      window.meshBC = new BroadcastChannel('billboard-mesh');
+      window.meshBC.onmessage = function (ev) { window.meshReceive(ev.data, true); };
+    }
+  } catch (e) { window.meshBC = null; }
+
+  window.meshJoin = async function (name) {
+    try {
+      const r = await fetch('/api/mesh/join', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name || 'instance', meta: { ua: navigator.userAgent.slice(0, 80) } })
+      });
+      const j = await r.json();
+      window.meshId = j.node_id;
+      window.meshSince = 0;
+      console.log('MESH: joined as ' + window.meshId + ' (' + j.nodes + ' nodes)');
+      return window.meshId;
+    } catch (e) { return null; }
+  };
+
+  window.meshSend = async function (kind, payload, to) {
+    const pkt = {
+      from: window.meshId, to: to || '',
+      kind: kind || 'text',
+      payload: JSON.stringify(payload)
+    };
+    // same-device hop first — instant, and does not depend on the server
+    try { if (window.meshBC) window.meshBC.postMessage(pkt); } catch (e) {}
+    try {
+      await fetch('/api/mesh/send', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pkt)
+      });
+    } catch (e) {}
+    return pkt;
+  };
+
+  window.meshReceive = function (pkt, local) {
+    if (!pkt || !pkt.payload) return null;
+    if (window.meshId && pkt.from === window.meshId) return null;   // never hear ourselves
+    try { pkt.payload = JSON.parse(pkt.payload); } catch (e) {}
+    window.meshLog.push({ t: Date.now(), kind: pkt.kind, from: pkt.from, local: !!local, payload: pkt.payload });
+    if (window.meshLog.length > 100) window.meshLog.shift();
+    const h = window.meshHandlers[pkt.kind];
+    if (h) { try { h(pkt); } catch (e) {} }
+    return pkt;
+  };
+
+  window.meshOn = function (kind, fn) { window.meshHandlers[kind] = fn; };
+
+  // Collect from the relay. Polled on its own 200ms cadence; packets are
+  // consumed on read, so a packet is delivered exactly once.
+  window.meshPoll = async function () {
+    if (!window.meshId) return null;
+    try {
+      const r = await fetch('/api/mesh/poll', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ node_id: window.meshId, since: window.meshSince })
+      });
+      const j = await r.json();
+      window.meshSince = j.now;
+      (j.packets || []).forEach(function (p) { window.meshReceive(p, false); });
+      return j;
+    } catch (e) { return null; }
+  };
+
+  setInterval(function () {
+    if (!window.meshId) { window.meshJoin(); return; }
+    window.meshPoll();
+    try {
+      fetch('/api/mesh/heartbeat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ node_id: window.meshId })
+      });
+    } catch (e) {}
+  }, 200);
+
+  // ============ STUDY FUNCTION — every 5 milliseconds ============
+  // Looks at the spectrum the way the water reads it: crest arrival, height,
+  // depth, whether the crest has broken. No side effects. Pure observation.
+  window.study = {
+    ticks: 0,
+    last: null,
+    crestHz: 0,       // where the tallest crest is right now
+    height: 0,        // normalized wave height
+    depth: 0,         // d(x) under the tallest crest
+    speed: 0,         // c for that crest
+    breaking: false,  // has the crest toppled
+    reach: 0,         // how far down the motion goes (surface -> 4%)
+    surface: 0,       // top-band energy
+    floor: 0,         // bottom-band energy
+    moving: false     // is the tallest crest moving at all
+  };
+
+  window.studyFn = function () {
+    try {
+      const s = window.study;
+      s.ticks++;
+      if (!window.bandVal || typeof WATER === 'undefined') return s;
+      const bv = window.bandVal;
+      const n = bv.length;
+      if (!n) return s;
+
+      // tallest crest, and where it sits in the field
+      let peak = 0, peakI = 0;
+      for (let i = 0; i < n; i++) { const v = bv[i] / 255; if (v > peak) { peak = v; peakI = i; } }
+      const x = peakI / Math.max(1, n - 1);
+      const hz = x * (WATER.TOP - WATER.BOTTOM) + WATER.BOTTOM;
+      const depth = window.waterDepthField(x);
+
+      s.crestHz = Math.round(hz);
+      s.height = peak;
+      s.depth = depth;
+      s.speed = window.waterSpeed(depth, hz);
+      s.reach = window.waterReach(depth, hz);
+      s.breaking = window.waterBreaks(hz, window.waterHeight(hz, peak));
+
+      // surface vs floor — is the motion on top or is it down deep
+      let hi = 0, lo = 0;
+      for (let i = 0; i < n; i++) { const v = bv[i] / 255; if (i < n / 4) lo += v; else if (i > n * 3 / 4) hi += v; }
+      s.floor = lo / Math.max(1, n / 4);
+      s.surface = hi / Math.max(1, n / 4);
+
+      // is the crest moving: compare to the previous tick
+      if (s.last != null) s.moving = Math.abs(peak - s.last) > 0.01;
+      s.last = peak;
+      return s;
+    } catch (e) { return window.study; }
+  };
+
+  // The 5ms tick.
+  setInterval(function () { window.studyFn(); }, 5);
+
   // ============ TRANSMISSION INTERRUPTION ============
   // Cut everything, hold silence, then the stream restarts. Same discipline
   // as the ATT S dropout: total audio drop, one beat, then back.

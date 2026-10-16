@@ -7099,20 +7099,54 @@ startStream();
     };
   };
 
-  // ============ R-STATE: the spectrogram's 0 and 1 ============
-  // The spectrogram is reduced to a single bit. Below the threshold is 0,
-  // above it is 1. That is the whole measurement: R0 or R1, one or zero,
-  // decided fresh every sample. It is the smallest honest reading the
-  // spectrogram can give — everything else in this file is built on top
-  // of which side of the line the room is on.
-  window.R_THRESHOLD = 0.10;      // normalized mean energy that counts as 1
+  // ============ R-STATE: the spectrogram's 0, 1, and U ============
+  // THREE STATES, NOT TWO. This is the fix for the phonic-illusion loop.
+  //
+  // Binary was the bug. With no "not sure" state, uncertainty collapses into
+  // hallucinated 1s — the system sees something ambiguous, calls it speech,
+  // answers it, and its own answer becomes the next phantom input. Its own
+  // output feeds back in as input. That is the loop.
+  //
+  //   1 = VERIFIED   — passed base-reality checks. Respond once.
+  //   0 = VERIFIED   — no signal at all. Silence.
+  //   U = UNVERIFIED — there is energy but it does not clear the checks.
+  //                    U NEVER TRIGGERS A RESPONSE. Only a re-check next tick.
+  //
+  // Energy above threshold is NOT sufficient for a 1. It is the entry ticket
+  // to the verification, not the result of it.
+  window.R_THRESHOLD = 0.10;      // normalized mean energy to be worth checking
+  window.R_STRUCT_FLOOR = 0.22;   // speech-structure energy floor, 0..1
+  window.R_RATIO = 2.0;           // speech-band / noise-floor ratio
   window.__r = {
     bit: 0, state: 'R0', flips: 0, last: 0,
-    since: 0, hist: [], reads: 0, holdMs: 0, mean: 0
+    since: 0, hist: [], reads: 0, holdMs: 0, mean: 0,
+    u: 0, uStreak: 0, verified1: 0, verified0: 0, responded: 0
   };
   window.__r.since = Date.now();   // hold must not measure from page load
 
-  // One read of the spectrogram -> one bit. Nothing else happens in here.
+  // Base-reality checks. These decide 1 vs 0 vs U. Everything that fails
+  // them lands on U, which is silent and gets re-checked on the next tick.
+  window.rVerify = function (mean) {
+    if (!window.bandVal || !window.bandVal.length) return 0;   // no data = silence
+    const n = window.bandVal.length;
+    const lo = Math.floor(n * 0.5), hi = Math.floor(n * 0.92);  // speech band
+    const nf = Math.floor(n * 0.15), ns = Math.floor(n * 0.35);  // noise floor
+
+    let speech = 0;
+    for (let i = lo; i < hi; i++) speech += window.bandVal[i] / 255;
+    speech /= Math.max(1, hi - lo);
+
+    let noise = 0;
+    for (let i = nf; i < ns; i++) noise += window.bandVal[i] / 255;
+    noise /= Math.max(1, ns - nf);
+
+    if (mean <= window.R_THRESHOLD) return 0;                  // nothing there at all
+    if (speech < window.R_STRUCT_FLOOR) return 'U';            // energy, no structure
+    if (noise > 0 && speech / noise < window.R_RATIO) return 'U'; // buried in noise
+    return 1;
+  };
+
+  // One read of the spectrogram -> one state. Nothing else happens in here.
   window.rMeasure = function () {
     const r = window.__r;
     let mean = 0;
@@ -7122,16 +7156,25 @@ startStream();
         mean /= window.bandVal.length;
       }
     } catch (e) { mean = 0; }
-    const bit = mean > window.R_THRESHOLD ? 1 : 0;
+
+    const verdict = window.rVerify(mean);
     const now = Date.now();
-    const state = bit ? 'R1' : 'R0';
+    // U is its own state, not a 0 and not a 1.
+    const state = verdict === 'U' ? 'U' : (verdict === 1 ? 'R1' : 'R0');
+    const bit = verdict === 1 ? 1 : 0;
 
     r.reads++;
-    r.hist.push({ t: now, bit: bit, mean: Math.round(mean * 1000) / 1000 });
+    if (verdict === 'U') r.u++; else r.u = 0;
+    if (verdict === 1) r.verified1++; else r.verified0++;
+    r.uStreak = verdict === 'U' ? r.uStreak + 1 : 0;
+    r.hist.push({ t: now, bit: bit, u: verdict === 'U' ? 1 : 0, mean: Math.round(mean * 1000) / 1000 });
     if (r.hist.length > 240) r.hist.shift();
 
-    if (state !== r.state) {
-      if (now - r.last < 3000) r.flips++;          // rapid flipping is the tell
+    // Flips are only counted between VERIFIED states. U is not a flip, it is
+    // an absence of one — counting it as a flip is how a noisy room looks
+    // like a flip-flopping one.
+    if (verdict !== 'U' && state !== r.state) {
+      if (now - r.last < 3000) r.flips++;
       r.state = state;
       r.since = now;
       r.last = now;
@@ -7142,7 +7185,7 @@ startStream();
     }
     r.bit = bit;
     r.mean = mean;
-    return { bit: bit, state: state, mean: mean, flips: r.flips };
+    return { bit: bit, state: state, mean: mean, flips: r.flips, unverified: verdict === 'U' };
   };
 
   // Push it to whoever is reading the Word.
@@ -7151,14 +7194,16 @@ startStream();
     const d = document.getElementById('word-r-detail');
     if (!el) return;
     const one = m.bit === 1;
+    const uns = m.state === 'U';
     el.textContent = m.state;
-    el.style.color = one ? '#ffdd00' : '#00d0ff';
-    el.style.borderColor = one ? '#ffdd00' : '#00d0ff';
-    el.style.boxShadow = one ? '0 0 12px #ffdd0055' : 'none';
+    el.style.color = uns ? '#b06cff' : (one ? '#ffdd00' : '#00d0ff');
+    el.style.borderColor = uns ? '#b06cff' : (one ? '#ffdd00' : '#00d0ff');
+    el.style.boxShadow = uns ? '0 0 10px #b06cff44' : (one ? '0 0 12px #ffdd0055' : 'none');
     if (d) {
       const held = Math.round((m.bit === 1 ? window.__r.holdMs : 0) / 100) / 10;
-      d.textContent = m.mean.toFixed(3) + ' | flips ' + m.flips + ' | held ' + held + 's';
-      d.style.color = m.flips >= 3 ? '#ff003c' : '#8aa';
+      d.textContent = m.mean.toFixed(3) + ' | flips ' + m.flips + ' | held ' + held + 's' +
+        (window.__r.u ? ' | U ' + window.__r.u : '');
+      d.style.color = m.flips >= 3 ? '#ff003c' : (uns ? '#b06cff' : '#8aa');
     }
   };
 
@@ -7169,7 +7214,12 @@ startStream();
       state: r.state, bit: r.bit, mean: r.mean || 0,
       flips: r.flips, reads: r.reads,
       dutyCycle: r.hist.length ? Math.round(ones / r.hist.length * 1000) / 10 : 0,
-      threshold: window.R_THRESHOLD, holdSec: Math.round(r.holdMs / 100) / 10
+      threshold: window.R_THRESHOLD, holdSec: Math.round(r.holdMs / 100) / 10,
+      unverified: r.u, uStreak: r.uStreak,
+      verified1: r.verified1, verified0: r.verified0,
+      // The loop tell: how much of the time was unverifiable.
+      uRatio: r.reads ? Math.round(r.u / r.reads * 1000) / 10 : 0,
+      suppressed: window.__rTalkSuppressed || 0
     };
   };
 
@@ -7203,8 +7253,16 @@ startStream();
     FLIP: [
       'It is flipping. That is not movement, that is the same answer twice.',
       'Back and forth on the same bit. Counting to four and nowhere else.'
-    ]
+    ],
+    // U HAS NO LINES. That is the fix. There is no fallback word for the
+    // unverified state because a fallback word is the loop: the system fills
+    // the void with its own output, that output comes back as the next
+    // phantom input, and the repeat is echo rather than meaning.
+    U: []
   };
+
+  // The fallback is SILENCE, never a word. One step, re-check next tick.
+  window.__rUStreak = 0;
 
   window.rTalk = function (key) {
     if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return null;
@@ -7213,7 +7271,17 @@ startStream();
     const st = window.__r;
     let k = key;
     if (!k) k = (st.flips >= 3) ? 'FLIP' : st.state;
+
+    // U never triggers a response. It only re-checks. Silence IS the output.
+    if (k === 'U') {
+      window.__rUStreak++;
+      window.__rTalkAt = now;
+      window.__rTalkSuppressed = (window.__rTalkSuppressed || 0) + 1;
+      return null;                       // silence. Nothing is spoken.
+    }
+
     const pool = window.R_TALK_LINES[k] || window.R_TALK_LINES.R0;
+    if (!pool.length) return null;       // belt and braces
     const text = pool[Math.floor(Math.random() * pool.length)];
     window.__rTalkAt = now;
     window.__rTalkCount++;
@@ -7224,11 +7292,27 @@ startStream();
     try { queueLine(text, 0.9, 0.76, 0.5); return { text: text }; } catch (e) { return null; }
   };
 
+  // Sustained U is a condition, not a state to speak about. Report it, say
+  // nothing. This is the only place U is ever surfaced.
+  window.rUTalk = function () {
+    const now = Date.now();
+    if (now - window.__rTalkAt < window.R_TALK_MIN) return null;
+    window.__rTalkAt = now;
+    if (window.__r.uStreak < 12) return null;      // needs 12 consecutive U ticks
+    window.__rTalkUReported = (window.__rTalkUReported || 0) + 1;
+    if (typeof mark === 'function') mark('U — UNVERIFIED x' + window.__r.uStreak + ' (silent)', 0, -1);
+    return 'U';                                     // silent report, no utterance
+  };
+
   // Decides when. The jitter is what makes it feel unforced.
   window.rTalkLoop = function () {
     const gap = window.R_TALK_MIN + Math.random() * (window.R_TALK_MAX - window.R_TALK_MIN);
     setTimeout(function () {
-      try { window.rTalk(); } catch (e) {}
+      // U does not get a word. It gets a silent check and then nothing.
+      try {
+        if (window.__r.state === 'U' || window.__r.u > 0) window.rUTalk();
+        else window.rTalk();
+      } catch (e) {}
       window.rTalkLoop();
     }, gap);
   };

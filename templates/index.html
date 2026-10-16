@@ -5489,6 +5489,85 @@ startStream();
   }
 
   window.smokeTick = smokeTick;
+
+  // ============ WIND — game-world physics (fixed) ============
+  // The medium in motion: the air itself moving. The road the wave and the fire
+  // both travel on. Wind = direction (one of 4) + strength (0-3).
+  // Each tick: EXACTLY one change. Direction shifts by at most one notch,
+  // strength rises or falls by at most one. Never jumps. Never reverses at once.
+  // direction wraps on 4 — it is four corners, not a line, so 3 -> 0 is one step.
+  window.WIND_DIRS = ['N', 'E', 'S', 'W'];
+  window.WIND_NAMES = ['still', 'breeze', 'gust', 'storm'];
+  window.__wind = { dir: 0, strength: 0, ticks: 0, turns: 0, changes: 0 };
+
+  function windStep(value, delta, max) {
+    const v = value + ((delta > 0) ? 1 : (delta < 0 ? -1 : 0));
+    if (v < 0) return 0;
+    if (v > max) return max;
+    return v;
+  }
+
+  // One tick. EXACTLY one change, never a jump. -1, 0, +1 only.
+  window.windTick = function (dirDelta, strengthDelta) {
+    const w = window.__wind;
+    // Pick a step, preferring no-change so the wind turns gradually.
+    const dd = (dirDelta == null) ? (Math.random() < 0.34 ? (Math.random() < 0.5 ? -1 : 1) : 0)
+                                  : Math.max(-1, Math.min(1, dirDelta));
+    const sd = (strengthDelta == null) ? (Math.random() < 0.5 ? (Math.random() < 0.5 ? -1 : 1) : 0)
+                                       : Math.max(-1, Math.min(1, strengthDelta));
+
+    // Direction first, then strength. Both clamped. One step each.
+    const nd = ((w.dir + dd) % 4 + 4) % 4;   // wraps on the four corners
+    const ns = windStep(w.strength, sd, 3);
+
+    w.dir = nd;
+    w.strength = ns;
+    w.ticks++;
+    if (nd !== ((w.dir - dd) % 4 + 4) % 4) w.turns++;
+    if (dd !== 0 || sd !== 0) w.changes++;
+    return w;
+  };
+
+  // How the wind bends the wave: downwind +1 step travel, upwind -1. Same
+  // wave, same count — the road just tilts.
+  window.windWaveTravel = function () {
+    const w = window.__wind;
+    if (w.strength === 0) return 0;
+    const s = w.strength >= 2 ? 1 : 1;       // strength scales the reach
+    return (w.strength === 1) ? s : s;
+  };
+
+  // Fire: wind feeds it, strength adds to reach. At 3 it scatters the flame
+  // the way it scatters smoke.
+  window.windFire = function () {
+    const w = window.__wind;
+    return {
+      reach: w.strength,                         // 0..3, added to fire's reach
+      scattered: w.strength >= 3,               // flame cannot hold its shape
+      direction: window.WIND_DIRS[w.dir]
+    };
+  };
+
+  // Smoke reads the wind. Every particle drifts one step downwind per tick.
+  window.windSmoke = function () {
+    const w = window.__wind;
+    const q = window.__smokeQueue || [];
+    if (w.strength > 0) {
+      const drift = w.strength;                 // one step downwind per tick
+      for (let i = 0; i < q.length; i++) q[i].x += drift;
+    }
+    return { particles: q.length, drifted: w.strength > 0, dir: window.WIND_DIRS[w.dir] };
+  };
+
+  window.windStats = function () {
+    const w = window.__wind;
+    return {
+      dir: w.dir, direction: window.WIND_DIRS[w.dir],
+      strength: w.strength, name: window.WIND_NAMES[w.strength],
+      ticks: w.ticks, turns: w.turns, changes: w.changes,
+      scattered: w.strength >= 3
+    };
+  };
   window.smokeEmit = windowSmokeEmit;
   window.smokeClear = windowSmokeClear;
   window.drawSmoke = drawSmoke;

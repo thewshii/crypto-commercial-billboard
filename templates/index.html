@@ -7258,6 +7258,145 @@ window.onHawkesOverload = function (raw) {
     logShift('SILENCE', 'mean<' + SILENCE_MEAN + ' for ' + (SILENCE_MS / 1000) + 's', action);
   }
 
+  // ============ WATER — the same wave, re-sliced across space ============
+  // Same math, different medium. y(t) is the wave at one place over time;
+  // y(x) is the wave at one time over place. Same y = A*sin(kx - wt + phi) —
+  // you just hold the other variable fixed. You don't rebuild the wave, you
+  // re-slice it. Same oscillator, read across space instead of time.
+  //
+  //   frequency  -> how often crests arrive (low = long swell, high = chop)
+  //   amplitude  -> wave height
+  //   waveform   -> water texture (sine = smooth swell, saw/square = breaking)
+  //   rough      -> chop, whitecaps, spray
+  //
+  // Three rules when the wave crosses into water:
+  //   1. it slows down  — water waves travel slower than sound; same count,
+  //      slower motion, less distance covered per tick
+  //   2. it disperses   — in deep water long wavelengths outrun short ones
+  //   3. it can break   — when height exceeds depth the crest topples
+  const WATER = {
+    SLOW: 0.22,          // rule 1: fraction of the in-air rate
+    DISPERSE: 0.0032,    // rule 2: extra delay per band index (seconds)
+    DEPTH: 0.62,         // rule 3: breaking threshold, normalized height
+    CHOP_GAIN: 0.9,      // spray level added by a breaking crest
+    SPRAY_GAIN: 0.5,
+    BOTTOM: 55,          // Hz — below this the water is too deep to break
+    TOP: 8000           // Hz — above this it's just ripples
+  };
+
+  function waterHeight(hz, amp) {
+    // frequency -> crest arrival rate -> water height in wavelengths
+    const h = Math.log2(Math.max(WATER.BOTTOM, Math.min(WATER.TOP, hz)) / WATER.BOTTOM);
+    return amp * Math.pow(2, -h * 0.5);   // long crests ride higher
+  }
+
+  function waterTexture(hz, rough) {
+    // sine = smooth swell; saw/square = rough, choppy, breaking
+    const t = Math.log2(Math.max(WATER.BOTTOM, Math.min(WATER.TOP, hz)) / WATER.BOTTOM) / 7;
+    if (rough > 0.75 && t > 0.55) return 'square';
+    if (rough > 0.5) return 'sawtooth';
+    if (rough > 0.3) return 'triangle';
+    return 'sine';
+  }
+
+  // Dispersion delay: long wavelengths outrun short ones, so the pack spreads.
+  function waterDelay(hz) {
+    const t = Math.log2(Math.max(WATER.BOTTOM, Math.min(WATER.TOP, hz)) / WATER.BOTTOM);
+    return t * WATER.DISPERSE;   // high freq waits longer -> spread out
+  }
+
+  function waterBreaks(hz, height) {
+    if (hz < WATER.BOTTOM) return false;         // too deep
+    return height > WATER.DEPTH;
+  }
+
+  // Build the water bus: one oscillator per band, re-sliced across space.
+  window.waterStart = function () {
+    if (window.__water) return window.__water;
+    const ctx = (typeof getAudioContext === 'function' && getAudioContext()) ||
+                (typeof M !== 'undefined' && M && M.ctx);
+    if (!ctx) return null;
+    const master = ctx.createGain();
+    master.gain.value = 0.0;              // fades in
+    try { master.connect(ctx.destination); } catch (e) {}
+    window.__water = { ctx: ctx, master: master, bands: [], born: 0 };
+    return window.__water;
+  };
+
+  // Feed the bands in. Each band gets its own depth node so the low end is
+  // a long swell and the high end is chop riding on top of it.
+  window.waterFeed = function (bands, opts) {
+    const w = window.waterStart();
+    if (!w) return null;
+    const rough = Math.min(1, Math.max(0, (opts && opts.rough) || 0));
+    const now = w.ctx.currentTime;
+    const n = bands.length;
+
+    for (let i = 0; i < n; i++) {
+      const hz = (i / Math.max(1, n - 1)) * (WATER.TOP - WATER.BOTTOM) + WATER.BOTTOM;
+      const amp = Math.min(1, bands[i] / 255);
+      const height = waterHeight(hz, amp);
+      const type = waterTexture(hz, rough);
+      const breaks = waterBreaks(hz, height);
+
+      if (!w.bands[i]) {
+        const osc = w.ctx.createOscillator();
+        const g = w.ctx.createGain();
+        const f = w.ctx.createBiquadFilter();
+        f.type = 'lowpass';
+        try {
+          osc.connect(f); f.connect(g); g.connect(w.master); osc.start();
+        } catch (e) {}
+        w.bands[i] = { osc: osc, gain: g, filter: f, spray: null };
+      }
+      const b = w.bands[i];
+
+      // rule 1: it slows down. same count, slower motion.
+      b.osc.frequency.setTargetAtTime(hz * WATER.SLOW, now, 0.08);
+      // frequency -> crest arrival rate; amplitude -> wave height
+      b.gain.gain.setTargetAtTime(height * 0.16, now, 0.12);
+      // rule 2: disperses — long wavelengths outrun short ones
+      b.osc.detune.setTargetAtTime(-waterDelay(hz) * 1000, now, 0.15);
+      // deeper low end, brighter high end: depth comes from the tilt
+      b.filter.frequency.setTargetAtTime(180 + amp * 2600 + (breaks ? WATER.CHOP_GAIN * 3000 : 0), now, 0.1);
+
+      // rule 3: it can break. rough + tall crest -> chop + whitecaps + spray
+      if (breaks && !b.spray) {
+        try {
+          const len = Math.floor(w.ctx.sampleRate * 1.2);
+          const nb = w.ctx.createBuffer(1, len, w.ctx.sampleRate);
+          const d = nb.getChannelData(0);
+          for (let k = 0; k < len; k++) d[k] = (Math.random() * 2 - 1) * (1 - k / len);
+          const src = w.ctx.createBufferSource();
+          src.buffer = nb; src.loop = true;
+          const hp = w.ctx.createBiquadFilter();
+          hp.type = 'highpass'; hp.frequency.value = 2400;   // whitecaps, spray
+          const sg = w.ctx.createGain(); sg.gain.value = 0;
+          src.connect(hp); hp.connect(sg); sg.connect(w.master); src.start();
+          b.spray = sg;
+        } catch (e) {}
+      }
+      if (b.spray) b.spray.gain.setTargetAtTime(breaks ? height * WATER.SPRAY_GAIN * 0.12 : 0, now, 0.2);
+    }
+    return w;
+  };
+
+  window.waterGain = function (v) {
+    const w = window.waterStart();
+    if (!w) return;
+    try { w.master.gain.setTargetAtTime(v, w.ctx.currentTime, 0.3); } catch (e) {}
+  };
+
+  // Toggle the water bus. Off by default so the page sounds exactly as before.
+  window.waterToggle = function (on) {
+    window.__waterOn = (on === undefined) ? !window.__waterOn : !!on;
+    if (window.__waterOn) { window.waterStart(); window.waterGain(0.22); }
+    else { window.waterGain(0); }
+    return window.__waterOn;
+  };
+
+  // Rough + excited becomes rough + excited water the moment you render it in
+  // space instead of time. Same oscillator, different slice.
   function frame(now) {
     requestAnimationFrame(frame);
     if (!M || !g) return;
@@ -7295,6 +7434,32 @@ function connectAudio() {
       total += bandVal[b];
     }
     const mean = total / BAND_COUNT;
+
+    // --- water: the same bands, re-sliced across space ---
+    // Rough = excitation (flatness low + energy high) + spectral tilt. This is
+    // the "rough + excited" that becomes chop, whitecaps and spray when the
+    // wave is rendered as water instead of sound. Nothing is rebuilt: the same
+    // band values, read across space rather than time.
+    try {
+      if (!window.__waterOn) { /* opt-in via window.waterGain(0.25) or window.waterStart() */ }
+      else if (window.__water && !window.__waterFailsafe) {
+        let arith = 0, geo = 0;
+        for (let b = 0; b < BAND_COUNT; b++) { const v = Math.max(1e-6, bandVal[b]); arith += v; geo += Math.log(v); }
+        const flat = Math.min(1, Math.exp(geo / BAND_COUNT) / Math.max(1e-6, arith / BAND_COUNT));
+        let lo = 0, hi = 0;
+        for (let b = 0; b < BAND_COUNT; b++) { const v = bandVal[b] / 255; if (b < BAND_COUNT / 2) lo += v; else hi += v; }
+        const tilt = hi / Math.max(1e-6, lo);
+        const rough = Math.min(1, (1 - flat) * 0.6 + Math.min(1, mean / 90) * 0.4);
+        window.waterFeed(bandVal, { rough: rough, tilt: tilt });
+        window.__waterRough = rough;
+        // Surf report: the crest topples where height exceeds depth.
+        window.__waterBreaking = 0;
+        for (let b = 0; b < BAND_COUNT; b++) {
+          const hz = (b / Math.max(1, BAND_COUNT - 1)) * (WATER.TOP - WATER.BOTTOM) + WATER.BOTTOM;
+          if (waterBreaks(hz, waterHeight(hz, bandVal[b] / 255))) window.__waterBreaking++;
+        }
+      }
+    } catch (e) {}
 
     // Mathematical spectrogram fitness (flatness x centroid balance).
     try {

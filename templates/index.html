@@ -6885,6 +6885,122 @@ startStream();
 
   window.vulnLog = function () { return window.__vulnLog.slice(); };
 
+  // ============ PLAY VERIFIER — 30s ceiling on every utterance ============
+  // Every attempt to play text is counted and timed. The counter runs one
+  // continuous count to four — 1, 2, 3, 4, 1, 2, 3, 4 — no syncopation, no
+  // async, no parallel, and each tick is EXACTLY one check. One step, one
+  // particle: a timeout can fire one thing per tick, never a batch.
+  // 30 seconds is the ceiling. Say it the way it is said: if it has been
+  // thirty seconds, it has been thirty seconds. Jazz and freedom.
+  window.PLAY_LIMIT_MS = 30000;
+  window.PLAY_TICK_MS = 250;
+  window.__playWatch = { count: 0, tick: 0, fired: 0, overs: 0, longest: 0 };
+  window.__playLog = [];
+  window.__playActive = null;
+
+  // The four-count clock. Nothing in this system uses any other time signature.
+  window.playTick = function () {
+    const w = window.__playWatch;
+    w.tick = (w.tick % 4) + 1;          // 1, 2, 3, 4, 1, 2, 3, 4
+    return w.tick;
+  };
+
+  function playOverflow() {
+    const w = window.__playWatch;
+    w.fired++;
+    w.overs++;
+    try { window.speechSynthesis.cancel(); } catch (e) {}
+    try {
+      window.vulnNotify('HIGH',
+        [{ why: 'utterance exceeded ' + (window.PLAY_LIMIT_MS / 1000) + 's and was cut' }], 'play');
+    } catch (e) {}
+    if (typeof mark === 'function') {
+      mark('PLAY ' + w.count + ' — OVER ' + (window.PLAY_LIMIT_MS / 1000) + 's, CUT', 0, -1);
+    }
+    window.__playActive = null;
+  }
+
+  // Start the verifier for one attempt. One action per tick, never more.
+  window.playWatchStart = function (text, voice) {
+    const w = window.__playWatch;
+    w.count++;
+    const rec = {
+      n: w.count, t0: Date.now(), voice: voice || 'en-NG',
+      len: String(text || '').length,
+      words: String(text || '').split(/\s+/).filter(Boolean).length,
+      ticks: 0, tick: 0, overs: false, ended: false
+    };
+    window.__playActive = rec;
+    window.__playLog.push(rec);
+    if (window.__playLog.length > 60) window.__playLog.shift();
+
+    const id = setInterval(function () {
+      if (window.__playActive !== rec) { clearInterval(id); return; }
+      rec.ticks++;
+      rec.tick = window.playTick();
+      if (Date.now() - rec.t0 >= window.PLAY_LIMIT_MS) {
+        clearInterval(id);
+        playOverflow();
+      }
+    }, window.PLAY_TICK_MS);
+    rec.intervalId = id;
+    return rec;
+  };
+
+  // End the verifier when the utterance actually ends.
+  window.playWatchEnd = function () {
+    const rec = window.__playActive;
+    if (!rec) return null;
+    try { clearInterval(rec.intervalId); } catch (e) {}
+    rec.ended = true;
+    rec.ms = Date.now() - rec.t0;
+    window.__playWatch.longest = Math.max(window.__playWatch.longest, rec.ms);
+    window.__playActive = null;
+    return rec;
+  };
+
+  // Wrap one utterance. Same discipline as the smoke queue: exactly one
+  // action per tick, never a batch, never more than one thing happening.
+  window.speakTimed = function (text, opts) {
+    const o = opts || {};
+    if (!text) return null;
+    if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy() && !o.force) return null;
+    const rec = window.playWatchStart(text, o.voice);
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(String(text));
+      u.rate = o.rate == null ? 0.95 : o.rate;
+      u.pitch = o.pitch == null ? 0.82 : o.pitch;
+      u.volume = o.volume == null ? 0.5 : o.volume;
+      if (o.lang) { try { u.lang = o.lang; } catch (e) {} }
+      u.onend = u.onerror = function () {
+        const r = window.playWatchEnd();
+        if (o.onDone) { try { o.onDone(r); } catch (e) {} }
+      };
+      window.speechSynthesis.speak(u);
+      return rec;
+    } catch (e) {
+      window.playWatchEnd();
+      return null;
+    }
+  };
+
+  // Jazz and freedom. Spoken once, on demand, and counted like everything else.
+  window.jazzAndFreedom = function () {
+    return window.speakTimed('Jazz and freedom.', { rate: 1.0, pitch: 0.85, volume: 0.55 });
+  };
+
+  window.playStats = function () {
+    const w = window.__playWatch;
+    const done = window.__playLog.filter(function (r) { return r.ended; });
+    return {
+      attempts: w.count, completed: done.length, overs: w.overs,
+      longestMs: w.longest, longestSec: Math.round(w.longest / 100) / 10,
+      tick: w.tick, limitMs: window.PLAY_LIMIT_MS,
+      avgMs: done.length ? Math.round(done.reduce(function (a, r) { return a + (r.ms || 0); }, 0) / done.length) : 0
+    };
+  };
+
   // ============ RULE ENFORCER ============
   // Reads the generated TTS back against the rules themselves and reports
   // whether they are actually holding. This is the counterpart to the

@@ -4985,6 +4985,7 @@ startStream();
 
   function queueLine(text, rate, pitch, volume) {
     try {
+      if (window.__cancelStormActive && window.__cancelStormUntil && Date.now() < window.__cancelStormUntil) return;
       if (!('speechSynthesis' in window)) return;
       var u = new SpeechSynthesisUtterance(text);
       // Prefer Nigerian-English pronunciation where a matching voice exists.
@@ -4998,20 +4999,36 @@ startStream();
         window.__ttsIndex = window.__ttsHistory.length - 1;
       } catch (e) {}
       window.speechSynthesis.speak(u);
-      // Breach detector: two acknowledgment lines within 3 minutes.
+      // Cancel storm: if an acknowledgment line plays more than once in 5 minutes,
+      // cancel speech and run a 60-second cancel loop.
       try {
         if (/I acknowledge/i.test(text)) {
           window.__ackTimestamps = window.__ackTimestamps || [];
           const t = Date.now();
           window.__ackTimestamps.push(t);
-          const cutoff = t - 180000;
+          const cutoff = t - 300000;
           window.__ackTimestamps = window.__ackTimestamps.filter(function (x) { return x >= cutoff; });
-          if (window.__ackTimestamps.length >= 2 && !window.__breachRegisteredRecently) {
-            window.__breachRegisteredRecently = true;
+          if (window.__ackTimestamps.length > 1 && !window.__cancelStormActive) {
+            window.__cancelStormActive = true;
+            window.__cancelStormUntil = t + 60000;
+            try { window.speechSynthesis.cancel(); } catch (e) {}
+            if (window.__cancelStormInterval) clearInterval(window.__cancelStormInterval);
+            window.__cancelStormInterval = setInterval(function () {
+              try {
+                if (Date.now() >= window.__cancelStormUntil) {
+                  clearInterval(window.__cancelStormInterval);
+                  window.__cancelStormInterval = 0;
+                  window.__cancelStormActive = false;
+                  return;
+                }
+                window.speechSynthesis.cancel();
+              } catch (e) {}
+            }, 250);
             setTimeout(function () {
-              try { queueLine("your breach has been registered.", 0.95, 0.8, 0.5); } catch (e) {}
-              setTimeout(function () { window.__breachRegisteredRecently = false; }, 180000);
-            }, 120);
+              try { clearInterval(window.__cancelStormInterval); } catch (e) {}
+              window.__cancelStormInterval = 0;
+              window.__cancelStormActive = false;
+            }, 60000);
           }
         }
       } catch (e) {}

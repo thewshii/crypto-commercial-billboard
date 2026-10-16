@@ -7421,11 +7421,57 @@ window.onHawkesOverload = function (raw) {
   const WATER = {
     SLOW: 0.22,          // rule 1: fraction of the in-air rate
     DISPERSE: 0.0032,    // rule 2: extra delay per band index (seconds)
+    DISPENSE_DEPTH: 0.05,// depth at/above which the pack separates
     DEPTH: 0.62,         // rule 3: breaking threshold, normalized height
     CHOP_GAIN: 0.9,      // spray level added by a breaking crest
     SPRAY_GAIN: 0.5,
     BOTTOM: 55,          // Hz — below this the water is too deep to break
-    TOP: 8000           // Hz — above this it's just ripples
+    TOP: 8000,           // Hz — above this it's just ripples
+    G: 9.81              // gravity — the one constant the shallow form needs
+  };
+
+  // ============ DEPTH — one new parameter, a field, not a rebuild ============
+  // Every position gets a depth value d(x): the seafloor under the wave.
+  // Depth then controls speed, dispersion and breaking. Nothing else changes.
+  //
+  //   shallow : c = sqrt(g * d)              — speed depends on depth only
+  //   deep    : c = sqrt(g * lambda / 2*pi) — bottom stops mattering
+  //
+  // The 1-2-3-4 count keeps ticking unchanged. Depth only changes what each
+  // tick does at each position. Wave rolls from deep to shallow: it speeds up
+  // and stretches out and flattens, then hits the shallows — slows, bunches,
+  // grows, breaks.
+
+  // Depth as a field over position. Normalized 0..1, 0 = deepest, 1 = shore.
+  // Returns the depth field d(x) for a normalized position x.
+  window.waterDepthField = function (x) {
+    const t = Math.min(1, Math.max(0, x));
+    // Seafloor profile: deep offshore, shelving up toward the beach.
+    const d = Math.pow(1 - t, 1.6);        // normalized 0..1
+    window.__waterDepthNow = d;
+    return d;
+  };
+
+  // c = sqrt(g*d) in shallow water; deep-water form when d > lambda/2.
+  window.waterSpeed = function (depth, hz) {
+    const lambda = 343 / Math.max(1, hz);          // wavelength in the medium
+    const deep = Math.sqrt(WATER.G * lambda / (2 * Math.PI));
+    const shallow = Math.sqrt(WATER.G * Math.max(0.001, depth));
+    // Whichever regime we are in governs speed.
+    return (depth > lambda / 2) ? deep : shallow;
+  };
+
+  // Motion decays with depth: by depth = lambda/2 it is ~4% of surface.
+  window.waterReach = function (depth, hz) {
+    const lambda = 343 / Math.max(1, hz);
+    return Math.exp(-depth * (2 * Math.PI) / Math.max(1e-6, lambda));
+  };
+
+  // Deep = dispersive, long waves outrun short ones. Shallow = no dispersion,
+  // everything travels together.
+  window.waterDispersive = function (depth, hz) {
+    const lambda = 343 / Math.max(1, hz);
+    return depth > lambda / 2 ? WATER.DISPENSE_DEPTH : 0;
   };
 
   function waterHeight(hz, amp) {
@@ -7477,11 +7523,16 @@ window.onHawkesOverload = function (raw) {
     const n = bands.length;
 
     for (let i = 0; i < n; i++) {
-      const hz = (i / Math.max(1, n - 1)) * (WATER.TOP - WATER.BOTTOM) + WATER.BOTTOM;
+      const x = i / Math.max(1, n - 1);              // position across the field
+      const depth = window.waterDepthField(x);        // seafloor under this position
+      const hz = x * (WATER.TOP - WATER.BOTTOM) + WATER.BOTTOM;
       const amp = Math.min(1, bands[i] / 255);
       const height = waterHeight(hz, amp);
       const type = waterTexture(hz, rough);
       const breaks = waterBreaks(hz, height);
+      const c = window.waterSpeed(depth, hz);         // depth sets the speed
+      const disp = window.waterDispersive(depth, hz); // deep disperses, shallow doesn't
+      const reach = window.waterReach(depth, hz);     // how far down the wave reaches
 
       if (!w.bands[i]) {
         const osc = w.ctx.createOscillator();
@@ -7496,11 +7547,16 @@ window.onHawkesOverload = function (raw) {
       const b = w.bands[i];
 
       // rule 1: it slows down. same count, slower motion.
-      b.osc.frequency.setTargetAtTime(hz * WATER.SLOW, now, 0.08);
+      // depth sets how much of that slowdown: deeper = faster, shallower = slower.
+      const rate = WATER.SLOW * Math.min(2.2, 0.55 + depth * 1.7);
+      b.osc.frequency.setTargetAtTime(hz * rate, now, 0.08);
       // frequency -> crest arrival rate; amplitude -> wave height
-      b.gain.gain.setTargetAtTime(height * 0.16, now, 0.12);
-      // rule 2: disperses — long wavelengths outrun short ones
-      b.osc.detune.setTargetAtTime(-waterDelay(hz) * 1000, now, 0.15);
+      // shallow water bunches the pack and the crest grows taller
+      const shoal = depth < 0.35 ? (0.35 - depth) * 0.9 : 0;
+      b.gain.gain.setTargetAtTime(height * (0.16 + shoal * 0.22) * reach, now, 0.12);
+      // rule 2: disperses — long wavelengths outrun short ones. No dispersion
+      // in the shallows, so the delay collapses to zero there.
+      b.osc.detune.setTargetAtTime(-waterDelay(hz) * 1000 * (disp > 0 ? 1 : 0.05), now, 0.15);
       // deeper low end, brighter high end: depth comes from the tilt
       b.filter.frequency.setTargetAtTime(180 + amp * 2600 + (breaks ? WATER.CHOP_GAIN * 3000 : 0), now, 0.1);
 

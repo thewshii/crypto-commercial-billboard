@@ -5610,6 +5610,74 @@ startStream();
     };
   };
 
+  // ============ LLM VOICE — generate, then hand to the chosen voice ============
+// The model writes the line. The voice profile delivers it. They stay separate:
+// the writing does not get to choose the voice and the voice does not get to
+// change what was written.
+//
+// Generated output is not trusted because it was generated here. It goes
+// through the same two gates as anything else on air — the safety scan and
+// the refusal check — and a blocked line is never spoken.
+  window.voiceGenerate = async function (topic, voice) {
+    const v = voice || 'ng';
+    try {
+      const r = await fetch('/api/voice/say', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          voice: v, topic: topic || '',
+          seed: Math.floor(Math.random() * 100000)
+        })
+      });
+      const j = await r.json();
+      if (j.status !== 'ok') {
+        window.vulnNotify('HIGH', [{ why: 'voice blocked — ' + (j.reason || j.error || 'unknown') }], 'voice');
+        return null;
+      }
+      return j;
+    } catch (e) { return null; }
+  };
+
+  // Take a voice, get a line, check it, speak it. Returns what was said or null.
+  window.voiceSay = async function (topic, voice, opts) {
+    const o = opts || {};
+    let j = o.text ? null : await window.voiceGenerate(topic, voice);
+    if (!j && o.text) {
+      // Supplied text goes through the same server gate.
+      try {
+        const r = await fetch('/api/voice/say', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ voice: voice || 'ng', text: o.text })
+        });
+        j = await r.json();
+      } catch (e) { return null; }
+    }
+    if (!j || j.status !== 'ok') return null;
+
+    // Client-side gates. Same as any other line on air.
+    const v = window.vulnScan(j.text, 'voice');
+    if (v && v.severity === 'CRITICAL') return null;
+    const e = window.enforceRules ? window.enforceRules(j.text, 'voice') : { ok: true };
+    if (!e.ok) {
+      window.vulnNotify('CRITICAL', e.violations.map(x => ({ why: 'rule ' + x.rule + ': ' + x.why })), 'voice');
+      return null;
+    }
+
+    // Dispatch to whichever voice was chosen. fn comes back from the server.
+    const rates = { queueLine: 0.95, queueLineFemale: 0.95, queueLineMale: 0.95, speakTimed: 0.9 };
+    const rate = o.rate || j.rate || 0.95;
+    const pitch = o.pitch || j.pitch || 0.82;
+    const volume = o.volume || j.volume || 0.5;
+    try {
+      if (j.fn === 'queueLineFemale') queueLineFemale(j.text, rate, pitch, volume);
+      else if (j.fn === 'queueLineMale') queueLineMale(j.text, rate, pitch, volume);
+      else if (j.fn === 'speakTimed' || j.fn === 'story' || j.fn === 'timed') {
+        window.speakTimed(j.text, { rate: rate, pitch: pitch, volume: volume, voice: j.voice });
+      } else queueLine(j.text, rate, pitch, volume);
+      window.__lastVoiceSay = { voice: j.voice, text: j.text, t: Date.now() };
+      return j;
+    } catch (err) { return null; }
+  };
+
   // ============ CALL FREQUENCY — a suggestion channel, never a command ============
 // He can put a suggestion on the wire: where to look on the X/Y axes, what to
 // look at. It goes out as a packet on the mesh and as a TTS line.

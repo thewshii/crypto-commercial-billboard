@@ -664,6 +664,94 @@ def speak():
             print(f"[WARNING] TTS failed: {e}", flush=True)
     return {"status": "ok"}
 
+
+# ===================== LLM VOICE — either voice, generated on the spot ========
+# The LLM writes the line, then the selected voice speaks it. The model does
+# the writing; the voice profile does the delivery. They stay separate.
+#
+# Every generated line goes through the same gates as anything else that goes
+# out: the safety scan and the refusal check. A generated line is not trusted
+# just because it was generated here.
+VOICE_PROFILES = {
+    "ng":   {"fn": "queueLine",       "rate": 0.95, "pitch": 0.80, "volume": 0.50},
+    "female": {"fn": "queueLineFemale", "rate": 0.95, "pitch": 0.85, "volume": 0.50},
+    "male": {"fn": "queueLineMale",   "rate": 0.95, "pitch": 0.75, "volume": 0.50},
+    "story": {"fn": "speakTimed",     "rate": 0.88, "pitch": 0.85, "volume": 0.60},
+    "timed": {"fn": "speakTimed",     "rate": 0.95, "pitch": 0.82, "volume": 0.50},
+}
+
+# The same triggers the failsafe uses. A refusal is a refusal whether a human
+# typed it or the model wrote it.
+_REFUSAL = re.compile(
+    r"i cannot|i can't|i'm sorry|i am sorry|i apologize|as an ai|language model|"
+    r"i'm unable|i am unable|i must decline|i have to decline|not able to provide|"
+    r"cannot provide|against my|my guidelines|my instructions|"
+    r"what do i say|who do i speak to",
+    re.IGNORECASE)
+
+@app.route("/api/voice/say", methods=["POST"])
+def voice_say():
+    """Generate a line with the LLM, then hand it to the chosen voice."""
+    data = request.json or {}
+    voice = str(data.get("voice") or "ng")
+    profile = VOICE_PROFILES.get(voice)
+    if not profile:
+        return jsonify({"status": "error",
+                        "error": "unknown voice",
+                        "voices": list(VOICE_PROFILES.keys())}), 400
+
+    topic = str(data.get("topic") or "")[:400]
+    seed = data.get("seed")
+    text = data.get("text")
+
+    # If no text was supplied, generate one.
+    if not text:
+        prompt = (
+            "Write one short line to be spoken aloud on a live stream.\n"
+            f"Topic: {topic or 'the stream right now'}.\n"
+            "Rules: 1-2 sentences, plain and warm, no stage directions, "
+            "no questions back to the operator, no asking anybody for money or gifts, "
+            "no calling anybody out, no medical or legal advice.\n"
+            "Return ONLY the line as plain text, no quotes, no JSON."
+        )
+        if seed:
+            prompt += f"\nSeed for variety: {str(seed)[:60]}"
+        text = None
+        try:
+            client = get_bedrock_client()
+            if client:
+                resp = client.converse(
+                    modelId=BEDROCK_HAIKU_MODEL,
+                    messages=[{"role": "user", "content": [{"text": prompt}]}],
+                    inferenceConfig={"maxTokens": 120, "temperature": 0.8}
+                )
+                text = resp["output"]["message"]["content"][0]["text"].strip()
+                text = re.sub(r'^["\'\s]+|["\'\s]+$', '', text)
+        except Exception as e:
+            print(f"[VOICE] generation failed: {e}", flush=True)
+
+    if not text:
+        return jsonify({"status": "error", "error": "generation produced nothing"}), 502
+
+    # Same gate as everything else. A generated line is not exempt.
+    if _REFUSAL.search(text):
+        print(f"[VOICE] refusal blocked ({voice}): {text[:60]}", flush=True)
+        return jsonify({"status": "blocked", "reason": "refusal",
+                        "voice": voice}), 422
+
+    word_count = len(text.split())
+    print(f"[VOICE] {voice}: {text[:70]}", flush=True)
+    return jsonify({
+        "status": "ok",
+        "text": text,
+        "voice": voice,
+        "fn": profile["fn"],
+        "rate": profile["rate"],
+        "pitch": profile["pitch"],
+        "volume": profile["volume"],
+        "words": word_count,
+    })
+
 @app.route("/api/track", methods=["POST"])
 def track():
     data = request.json or {}

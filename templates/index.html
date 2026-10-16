@@ -1067,6 +1067,7 @@
         <button id="pitch-slide-btn" onclick="playPitchSlide()" style="position:absolute; top:1px; right:520px; z-index:3; background:#0b0f16; border:1px solid #ffaa00; color:#ffaa00; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;"> musical note PITCH SLIDE</button>
         <button id="annihilate-war-btn" onclick="annihilateWarNoise()" style="position:absolute; top:1px; right:210px; z-index:3; background:#1a0404; border:1px solid #ff3355; color:#ff3355; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🛑 ANNIHILATE</button>
         <button id="host-link-btn" onclick="openHostLink()" style="position:absolute; top:1px; right:270px; z-index:3; background:#0b0f16; border:1px solid #00ffff; color:#00ffff; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">📡 HOST LINK</button>
+        <button id="att-s-btn" onclick="attSSpeak()" style="position:absolute; top:1px; right:610px; z-index:3; background:#0b0f16; border:1px solid #ff003c; color:#ff003c; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🔊 ATT S SPEAK</button>
         <span id="osc-hud" style="position:absolute; top:1px; right:190px; z-index:3; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); color:#ffaa00; text-shadow:0 0 4px #ffaa00; pointer-events:none;">OSC 0 live | peak 0 | made 0</span>
         <canvas id="spectrum-canvas" style="width:100%; height:100%; display:block;"></canvas>
     </div>
@@ -7180,6 +7181,30 @@ function connectAudio() {
         }
       });
   }
+
+  // ATT S speak experiment: drop all audio, then speak the generation sequence.
+  function attSSpeak() {
+    try {
+      // Drop all audio first.
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+      try { document.querySelectorAll('audio, video').forEach(function (el) { try { el.pause(); el.currentTime = 0; } catch (e) {} }); } catch (e) {}
+      try { if (typeof bgAudio !== 'undefined' && bgAudio) { bgAudio.pause(); bgAudio.currentTime = 0; } } catch (e) {}
+      try { if (typeof audioPlayer !== 'undefined' && audioPlayer) { audioPlayer.pause(); audioPlayer.currentTime = 0; } } catch (e) {}
+      try { if (typeof audioCtx !== 'undefined' && audioCtx && audioCtx.state === 'running') audioCtx.suspend(); } catch (e) {}
+      setTimeout(function () {
+        try {
+          const text = "This is an experiment of generation of time. Do you want to be the new generation? What is the origin of the word generation? Do you think you fully incorporated incorporated? In your day.";
+          const u = new SpeechSynthesisUtterance(text);
+          u.rate = 0.95; u.pitch = 0.9; u.volume = 1.0;
+          u.onend = u.onerror = function () {
+            try { if (typeof audioCtx !== 'undefined' && audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } catch (e) {}
+          };
+          window.speechSynthesis.speak(u);
+        } catch (e) {}
+      }, 120);
+    } catch (e) {}
+  }
+  window.attSSpeak = attSSpeak;
 
   function init() {
     if (!canvas) return;

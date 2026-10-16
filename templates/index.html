@@ -5066,6 +5066,7 @@ startStream();
     try {
       if (window.__cancelStormActive && window.__cancelStormUntil && Date.now() < window.__cancelStormUntil) return;
       if (!('speechSynthesis' in window)) return;
+      ttsReadoutPush(text, { rate: rate, pitch: pitch, volume: volume, voice: 'en-NG', fn: 'queueLine' });
       var u = new SpeechSynthesisUtterance(text);
       // Prefer Nigerian-English pronunciation where a matching voice exists.
       try { u.lang = 'en-NG'; } catch (e) {}
@@ -5119,6 +5120,7 @@ startStream();
   function queueLineFemale(text, rate, pitch, volume) {
     try {
       if (!('speechSynthesis' in window)) return;
+      ttsReadoutPush(text, { rate: rate, pitch: pitch, volume: volume, voice: 'en-US', fn: 'queueLineFemale' });
       var u = new SpeechSynthesisUtterance(text);
       try { u.lang = 'en-US'; } catch (e) {}
       try {
@@ -5141,6 +5143,7 @@ startStream();
   function queueLineMale(text, rate, pitch, volume) {
     try {
       if (!('speechSynthesis' in window)) return;
+      ttsReadoutPush(text, { rate: rate, pitch: pitch, volume: volume, voice: 'en-US', fn: 'queueLineMale' });
       var u = new SpeechSynthesisUtterance(text);
       try { u.lang = 'en-US'; } catch (e) {}
       // Prefer a distinctly male voice if available.
@@ -6907,6 +6910,114 @@ startStream();
 
   window.vulnLog = function () { return window.__vulnLog.slice(); };
 
+  // ============ LIVE TTS READOUT ============
+// Every utterance that goes out is recorded here with the parameters it went
+// out with. This is the on-screen answer to "what is it saying right now, and
+// with what voice." The panel is fixed to the bottom-right so it never collides
+// with the toolbar or the Word screen.
+  window.__ttsReadout = [];
+  window.__ttsCurrent = null;
+  window.__ttsCounts = { queueLine: 0, queueLineFemale: 0, queueLineMale: 0, speakTimed: 0, other: 0 };
+
+  function ttsReadoutEnsure() {
+    let el = document.getElementById('tts-readout');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'tts-readout';
+    el.style.cssText =
+      'position:fixed;right:8px;bottom:8px;z-index:10002;width:min(46vw,360px);' +
+      'background:rgba(2,6,10,.86);border:1px solid #00d0ff;border-radius:6px;' +
+      'padding:7px 9px;color:#8ff;font:500 clamp(0.55rem,0.82vw,0.7rem)/1.4 ' +
+      'ui-monospace,Menlo,Consolas,monospace;pointer-events:none;' +
+      'box-shadow:0 0 16px #00d0ff33;';
+    document.body.appendChild(el);
+    return el;
+  }
+
+  // Called by every queueLine* and speakTimed as the utterance goes out.
+  window.ttsReadoutPush = function (text, info) {
+    window.ttsReadoutPanel = true;
+    const i = info || {};
+    const t = Date.now();
+    const rec = {
+      t: t, text: String(text || ''),
+      fn: i.fn || 'other',
+      voice: i.voice || 'en-NG',
+      rate: i.rate == null ? 1.0 : i.rate,
+      pitch: i.pitch == null ? 0.85 : i.pitch,
+      volume: i.volume == null ? 0.5 : i.volume,
+      words: String(text || '').split(/\s+/).filter(Boolean).length
+    };
+    window.__ttsCurrent = rec;
+    window.__ttsReadout.push(rec);
+    if (window.__ttsReadout.length > 40) window.__ttsReadout.shift();
+    window.__ttsCounts[rec.fn] = (window.__ttsCounts[rec.fn] || 0) + 1;
+    return rec;
+  };
+
+  function ttsReadoutRender() {
+    const el = ttsReadoutEnsure();
+    const c = window.__ttsCurrent;
+    const ss = ('speechSynthesis' in window) ? window.speechSynthesis : null;
+    const speaking = ss ? !!ss.speaking : false;
+    const pending = ss ? ss.pending : false;
+
+    const state = speaking ? '● SPEAKING' : (pending ? '○ QUEUED' : '— IDLE');
+    const color = speaking ? '#00ff88' : (pending ? '#ffdd00' : '#5a7a8a');
+
+    let html = '<div style="display:flex;justify-content:space-between;align-items:center;' +
+      'border-bottom:1px solid #00d0ff33;padding-bottom:4px;margin-bottom:5px;">' +
+      '<span style="letter-spacing:.16em;color:#00d0ff;">TTS LIVE</span>' +
+      '<span style="color:' + color + ';">' + state + '</span></div>';
+
+    if (c) {
+      const ago = Math.round((Date.now() - c.t) / 100) / 10;
+      html += '<div style="color:#cfe;font-weight:600;">' + (c.fn || '') + '</div>' +
+        '<div style="opacity:.6;">' + c.voice + ' | r' + c.rate +
+        ' p' + c.pitch + ' v' + c.volume + ' | ' + c.words + 'w | ' + ago + 's ago</div>' +
+        '<div style="margin-top:4px;color:#e8f6ff;">' +
+        c.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').slice(0, 180) + '</div>';
+    } else {
+      html += '<div style="opacity:.5;">nothing spoken yet</div>';
+    }
+
+    // X and Y run on the same panel — they are both live telemetry.
+    const a = window.__axis;
+    if (a) {
+      html += '<div style="margin-top:6px;border-top:1px solid #00d0ff33;padding-top:4px;opacity:.85;">' +
+        'X ' + (a.x || 0).toFixed(2) + ' d=' + (a.depth == null ? 0 : a.depth).toFixed(2) +
+        ' | Y ' + (a.y || 0).toFixed(2) + ' [' + (a.bar || 1) + '/4]' +
+        (a.breaking ? ' | <span style="color:#ff003c">BREAKING</span>' : '') + '</div>';
+    }
+
+    const k = window.__ttsCounts;
+    html += '<div style="margin-top:4px;opacity:.45;">ng ' + (k.queueLine || 0) +
+      ' | f ' + (k.queueLineFemale || 0) +
+      ' | m ' + (k.queueLineMale || 0) +
+      ' | x ' + ((k.speakTimed || 0) + (k.other || 0)) + '</div>';
+
+    el.innerHTML = html;
+  }
+
+  window.ttsReadout = function () {
+    return {
+      current: window.__ttsCurrent,
+      recent: window.__ttsReadout.slice(-10),
+      counts: window.__ttsCounts,
+      speaking: ('speechSynthesis' in window) ? !!window.speechSynthesis.speaking : false,
+      pending: ('speechSynthesis' in window) ? !!window.speechSynthesis.pending : false
+    };
+  };
+
+  window.ttsReadoutToggle = function () {
+    const el = ttsReadoutEnsure();
+    el.style.display = el.style.display === 'none' ? '' : 'none';
+    return el.style.display !== 'none';
+  };
+
+  // Renders at 4 Hz. On the four-count, like everything else here.
+  setInterval(function () { try { ttsReadoutRender(); } catch (e) {} }, 250);
+
   // ============ X AND Y — live axis readout ============
 // Rule 100: X is space (position, depth), Y is time and height (count, crest).
 // Both axes are read here so the operator can see where the wave actually is.
@@ -7203,6 +7314,12 @@ startStream();
     const o = opts || {};
     if (!text) return null;
     if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy() && !o.force) return null;
+    window.ttsReadoutPush(text, {
+      rate: o.rate == null ? 0.95 : o.rate,
+      pitch: o.pitch == null ? 0.82 : o.pitch,
+      volume: o.volume == null ? 0.5 : o.volume,
+      voice: o.voice || 'timed', fn: 'speakTimed'
+    });
     const rec = window.playWatchStart(text, o.voice);
     try {
       window.speechSynthesis.cancel();

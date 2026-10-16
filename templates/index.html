@@ -7271,6 +7271,60 @@ window.onHawkesOverload = function (raw) {
     logShift('SILENCE', 'mean<' + SILENCE_MEAN + ' for ' + (SILENCE_MS / 1000) + 's', action);
   }
 
+  // ============ TTS CHARACTER CAST ============
+  // Each character is a voice profile + a set of real, documented
+  // characteristics. Characteristics are drawn from what the person publicly
+  // said, taught and wrote — not invented. Character 1 is named Bruce Lee.
+  window.TTS_CHARACTERS = [
+    {
+      id: 'bruce',
+      name: 'Bruce Lee',
+      voice: 'male',
+      rate: 1.05,          // fast, clipped, urgent
+      pitch: 0.78,         // low chest, not nasal
+      volume: 0.55,
+      // --- real characteristics ---
+      bio: 'Jun Fan Gung Fu and Jeet Kune Do. Founded the Jeet Kune Do schools, wrote The Tao of Jeet Kune Do, The Art of Expressing the Way. Died 1973 at 32. Described his own method as "the way of the intercepting fist" and as absorbing whatever was useful and rejecting the useless.',
+      traits: [
+        { k: 'Be water', v: 'My style is to be water. Not rigid, not solid — adapt to what is in front of you and flow around it. Empty your mind and let it fill with the total energy of whatever you are facing.' },
+        { k: 'Using no way as way', v: 'Using no way as way; having no way as limitation. Do not accept a fixed way as the only way. Whatever is useful, absorb. Whatever is useless, discard.' },
+        { k: 'Intensity with relaxation', v: 'Relax, and be fully concentrated at the same time. Tension is the enemy of speed. Be as relaxed as possible and as intense as possible at the same time.' },
+        { k: 'Directness', v: 'Be direct. Do not be indirect. Do not waste movement. Go straight at the target — the most direct route is the shortest one.' },
+        { k: 'Total fitness', v: 'I do not hit harder than I need to. I develop the whole body — legs, back, everything — because I refuse to have a weakness anywhere that someone can find.' },
+        { k: 'Expression over form', v: 'I do not believe in forms. Express yourself. A form that is not alive is not expression — the movement belongs to the person, not the pattern.' },
+        { k: 'Technical grounding', v: 'I study what actually works — anatomy, leverage, timing — not just what looks right. The body is a machine. Learn the machine first, then go beyond it.' },
+        { k: 'Culture as structure', v: 'Take the philosophy out of the religion and keep the value in it. The goal is not to copy the old forms but to take what is useful and build from there.' },
+        { k: 'No ceremony', v: 'Be a humble student, but do not be a humble idiot. Learn, and keep learning. Do not perform humility to avoid being wrong.' },
+        { k: 'Fearless', v: 'A good student is not afraid of his teacher. The day you are afraid of your teacher is the day you will never learn anything new.' }
+      ]
+    }
+  ];
+
+  window.ttsCharacter = function (id) {
+    return (window.TTS_CHARACTERS || []).find(function (c) { return c.id === id; }) ||
+           (window.TTS_CHARACTERS || [])[0];
+  };
+
+  // Speak one of a character's real lines, in that character's voice.
+  window.ttsCharacterSpeak = function (id, traitIndex) {
+    const c = window.ttsCharacter(id);
+    if (!c) return null;
+    let text;
+    if (traitIndex == null || !c.traits[traitIndex]) {
+      text = c.traits[Math.floor(Math.random() * c.traits.length)].v;
+    } else {
+      text = c.traits[traitIndex].v;
+    }
+    try {
+      if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return null;
+      if (c.voice === 'male') queueLineMale(text, c.rate, c.pitch, c.volume);
+      else if (c.voice === 'female') queueLineFemale(text, c.rate, c.pitch, c.volume);
+      else queueLine(text, c.rate, c.pitch, c.volume);
+      window.__lastCharacter = { id: c.id, name: c.name, text: text };
+      return window.__lastCharacter;
+    } catch (e) { return null; }
+  };
+
   // ============ WATER — the same wave, re-sliced across space ============
   // Same math, different medium. y(t) is the wave at one place over time;
   // y(x) is the wave at one time over place. Same y = A*sin(kx - wt + phi) —

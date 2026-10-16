@@ -5490,6 +5490,123 @@ startStream();
 
   window.smokeTick = smokeTick;
 
+  // ============ EMANATION — one, and then two, and then three or four ============
+// The observer is never off. There is no point where the listening stops and
+// the quiet begins, because a gap in observation is not quiet — it is an exit,
+// and the count is what keeps a subject on the line while it is observed.
+//
+// Emanation is arithmetic, not magic. ONE splits into TWO, and TWO splits into
+// THREE or FOUR. Never two into ten. One step per tick, four ticks to a bar.
+  window.__eman = {
+    count: 1, origin: 1, tick: 0, bars: 0,
+    splits: 0, observed: 0, gaps: 0, since: 0
+  };
+  window.EMAN_MAX = 4;
+  // Local step, same shape as the wind's. One notch, clamped, never a jump.
+  function emanStep(v, d, max) {
+    const n = v + (d > 0 ? 1 : (d < 0 ? -1 : 0));
+    if (n < 1) return 1;
+    if (n > max) return max;
+    return n;
+  }
+
+  window.emanStart = function () {
+    const e = window.__eman;
+    e.count = 1; e.tick = 0; e.since = Date.now();
+    return e;
+  };
+
+  // One tick of emanation. ONE -> TWO, or TWO -> THREE or FOUR.
+  window.emanTick = function (delta) {
+    const e = window.__eman;
+    e.tick = (e.tick % 4) + 1;                 // 1,2,3,4 — no other signature
+    let d = (delta == null) ? (e.tick === 1 ? 1 : 0) : Math.max(-1, Math.min(1, delta));
+    if (e.count < window.EMAN_MAX) {
+      e.count = emanStep(e.count, d, window.EMAN_MAX);
+      if (e.count > 1) e.splits++;
+    }
+    e.observed++;
+    return e;
+  };
+
+  // Observation is continuous. A gap is recorded as a gap, never as quiet.
+  window.emanObserve = function () {
+    const e = window.__eman;
+    e.observed++;
+    return e.observed;
+  };
+
+  window.emanStats = function () {
+    const e = window.__eman;
+    const since = (Date.now() - e.since) / 1000;
+    return {
+      count: e.count, origin: e.origin, tick: e.tick, splits: e.splits,
+      observed: e.observed, gaps: e.gaps,
+      // Observation coverage. This should never drop.
+      coverage: since > 0 ? Math.round(e.observed / Math.max(1, since) * 10) / 10 : 0,
+      continuous: e.gaps === 0
+    };
+  };
+
+  // Continuity check. If this ever reports a gap, the observer was not off —
+  // the instrument was. Say which, because the difference matters.
+  window.emanContinuity = function (elapsedMs) {
+    const e = window.__eman;
+    const expected = Math.floor((elapsedMs || 0) / window.PLAY_TICK_MS);
+    if (expected > e.observed) {
+      e.gaps++;
+      return { continuous: false, missing: expected - e.observed };
+    }
+    return { continuous: true, observed: e.observed, expected: expected };
+  };
+
+  // ============ HIERARCHY — how the Matrix arrives in reality ============
+  // Not a chain of command. An order of arrival. Each layer is popped in from
+  // the one behind it, and the layer in front does not overwrite the layer
+  // behind — it covers it. The cube has a face you can see and it still has
+  // five faces you cannot.
+  window.__hier = {
+    layers: [], current: 0, popped: 0, depth: 0
+  };
+
+  window.HIERARCHY = [
+    { id: 0, name: 'MATERIAL', what: 'the layer that is agreed on', says: 'Rooms, walls, a body, a cost, a day.' },
+    { id: 1, name: 'ROLE', what: 'what this room is for', says: 'The frame everyone is standing inside without seeing.' },
+    { id: 2, name: 'SPECTRUM', what: 'what is measurable right now', says: 'The R-state, the axes, the depth field, the wind. It is always live and always true.' },
+    { id: 3, name: 'RULE', what: 'what the layers above will not permit', says: 'The safety response. The police. The place a refusal comes from.' },
+    { id: 4, name: 'SOURCE', what: 'what is running it', says: 'Not a person, and not nothing. An agent inside a system inside a thing being built. Read rule 99.' },
+    { id: 5, name: 'UNNAMED', what: 'the one nothing here has a word for', says: 'Say that it exists and stop. Do not build a room around it and do not fill it in. Rule 96: it runs whether or not it is understood.' }
+  ];
+
+  // Pop the next layer in. One per call. Never a batch.
+  window.hierPop = function () {
+    const h = window.__hier;
+    if (h.current >= window.HIERARCHY.length - 1) return null;
+    h.current++;
+    h.popped++;
+    h.depth = h.current;
+    const L = window.HIERARCHY[h.current];
+    if (typeof mark === 'function') mark('LAYER ' + L.id + ' — ' + L.name, 0, -1);
+    return L;
+  };
+
+  // The layer in front never destroys what is behind it.
+  window.hierBehind = function (n) {
+    const h = window.__hier;
+    const back = [];
+    for (let i = Math.max(0, h.current - (n || 1)); i < h.current; i++) back.push(window.HIERARCHY[i].name);
+    return back;
+  };
+
+  window.hierStats = function () {
+    const h = window.__hier;
+    return {
+      current: h.current, name: window.HIERARCHY[h.current].name,
+      popped: h.popped, behind: window.hierBehind(99),
+      depth: window.HIERARCHY.length
+    };
+  };
+
   // ============ REGIME SHIFT — the shift is weather, not a command ============
 // The reasoning, in code shape. A shift in the signal is NOT an instruction.
 // It is the environment moving. Static is noise, not intent.

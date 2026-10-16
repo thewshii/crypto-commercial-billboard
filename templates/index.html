@@ -4426,7 +4426,7 @@ startStream();
             loadMarkovChain(function () {
                 const line = generateMarkovLine();
                 // Block Markov lines that mention the Wayne/exile phrase.
-                if (line && !/Wayne|exile/i.test(line)) speakBrinkLine(line);
+                if (line && !/Wayne|exile|wear|best|fanatic/i.test(line)) speakBrinkLine(line);
             });
         }
 

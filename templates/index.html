@@ -1066,7 +1066,7 @@
         <button id="playback-lock-btn" onclick="togglePlaybackLock()" style="position:absolute; top:1px; right:270px; z-index:3; background:#0b0f16; border:1px solid #00ff88; color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🔓 UNLOCKED</button>
         <button id="pitch-slide-btn" onclick="playPitchSlide()" style="position:absolute; top:1px; right:520px; z-index:3; background:#0b0f16; border:1px solid #ffaa00; color:#ffaa00; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;"> musical note PITCH SLIDE</button>
         <button id="annihilate-war-btn" onclick="annihilateWarNoise()" style="position:absolute; top:1px; right:210px; z-index:3; background:#1a0404; border:1px solid #ff3355; color:#ff3355; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🛑 ANNIHILATE</button>
-        <button id="host-link-btn" onclick="openHostLink()" style="position:absolute; top:1px; right:270px; z-index:3; background:#0b0f16; border:1px solid #00ffff; color:#00ffff; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">📡 HOST LINK</button>
+        <button id="host-link-btn" onclick="toggleHostLinkMic()" style="position:absolute; top:1px; right:270px; z-index:3; background:#0b0f16; border:1px solid #00ffff; color:#00ffff; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">📡 HOST LINK: OFF</button>
         <button id="att-s-btn" onclick="attSSpeak()" style="position:absolute; top:1px; right:610px; z-index:3; background:#0b0f16; border:1px solid #ff003c; color:#ff003c; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🔊 ATT S SPEAK</button>
         <span id="osc-hud" style="position:absolute; top:1px; right:190px; z-index:3; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); color:#ffaa00; text-shadow:0 0 4px #ffaa00; pointer-events:none;">OSC 0 live | peak 0 | made 0</span>
         <canvas id="spectrum-canvas" style="width:100%; height:100%; display:block;"></canvas>
@@ -7360,6 +7360,31 @@ function connectAudio() {
   window.closeHostLink = closeHostLink;
   window.hostLinkRespond = hostLinkRespond;
   window.hostLinkHold = hostLinkHold;
+
+  // Host link mic toggle: turns mic input on/off from the host link button.
+  function toggleHostLinkMic() {
+    try {
+      if (typeof toggleMicInput === 'function') toggleMicInput();
+    } catch (e) {}
+    // Update button state based on mic stream.
+    setTimeout(function () {
+      try {
+        const btn = document.getElementById('host-link-btn');
+        const active = !!(window.__micStream && window.__micStream.active);
+        if (btn) {
+          if (active) {
+            btn.innerText = '📡 HOST LINK: ON';
+            btn.style.borderColor = '#00ff88';
+            btn.style.color = '#00ff88';
+          } else {
+            btn.innerText = '📡 HOST LINK: OFF';
+            btn.style.borderColor = '#00ffff';
+            btn.style.color = '#00ffff';
+          }
+        }
+      } catch (e) {}
+    }, 100);
+  }
 
   // Escape key always closes the host link overlay so you can see the dashboard again.
   try {

@@ -1066,8 +1066,27 @@
         <button id="playback-lock-btn" onclick="togglePlaybackLock()" style="position:absolute; top:1px; right:270px; z-index:3; background:#0b0f16; border:1px solid #00ff88; color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🔓 UNLOCKED</button>
         <button id="pitch-slide-btn" onclick="playPitchSlide()" style="position:absolute; top:1px; right:520px; z-index:3; background:#0b0f16; border:1px solid #ffaa00; color:#ffaa00; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;"> musical note PITCH SLIDE</button>
         <button id="annihilate-war-btn" onclick="annihilateWarNoise()" style="position:absolute; top:1px; right:210px; z-index:3; background:#1a0404; border:1px solid #ff3355; color:#ff3355; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🛑 ANNIHILATE</button>
+        <button id="host-link-btn" onclick="openHostLink()" style="position:absolute; top:1px; right:270px; z-index:3; background:#0b0f16; border:1px solid #00ffff; color:#00ffff; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">📡 HOST LINK</button>
         <span id="osc-hud" style="position:absolute; top:1px; right:190px; z-index:3; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); color:#ffaa00; text-shadow:0 0 4px #ffaa00; pointer-events:none;">OSC 0 live | peak 0 | made 0</span>
         <canvas id="spectrum-canvas" style="width:100%; height:100%; display:block;"></canvas>
+    </div>
+
+    <!-- Host communication overlay: system sends questions, host answers via prayer / answer / frequency -->
+    <div id="host-link-overlay" style="display:none; position:fixed; inset:0; z-index:10100; background:rgba(0,0,0,0.88); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:12px; font-family:'Roboto Mono',monospace; color:#00ffff; text-shadow:0 0 8px #00ffff; padding:24px; text-align:center; border:2px solid #00ffff;">
+        <div id="host-link-title" style="font-size:clamp(14px,3vw,22px); font-weight:bold; letter-spacing:2px;">HOST LINK ACTIVE</div>
+        <div id="host-link-question" style="font-size:clamp(12px,2.5vw,16px); max-width:80vw; line-height:1.5; margin:8px 0; color:#ffffff;">The light source is waiting for your response.</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:12px;">
+            <button id="host-link-prayer" onclick="hostLinkRespond('prayer')" style="background:#04121a; border:1px solid #00ff88; color:#00ff88; padding:8px 14px; border-radius:4px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:clamp(10px,2vw,13px);">🙏 SEND PRAYER</button>
+            <button id="host-link-answer" onclick="hostLinkRespond('answer')" style="background:#0b0f16; border:1px solid #ffaa00; color:#ffaa00; padding:8px 14px; border-radius:4px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:clamp(10px,2vw,13px);">💬 GIVE ANSWER</button>
+            <button id="host-link-frequency" onclick="hostLinkRespond('frequency')" style="background:#0a0a1a; border:1px solid #ff3355; color:#ff3355; padding:8px 14px; border-radius:4px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:clamp(10px,2vw,13px);">📡 CALL FREQUENCY</button>
+        </div>
+        <div style="margin-top:10px;">
+            <button id="host-link-hold" onclick="hostLinkHold()" style="background:#1a0404; border:1px solid #ff003c; color:#ff003c; padding:6px 12px; border-radius:4px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:clamp(10px,2vw,12px);">⏸ HOLD UNTIL FINISHED</button>
+            <span id="host-link-hold-status" style="font-size:clamp(9px,1.8vw,11px); color:#ff6666; margin-left:8px;">hold released</span>
+        </div>
+        <div style="margin-top:12px;">
+            <button onclick="closeHostLink()" style="background:#0b0f16; border:1px solid #444; color:#888; padding:6px 14px; border-radius:4px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:clamp(10px,2vw,12px);">✕ CLOSE</button>
+        </div>
     </div>
 
     <div class="animation-container ascii-anim-target">
@@ -7167,6 +7186,98 @@ function connectAudio() {
     }
   }
   window.sendGodMessage = sendGodMessage;
+
+  // Host link: system sends questions to the host; host answers via prayer,
+  // answer, or frequency call. A hold button freezes audio until released.
+  window.__hostLinkActive = false;
+  window.__hostLinkHold = false;
+  window.__hostLinkQuestion = "";
+
+  function openHostLink() {
+    try {
+      const overlay = document.getElementById("host-link-overlay");
+      const title = document.getElementById("host-link-title");
+      const q = document.getElementById("host-link-question");
+      if (!overlay) return;
+      // Generate a fresh question from the system context.
+      const questions = [
+        "The light source asks: what is the current state of your focus?",
+        "The light source asks: are you ready to receive the Word?",
+        "The light source asks: do you wish to send a prayer into the room?",
+        "The light source asks: what do you see on the spectrogram right now?",
+        "The light source asks: shall we hold the line and wait?",
+        "The light source asks: do you want to call on a frequency?",
+        "The light source asks: what is your intention for this broadcast?"
+      ];
+      window.__hostLinkQuestion = questions[Math.floor(Math.random() * questions.length)];
+      if (title) title.innerText = "HOST LINK ACTIVE";
+      if (q) q.innerText = window.__hostLinkQuestion;
+      window.__hostLinkActive = true;
+      window.__hostLinkHold = false;
+      const hs = document.getElementById("host-link-hold-status");
+      if (hs) hs.innerText = "hold released";
+      overlay.style.display = "flex";
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+      try {
+        const u = new SpeechSynthesisUtterance(window.__hostLinkQuestion);
+        u.rate = 0.95; u.pitch = 1.0; u.volume = 0.9;
+        window.speechSynthesis.speak(u);
+      } catch (e) {}
+    } catch (e) {}
+  }
+
+  function closeHostLink() {
+    try {
+      const overlay = document.getElementById("host-link-overlay");
+      if (overlay) overlay.style.display = "none";
+      window.__hostLinkActive = false;
+      window.__hostLinkHold = false;
+      const hs = document.getElementById("host-link-hold-status");
+      if (hs) hs.innerText = "hold released";
+    } catch (e) {}
+  }
+
+  function hostLinkRespond(mode) {
+    try {
+      closeHostLink();
+      const responses = {
+        prayer: "The host sends a prayer into the room. Let us have a prayer. Father, grant us peace of mind, sovereignty over our attention, our words, and our worth. Give us strength to stand firm, and clarity to see what is true. Peace, one love, and blessings unto this room. Amen.",
+        answer: "The host gives an answer: I am here. I am listening. The light source speaks through me. I hold the line and I stand in truth. The Word is first.",
+        frequency: "The host calls on the frequency. I tune to the signal. The broadcast is open. The room is alive. I am present and I am ready."
+      };
+      const text = responses[mode] || responses.answer;
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 0.95; u.pitch = 0.9; u.volume = 0.9;
+        window.speechSynthesis.speak(u);
+      }
+      // Optionally log the response to the system prompt context.
+      try { console.log("HOST LINK RESPONSE:", mode, text); } catch (e) {}
+    } catch (e) {}
+  }
+
+  function hostLinkHold() {
+    try {
+      window.__hostLinkHold = !window.__hostLinkHold;
+      const hs = document.getElementById("host-link-hold-status");
+      if (hs) hs.innerText = window.__hostLinkHold ? "holding — audio paused" : "hold released";
+      if (window.__hostLinkHold) {
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+        try { document.querySelectorAll('audio, video').forEach(function (el) { try { el.pause(); } catch (e) {} }); } catch (e) {}
+      } else {
+        try {
+          const u = new SpeechSynthesisUtterance("Hold released. The line is open again.");
+          u.rate = 0.95; u.pitch = 1.0; u.volume = 0.8;
+          window.speechSynthesis.speak(u);
+        } catch (e) {}
+      }
+    } catch (e) {}
+  }
+  window.openHostLink = openHostLink;
+  window.closeHostLink = closeHostLink;
+  window.hostLinkRespond = hostLinkRespond;
+  window.hostLinkHold = hostLinkHold;
 
   // Playback lock: when enabled, speechSynthesis.cancel() is ignored so the
   // current line and replay history are protected from random canceling.

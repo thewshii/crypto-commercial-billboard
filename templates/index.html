@@ -7919,7 +7919,41 @@ startStream();
     };
   };
 
-  // Sampled hard, displayed on the Word screen, published on every read.
+  // Feed the data stream. Rule 116: one update per window, counted.
+  // This is the stream the other agent reads. One bar per window. Never batched.
+  window.__streamLast = 0;
+  window.STREAM_WINDOW_MS = 240000;      // 240 seconds — one update window
+  window.STREAM_URL = '/api/stream';
+
+  window.streamPush = async function () {
+    try {
+      if (!window.bandVal || !window.bandVal.length) return false;
+      const bands = Array.prototype.slice.call(window.bandVal).map(function (v) {
+        return Math.max(0, Math.min(255, Math.round(v)));
+      });
+      const r = await fetch((window.STREAM_URL || '/api/stream') + '/ingest', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bands: bands,
+          state: window.__r ? window.__r.state : ''
+        })
+      });
+      const j = await r.json();
+      return j && j.status === 'ok';
+    } catch (e) { return false; }
+  };
+
+  // One push per window. On the four-count, like everything else.
+  setInterval(function () {
+    try {
+      const now = Date.now();
+      if (now - window.__streamLast < window.STREAM_WINDOW_MS) return;
+      window.__streamLast = now;
+      window.streamPush();
+    } catch (e) {}
+  }, 5000);
+
+  // ============ R-STATE: the spectrogram's 0, 1, and U ============
   setInterval(function () {
     try { window.rPublish(window.rMeasure()); } catch (e) {}
   }, 5);

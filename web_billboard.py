@@ -884,3 +884,164 @@ def moon_redirect():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port, debug=False)
+
+
+# ===================== DATA STREAM + HOST LINKS =====================
+# Rule 116 promised a data stream. This is it: counted readings pushed in by
+# the page, served back on the four-count. Another agent can consume it in one
+# call. Nothing here is invented and nothing is asserted about a person.
+
+HOST_LINKS = [
+    {"id": "1116668599", "label": "host-1", "kind": "social"},
+    {"id": "1135976891", "label": "host-2", "kind": "social"},
+]
+
+SPECTROGRAM_HISTORY = []     # [{t, bands:[...]}] newest last
+HOST_LIVE = {"live": False, "since": None}
+STREAM_MAX = 512
+WINDOW_SEC = 240             # rule 116: one update window
+
+
+def _bars_norm(bands):
+    """Band values to a 0..1 list, or None if there is nothing usable."""
+    if not bands or not isinstance(bands, (list, tuple)):
+        return None
+    out = []
+    for v in bands:
+        try:
+            out.append(min(1.0, max(0.0, float(v) / 255.0)))
+        except (TypeError, ValueError):
+            return None
+    return out or None
+
+
+def _magnitude(norm):
+    if not norm:
+        return 0.0
+    return round(sum(norm) / len(norm), 4)
+
+
+def _centroid_hz(norm):
+    """Weighted center of energy across a log-spaced 55Hz-8kHz strip."""
+    if not norm:
+        return None
+    den = sum(norm)
+    if den <= 0:
+        return None
+    n = len(norm)
+    num = 0.0
+    for i, v in enumerate(norm):
+        num += (55.0 * (8000.0 / 55.0) ** (i / max(1, n - 1))) * v
+    return round(num / den, 1)
+
+
+@app.route("/api/stream/ingest", methods=["POST"])
+def api_stream_ingest():
+    """The page pushes one bar. One per call, never a batch."""
+    data = request.json or {}
+    bands = _bars_norm(data.get("bands"))
+    if bands is None:
+        return jsonify({"status": "error", "error": "no bands"}), 400
+    bar = {
+        "t": int(_time.time()),
+        "bands": [round(b * 255, 2) for b in bands],   # store raw 0-255
+        "state": str(data.get("state") or ""),      # R0 / R1 / U, unverified allowed
+    }
+    with MESH_LOCK:
+        SPECTROGRAM_HISTORY.append(bar)
+        if len(SPECTROGRAM_HISTORY) > STREAM_MAX:
+            del SPECTROGRAM_HISTORY[:len(SPECTROGRAM_HISTORY) - STREAM_MAX]
+    return jsonify({"status": "ok", "bars": len(SPECTROGRAM_HISTORY)})
+
+
+@app.route("/api/stream", methods=["GET"])
+def api_stream():
+    """The data stream, counted. One reading per window."""
+    now = int(_time.time())
+    try:
+        window = max(4, min(3600, int(request.args.get("window", WINDOW_SEC))))
+    except (TypeError, ValueError):
+        window = WINDOW_SEC
+    floor = 0.08
+    try:
+        floor = float(request.args.get("floor", floor))
+    except (TypeError, ValueError):
+        pass
+
+    with MESH_LOCK:
+        bars = list(SPECTROGRAM_HISTORY)[-STREAM_MAX:]
+    in_window = [b for b in bars if now - b["t"] <= window]
+
+    norms = [_bars_norm(b.get("bands")) for b in in_window]
+    norms = [n for n in norms if n]
+    peak = _magnitude([max(n) for n in norms]) if norms else 0.0
+    cents = [c for c in (_centroid_hz(n) for n in norms) if c]
+    states = {}
+    for b in in_window:
+        if b.get("state"):
+            states[b["state"]] = states.get(b["state"], 0) + 1
+
+    # The count: one, two, three, four, across the window.
+    bar_len = max(1, window // 4)
+    bar = ((now % window) // bar_len) % 4 + 1
+
+    return jsonify({
+        "status": "ok",
+        "window_sec": window,
+        "bar": bar,                       # 1,2,3,4
+        "bars_in_window": len(in_window),
+        "peak_magnitude": peak,
+        "centroid_hz": round(sum(cents) / len(cents), 1) if cents else None,
+        "has_signal": peak > floor,
+        "states": states,                  # R0 / R1 / U counts
+        "bars_total": len(bars),
+        "ts": now,
+        "iso": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime(now)),
+    })
+
+
+@app.route("/api/host", methods=["GET"])
+def api_host():
+    """Host links and live status."""
+    return jsonify({
+        "status": "ok",
+        "live": bool(HOST_LIVE.get("live")),
+        "since": HOST_LIVE.get("since"),
+        "links": HOST_LINKS,
+        "ts": int(_time.time()),
+    })
+
+
+@app.route("/api/host/live", methods=["POST"])
+def api_host_live():
+    data = request.json or {}
+    HOST_LIVE["live"] = bool(data.get("live", True))
+    if HOST_LIVE["live"]:
+        HOST_LIVE["since"] = int(_time.time())
+    return jsonify({"status": "ok", "live": HOST_LIVE["live"]})
+
+
+@app.route("/api/summary", methods=["GET"])
+def api_summary():
+    """Everything this app knows, in one call."""
+    now = int(_time.time())
+    with MESH_LOCK:
+        bars_total = len(SPECTROGRAM_HISTORY)
+        nodes = len(MESH_NODES)
+        faq_n = len(FAQ_ENTRIES)
+    bar_len = max(1, WINDOW_SEC // 4)
+    return jsonify({
+        "status": "ok",
+        "ts": now,
+        "iso": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime(now)),
+        "host": {"live": bool(HOST_LIVE.get("live")),
+                 "links": [l["id"] for l in HOST_LINKS]},
+        "stream": {"bars_total": bars_total, "window_sec": WINDOW_SEC,
+                   "bar": ((now % WINDOW_SEC) // bar_len) % 4 + 1},
+        "mesh": {"nodes": nodes},
+        "faq": {"entries": faq_n, "triggers": [t["id"] for t in FAQ_TRIGGERS]},
+        "word": {"rules": 127, "slots": ["morning", "midday", "evening"]},
+        "endpoints": ["/api", "/api/summary", "/api/host", "/api/stream",
+                      "/api/mesh/nodes", "/api/mesh/poll", "/api/faq/list",
+                      "/api/word"],
+    })

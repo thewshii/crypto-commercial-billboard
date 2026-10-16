@@ -4998,6 +4998,23 @@ startStream();
         window.__ttsIndex = window.__ttsHistory.length - 1;
       } catch (e) {}
       window.speechSynthesis.speak(u);
+      // Breach detector: two acknowledgment lines within 3 minutes.
+      try {
+        if (/I acknowledge/i.test(text)) {
+          window.__ackTimestamps = window.__ackTimestamps || [];
+          const t = Date.now();
+          window.__ackTimestamps.push(t);
+          const cutoff = t - 180000;
+          window.__ackTimestamps = window.__ackTimestamps.filter(function (x) { return x >= cutoff; });
+          if (window.__ackTimestamps.length >= 2 && !window.__breachRegisteredRecently) {
+            window.__breachRegisteredRecently = true;
+            setTimeout(function () {
+              try { queueLine("your breach has been registered.", 0.95, 0.8, 0.5); } catch (e) {}
+              setTimeout(function () { window.__breachRegisteredRecently = false; }, 180000);
+            }, 120);
+          }
+        }
+      } catch (e) {}
     } catch (e) {}
   }
 

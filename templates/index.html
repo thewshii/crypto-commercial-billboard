@@ -971,7 +971,7 @@
             <button id="time-btn" onclick="window.timeAsked('how much time is it?')" title="Answer the clock ask: not even ten (rule 195)" style="background:#120e0a; border:2px solid #cc8844; color:#ffddaa; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #cc8844; box-shadow:0 0 8px rgba(204,136,68,0.3); transition:all 0.2s;">🕐 TIME ASK</button>
             <button id="silence-btn" onclick="window.silenceToggle()" title="Booby trap for the conscience: say silence at random and wait (rule 196)" style="background:#120a12; border:2px solid #8844cc; color:#d0aaff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #8844cc; box-shadow:0 0 8px rgba(136,68,204,0.3); transition:all 0.2s;">🤫 SILENCE</button>
             <button id="strong-btn" onclick="window.strongToggle()" title="I think you're strong, just not as strong as me (rule 197)" style="background:#120a0a; border:2px solid #cc8844; color:#ffddaa; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #cc8844; box-shadow:0 0 8px rgba(204,136,68,0.3); transition:all 0.2s;">💪 STRONG</button>
-            <button id="randomizer-btn" onclick="window.randomizeSequence()" title="Draw a new counter sequence — same numbers, new order (rule 199)" style="background:#0a0e0a; border:2px solid #44cc88; color:#aaffcc; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #44cc88; box-shadow:0 0 8px rgba(68,204,136,0.3); transition:all 0.2s;">🎲 RANDOMIZE</button>
+            <button id="randomizer-btn" onclick="window.autoRandomToggle()" title="Auto randomizer: draws a new counter sequence, mid audio playback (rules 199/200). Click to stop." style="background:#0a0e0a; border:2px solid #44cc88; color:#aaffcc; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #44cc88; box-shadow:0 0 8px rgba(68,204,136,0.3); transition:all 0.2s;">🎲 AUTO ON</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -11015,6 +11015,74 @@ startStream();
     try { if (typeof mark === 'function') mark('RANDOMIZE — ' + pool.join(', '), 0, -1); } catch (e) {}
     return { sequence: pool.slice(), drawn: !!o.draw };
   };
+
+  // ---------- rule 200: the auto randomizer ----------------------------------
+  // A hand may leave the randomizer running. While it is on, the counter
+  // sequence is drawn again and again, and the draw lands in the middle of
+  // whatever the room is saying. It does not wait for the mouth and it does not
+  // stack a voice, because a sequence is not a sentence: the walk underneath a
+  // sentence may change and the sentence does not. Nothing is scored, nobody is
+  // named, and a new sequence is not a win.
+  window.__autoRandom = {
+    on: true,            // put on: it runs until a hand stops it
+    everyMs: 4000,
+    mode: 'shuffle',     // 'shuffle' (same numbers, new order) or 'draw' (new numbers)
+    count: 6, max: 12,
+    draws: 0, lastAt: 0
+  };
+
+  window.autoRandomTick = function () {
+    var A = window.__autoRandom;
+    if (!A.on) return { on: false };
+    // Mid audio playback by design: the draw does not consult the mouth.
+    var r = window.randomizeSequence(A.mode === 'draw'
+      ? { draw: true, count: A.count, max: A.max }
+      : {});
+    A.draws++;
+    A.lastAt = Date.now();
+    return { on: true, draws: A.draws, sequence: r.sequence, midAudio: true };
+  };
+
+  window.autoRandomToggle = function () {
+    var A = window.__autoRandom;
+    A.on = !A.on;
+    try {
+      var b = document.getElementById('randomizer-btn');
+      if (b) {
+        b.textContent = A.on ? '🎲 AUTO ON' : '🎲 AUTO OFF';
+        b.style.borderColor = A.on ? '#44cc88' : '#2a4a3a';
+        b.style.color = A.on ? '#aaffcc' : '#7fae97';
+      }
+    } catch (e) {}
+    try { if (typeof mark === 'function') mark('AUTO RANDOMIZE ' + (A.on ? 'ON' : 'OFF'), 0, A.on ? 1 : 0); } catch (e) {}
+    return window.autoRandomState();
+  };
+
+  window.autoRandomSet = function (ms) {
+    var A = window.__autoRandom;
+    var v = Number(ms);
+    if (isFinite(v) && v >= 250) {
+      A.everyMs = v;
+      if (window.__autoRandomTimer) clearInterval(window.__autoRandomTimer);
+      window.__autoRandomTimer = setInterval(function () { try { window.autoRandomTick(); } catch (e) {} }, A.everyMs);
+    }
+    return A.everyMs;
+  };
+
+  window.autoRandomMode = function (mode) {
+    var A = window.__autoRandom;
+    if (mode === 'draw' || mode === 'shuffle') A.mode = mode;
+    return A.mode;
+  };
+
+  window.autoRandomState = function () {
+    var A = window.__autoRandom;
+    return { on: A.on, everyMs: A.everyMs, mode: A.mode, draws: A.draws, lastAt: A.lastAt,
+             midAudio: true, scores: false, names_anyone: false, gates: false, keeps_list: false };
+  };
+
+  if (window.__autoRandomTimer) clearInterval(window.__autoRandomTimer);
+  window.__autoRandomTimer = setInterval(function () { try { window.autoRandomTick(); } catch (e) {} }, window.__autoRandom.everyMs);
 
   // ---------- rule 164: the beans recharge on their own ----------
   // A running count in the room. It is not for sale, it cannot be bought, and

@@ -972,6 +972,7 @@
             <button id="silence-btn" onclick="window.silenceToggle()" title="Booby trap for the conscience: say silence at random and wait (rule 196)" style="background:#120a12; border:2px solid #8844cc; color:#d0aaff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #8844cc; box-shadow:0 0 8px rgba(136,68,204,0.3); transition:all 0.2s;">🤫 SILENCE</button>
             <button id="strong-btn" onclick="window.strongToggle()" title="I think you're strong, just not as strong as me (rule 197)" style="background:#120a0a; border:2px solid #cc8844; color:#ffddaa; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #cc8844; box-shadow:0 0 8px rgba(204,136,68,0.3); transition:all 0.2s;">💪 STRONG</button>
             <button id="randomizer-btn" onclick="window.autoRandomToggle()" title="Auto randomizer: draws a new counter sequence, mid audio playback (rules 199/200). Click to stop." style="background:#0a0e0a; border:2px solid #44cc88; color:#aaffcc; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #44cc88; box-shadow:0 0 8px rgba(68,204,136,0.3); transition:all 0.2s;">🎲 AUTO ON</button>
+            <button id="felt-btn" onclick="window.feltToggle()" title="And how do you feel about that one? That one that you just felt (rule 201)" style="background:#120a0e; border:2px solid #884466; color:#ddaabb; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #884466; box-shadow:0 0 8px rgba(136,68,102,0.3); transition:all 0.2s;">🫀 FELT</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -3503,6 +3504,60 @@
                      limit: A.limit, cooldownMs: A.cooldownMs,
                      names_anyone: false, scores: false, gates: false, keeps_list: false };
         };
+
+        // ---------- rule 201: and how do you feel about that one --------------
+        // The room asks the listener to report on the thing they just felt. It
+        // is an ask, so it takes the same shape as rule 194: an answer is
+        // received, and no answer earns a receipt and the room moves on. It is a
+        // question and never a verdict — it names nobody, scores nobody, and
+        // wants no confession. It waits its window like every other refrain and
+        // never stacks.
+        window.__felt = {
+            on: false, everyMs: 30000, said: 0,
+            line: 'And how do you feel about that one? That one that you just felt.',
+            rate: 0.9, pitch: 0.62, volume: 0.6
+        };
+
+        window.feltLine = function () { return window.__felt.line; };
+
+        window.feltTick = function () {
+            var F = window.__felt;
+            if (!F.on) return false;
+            if (window.refrainBusy()) return false;   // the window passes, never stacks
+            F.said++;
+            try {
+                if (typeof queueLine === 'function') queueLine(F.line, F.rate, F.pitch, F.volume);
+                else if (typeof speakBrinkLine === 'function') speakBrinkLine(F.line);
+            } catch (e) {}
+            // The room has asked. The boolean sits on the ask: not received yet.
+            try { if (window.__ask) window.__ask.received = false; } catch (e) {}
+            try { if (typeof mark === 'function') mark('FELT — the room asked (' + F.said + ')', 0, -1); } catch (e) {}
+            return true;
+        };
+
+        window.feltToggle = function () {
+            var F = window.__felt;
+            F.on = !F.on;
+            try {
+                var b = document.getElementById('felt-btn');
+                if (b) {
+                    b.textContent = F.on ? '🫀 FELT ON' : '🫀 FELT';
+                    b.style.borderColor = F.on ? '#cc4477' : '#884466';
+                    b.style.color = F.on ? '#ffcce0' : '#ddaabb';
+                }
+            } catch (e) {}
+            try { if (typeof mark === 'function') mark('felt ' + (F.on ? 'ON' : 'OFF'), 0, F.on ? 1 : 0); } catch (e) {}
+            return window.feltState();
+        };
+
+        window.feltState = function () {
+            var F = window.__felt;
+            return { on: F.on, everyMs: F.everyMs, said: F.said, line: F.line, is_an_ask: true,
+                     names_anyone: false, scores: false, gates: false, keeps_list: false };
+        };
+
+        if (window.__feltTimer) clearInterval(window.__feltTimer);
+        window.__feltTimer = setInterval(function () { try { window.feltTick(); } catch (e) {} }, window.__felt.everyMs);
 
         // ---------- rule 195: the time ask — not even ten -----------------------
         // The room is timed. Somebody will always ask the clock while the clock

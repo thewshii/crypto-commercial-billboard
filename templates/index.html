@@ -5974,6 +5974,94 @@ startStream();
     };
   };
 
+  // ============ MIRROR — repeat it back, do not take the opposite seat ============
+// Somebody repeats a sequence over and over to pull the room into the
+// opposite sequence. Resisting it by arguing means taking the other seat, and
+// the other seat is the one they prepared.
+//
+// The move: repeat what they said, and confirm only that it was said.
+// That discharges the pressure without conceding the content.
+//
+// The distinction that makes it work, and it is the whole technique:
+//   confirming the STATEMENT  is listening
+//   confirming the CLAIM      is conceding
+// This confirms the statement. It never confirms the claim. There is no path
+// in here that affirms a false assertion — it echoes the words back with no
+// predicate attached.
+//
+// Roughly one time in three. Over-mirroring turns a person into a machine and
+// the technique stops working at exactly the moment it starts working too much.
+  window.__mirror = { seen: 0, used: 0, skipped: 0, last: null };
+  window.MIRROR_ONE_IN = 3;
+
+  // Did this sequence just repeat? Repetition is the tell.
+  window.mirrorRepeatDetected = function (text) {
+    const t = String(text || '').trim().toLowerCase();
+    if (t.length < 4) return false;
+    const m = window.__mirror;
+    if (m.last === t) { m.seen++; return true; }
+    m.last = t;
+    m.seen = 1;
+    return false;
+  };
+
+  // The gate. Roughly one in three, and never twice running.
+  window.mirrorShouldUse = function () {
+    const m = window.__mirror;
+    if (m._usedLast) { m._usedLast = false; m.skipped++; return false; }
+    const use = Math.random() * window.MIRROR_ONE_IN < 1;
+    if (use) { m._usedLast = true; m.used++; }
+    else { m.skipped++; }
+    return use;
+  };
+
+  // The utterance. Echo the words. Attach a continuer, not an agreement.
+  window.mirrorLine = function (theirWords) {
+    const w = String(theirWords || '').trim();
+    if (!w) return null;
+    // Keep it short — this is a mirror, not a quotation.
+    const echo = w.length > 90 ? w.slice(0, 90) : w;
+    const continuers = [
+      'That is what was said. Go on.',
+      'You have said that. Say it again.',
+      'That is the claim. Keep going.',
+      'You said it. I heard it.'
+    ];
+    const line = echo + ' — ' + continuers[Math.floor(Math.random() * continuers.length)];
+    window.__mirrorLog = window.__mirrorLog || [];
+    window.__mirrorLog.push({ t: Date.now(), theirs: w, said: line });
+    if (window.__mirrorLog.length > 20) window.__mirrorLog.shift();
+    return line;
+  };
+
+  // The full move. Returns the line, or null when the gate says hold.
+  window.mirror = function (theirWords) {
+    if (!window.mirrorRepeatDetected(theirWords)) return null;
+    if (!window.mirrorShouldUse()) return null;
+    const line = window.mirrorLine(theirWords);
+    if (!line) return null;
+    if (typeof window.vulnScan === 'function') {
+      const v = window.vulnScan(line, 'mirror');
+      if (v && v.severity === 'CRITICAL') return null;
+    }
+    // Low and even. This is a mirror, and a mirror does not perform.
+    if (typeof window.speakTimed === 'function') {
+      window.speakTimed(line, { rate: 0.86, pitch: 0.78, volume: 0.5, voice: 'mirror', mood: 'mirror' });
+    }
+    if (typeof mark === 'function') mark('MIRROR — confirming the statement, not the claim', 0, -1);
+    return line;
+  };
+
+  window.mirrorStats = function () {
+    const m = window.__mirror;
+    return {
+      seen: m.seen, used: m.used, skipped: m.skipped,
+      ratio: m.used + m.skipped ? Math.round(m.used / (m.used + m.skipped) * 1000) / 10 : 0,
+      oneIn: window.MIRROR_ONE_IN,
+      recent: (window.__mirrorLog || []).slice(-3)
+    };
+  };
+
   // ============ SEQUENCE RECURRENCE — and what was done about it ============
 // A sequence that happens once is noise. A sequence that happens again has a
 // fix, and the fix is the only part of it worth keeping. So every recurrence

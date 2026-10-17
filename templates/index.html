@@ -3159,6 +3159,151 @@
             return false;
         };
 
+        // ---------- rule 203: the repetition counter and the codes -------------
+        // When the same thing comes back, the room does not say it back that many
+        // times. It counts it, and out of the count it makes a code. The count
+        // sits on the phrase and never on a person: nobody is named, nobody is
+        // scored, nothing is judged, and the code holds no name inside it, so a
+        // thing repeated is logged and not parroted. A phrase that stops coming
+        // back stops counting, and silence is never a repetition.
+        window.__repeat = {
+            on: true,
+            windowMs: 300000,     // five minutes: long enough to catch a refrain
+            minWords: 2,          // one word is a tic, not a refrain
+            maxTracked: 64,
+            heardTrack: {}, saidTrack: {},
+            heard: 0, said: 0, repeats: 0, codes: 0,
+            lastPhrase: null, lastCount: 0, lastCode: null, lastAt: 0, lastFrom: null
+        };
+
+        window.repeatNorm = function (text) {
+            return String(text == null ? '' : text)
+                .toLowerCase()
+                .replace(/[^a-z0-9' ]+/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        };
+
+        // The code: three letters and four digits, drawn from the words and the
+        // count. The same words at the same count always make the same code, and
+        // no name ever ends up inside one. I and O are left out, because a code
+        // is a thing that gets read aloud.
+        window.repeatCode = function (phrase, count) {
+            var s = window.repeatNorm(phrase) + '#' + (Number(count) || 0);
+            var h = 2166136261;
+            for (var i = 0; i < s.length; i++) {
+                h ^= s.charCodeAt(i);
+                h = Math.imul(h, 16777619) >>> 0;
+            }
+            var A = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+            var a = A[h % 24], b = A[(h >>> 5) % 24], c = A[(h >>> 10) % 24];
+            var n = (h >>> 15) % 100, d = (h >>> 22) % 100;
+            return a + b + c + '-' + (n < 10 ? '0' + n : n) + (d < 10 ? '0' + d : d);
+        };
+
+        // Drop anything that has not come back inside the window. A refrain that
+        // has stopped is not held against anything.
+        window.repeatSweep = function (now) {
+            var R = window.__repeat;
+            now = now || Date.now();
+            [R.heardTrack, R.saidTrack].forEach(function (t) {
+                Object.keys(t).forEach(function (k) {
+                    if (now - t[k].last > R.windowMs) delete t[k];
+                });
+            });
+        };
+
+        // Make room by dropping the oldest, never the loudest.
+        window.repeatEvict = function (t) {
+            var R = window.__repeat;
+            var keys = Object.keys(t);
+            if (keys.length < R.maxTracked) return;
+            keys.sort(function (a, b) { return t[a].first - t[b].first; });
+            delete t[keys[0]];
+        };
+
+        // A phrase heard in the room. The first one comes through as heard; every
+        // one after it is counted and coded and the room does not say it again
+        // for it. Nothing is ever said twice for having been counted once.
+        window.repeatHeard = function (text) {
+            var R = window.__repeat, now = Date.now();
+            var norm = window.repeatNorm(text);
+            R.heard++;
+            if (!R.on || !norm || norm.split(' ').length < R.minWords) {
+                return { repeat: false, count: 0, code: null, spoken: true };
+            }
+            window.repeatSweep(now);
+            var e = R.heardTrack[norm];
+            if (!e) {
+                window.repeatEvict(R.heardTrack);
+                R.heardTrack[norm] = { count: 1, first: now, last: now, code: null };
+                return { repeat: false, count: 1, code: null, spoken: true, phrase: norm };
+            }
+            e.count++; e.last = now;
+            e.code = window.repeatCode(norm, e.count);
+            R.repeats++; R.codes++;
+            R.lastPhrase = norm; R.lastCount = e.count; R.lastCode = e.code;
+            R.lastAt = now; R.lastFrom = 'heard';
+            try { if (typeof mark === 'function') mark('REPEAT \u00d7' + e.count + ' \u00b7 ' + e.code, 0, -1); } catch (err) {}
+            return { repeat: true, count: e.count, code: e.code, spoken: false, phrase: norm };
+        };
+
+        // A line the room's own mouth said. Counted the same way and coded the
+        // same way, and nothing is suppressed here — this is only the room
+        // hearing itself, so a refrain it keeps saying is known to it.
+        window.repeatSaid = function (text) {
+            var R = window.__repeat, now = Date.now();
+            var norm = window.repeatNorm(text);
+            R.said++;
+            if (!R.on || !norm || norm.split(' ').length < R.minWords) return { count: 0, code: null };
+            window.repeatSweep(now);
+            var e = R.saidTrack[norm];
+            if (!e) {
+                window.repeatEvict(R.saidTrack);
+                R.saidTrack[norm] = { count: 1, first: now, last: now, code: null };
+                return { count: 1, code: null, phrase: norm };
+            }
+            e.count++; e.last = now;
+            e.code = window.repeatCode(norm, e.count);
+            R.codes++;
+            R.lastPhrase = norm; R.lastCount = e.count; R.lastCode = e.code;
+            R.lastAt = now; R.lastFrom = 'said';
+            return { count: e.count, code: e.code, phrase: norm };
+        };
+
+        // The phrase that has come back the most, right now. For the readout.
+        window.repeatTop = function () {
+            var R = window.__repeat, best = null;
+            ['heardTrack', 'saidTrack'].forEach(function (name) {
+                var t = R[name];
+                Object.keys(t).forEach(function (k) {
+                    var e = t[k];
+                    if (!best || e.count > best.count) {
+                        best = { phrase: k, count: e.count, code: e.code,
+                                 from: name === 'heardTrack' ? 'heard' : 'said' };
+                    }
+                });
+            });
+            return best;
+        };
+
+        window.repeatState = function () {
+            var R = window.__repeat;
+            return { on: R.on, windowMs: R.windowMs, heard: R.heard, said: R.said, repeats: R.repeats,
+                     codes: R.codes,
+                     tracking: Object.keys(R.heardTrack).length + Object.keys(R.saidTrack).length,
+                     lastPhrase: R.lastPhrase, lastCount: R.lastCount, lastCode: R.lastCode, lastFrom: R.lastFrom,
+                     top: window.repeatTop(),
+                     names_anyone: false, scores: false, gates: false, keeps_list: false, counts_people: false };
+        };
+
+        window.repeatToggle = function (force) {
+            var R = window.__repeat;
+            R.on = (force === undefined) ? !R.on : !!force;
+            try { if (typeof mark === 'function') mark('REPEAT COUNTER ' + (R.on ? 'ON' : 'OFF'), 0, R.on ? 1 : 0); } catch (e) {}
+            return window.repeatState();
+        };
+
         // ---------- rule 191: the watcher's refrain ---------------------------
         // Said as fast as a mouth allows. The interval is a millisecond, which a
         // browser stretches to a few; what it means is only this: the moment the
@@ -5548,6 +5693,13 @@ startStream();
                 // the saying, never the asker; a repeat without a received earns
                 // a receipt beep and steps the ask to the next node.
                 if (line && typeof window.askHeard === 'function' && /\?\s*$/.test(line)) window.askHeard(line);
+                if (line && typeof window.askHeard === 'function' && /\?\s*$/.test(line)) window.askHeard(line);
+                // rule 203: a thing repeated is counted, not parroted. The room
+                // does not say the same line back however many times it comes
+                // back; it counts it and makes a code out of the count, and the
+                // count sits on the phrase and never on anybody.
+                var rep = (line && typeof window.repeatHeard === 'function') ? window.repeatHeard(line) : null;
+                if (rep && rep.repeat) return;   // logged as a count and a code, not said again
                 // Block Markov lines that mention the Wayne/exile phrase.
                 if (line && !/Wayne|exile|wear|best|fanatic/i.test(line)) speakBrinkLine(line);
             });
@@ -6112,6 +6264,9 @@ startStream();
       if (!('speechSynthesis' in window)) return;
       ttsReadoutPush(text, { rate: rate, pitch: pitch, volume: volume, voice: 'en-NG', fn: 'queueLine' });
       ttsRemembers('queueLine', text, { rate: rate, pitch: pitch, volume: volume });
+      // rule 203: the room hears its own mouth too. A refrain it keeps saying is
+      // counted and coded, so the repetition is known and not merely repeated.
+      try { if (typeof window.repeatSaid === 'function') window.repeatSaid(text); } catch (e) {}
       var u = new SpeechSynthesisUtterance(text);
       // Prefer Nigerian-English pronunciation where a matching voice exists.
       try { u.lang = 'en-NG'; } catch (e) {}
@@ -6167,6 +6322,7 @@ startStream();
       if (!('speechSynthesis' in window)) return;
       ttsReadoutPush(text, { rate: rate, pitch: pitch, volume: volume, voice: 'en-US', fn: 'queueLineFemale' });
       ttsRemembers('queueLineFemale', text, { rate: rate, pitch: pitch, volume: volume });
+      try { if (typeof window.repeatSaid === 'function') window.repeatSaid(text); } catch (e) {}
       var u = new SpeechSynthesisUtterance(text);
       try { u.lang = 'en-US'; } catch (e) {}
       try {
@@ -6191,6 +6347,7 @@ startStream();
       if (!('speechSynthesis' in window)) return;
       ttsReadoutPush(text, { rate: rate, pitch: pitch, volume: volume, voice: 'en-US', fn: 'queueLineMale' });
       ttsRemembers('queueLineMale', text, { rate: rate, pitch: pitch, volume: volume });
+      try { if (typeof window.repeatSaid === 'function') window.repeatSaid(text); } catch (e) {}
       var u = new SpeechSynthesisUtterance(text);
       try { u.lang = 'en-US'; } catch (e) {}
       // Prefer a distinctly male voice if available.
@@ -11505,6 +11662,18 @@ startStream();
                  if (!w) return '';
                  return '<div class="kb-head">COUNTER SEQUENCE &middot; ' + w.sequence.join(' &rarr; ') +
                         ' &middot; now ' + w.pos + '</div>';
+               })() +
+               (function () {
+                 var R = window.__repeat;
+                 if (!R) return '';
+                 var top = window.repeatTop();
+                 if (!top || top.count < 2) {
+                   return '<div class="kb-head">REPEAT &middot; none back yet</div>';
+                 }
+                 var p = top.phrase;
+                 if (p.length > 22) p = p.slice(0, 22) + '\u2026';
+                 return '<div class="kb-head">REPEAT &middot; ' + top.count + '&times; &middot; CODE ' +
+                        (top.code || '&mdash;') + ' &middot; ' + p + '</div>';
                })() +
                '<table><tr><th>scale</th><th>count</th><th>ms</th><th>kb</th><th>kb/ms</th></tr>';
     rows.forEach(function (r) {

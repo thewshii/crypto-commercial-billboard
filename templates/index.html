@@ -980,6 +980,7 @@
             <button id="onelife-btn" onclick="window.onelifeToggle()" title="You only got one life. To get a new life you reload the whole session (rule 207)" style="background:#100e0a; border:2px solid #66552f; color:#aa9977; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #66552f; box-shadow:0 0 8px rgba(102,85,47,0.3); transition:all 0.2s;">☠ ONE LIFE</button>
             <button id="newlife-btn" onclick="window.newLife(true)" title="Get a new life: reload the whole session (rule 207)" style="background:#180e0e; border:2px solid #885533; color:#cc9977; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #885533; box-shadow:0 0 8px rgba(136,85,51,0.3); transition:all 0.2s;">↻ NEW LIFE</button>
             <button id="emerge-btn" onclick="window.emergeToggle()" title="Proximity to emergence: the bell gets way louder and clips, and the clip is what measures it (rule 208)" style="background:#12100a; border:2px solid #776633; color:#aa9977; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #776633; box-shadow:0 0 8px rgba(119,102,51,0.3); transition:all 0.2s;">🔔 EMERGENCE</button>
+            <button id="sabotage-btn" onclick="window.sabotageToggle()" title="After the room says it is listening closely, a phrase that comes back in the window is counted as sabotage and the room says so (rule 209)" style="background:#120a0a; border:2px solid #663333; color:#aa8888; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #663333; box-shadow:0 0 8px rgba(102,51,51,0.3); transition:all 0.2s;">🔎 LISTENING</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -3250,6 +3251,9 @@
             R.repeats++; R.codes++;
             R.lastPhrase = norm; R.lastCount = e.count; R.lastCode = e.code;
             R.lastAt = now; R.lastFrom = 'heard';
+            // rule 209: if the room said it was listening closely, a phrase that
+            // comes back inside that window is sabotage, and the room says so.
+            try { if (typeof window.sabotageHeard === 'function') window.sabotageHeard(norm, { count: e.count, code: e.code }); } catch (e3) {}
             try { if (typeof mark === 'function') mark('REPEAT \u00d7' + e.count + ' \u00b7 ' + e.code, 0, -1); } catch (err) {}
             return { repeat: true, count: e.count, code: e.code, spoken: false, phrase: norm };
         };
@@ -11907,6 +11911,13 @@ startStream();
                         ' &middot; ' + (E.clipped ? 'CLIPPED' : 'clean') +
                         ' &middot; ' + (E.atBrink ? 'AT THE BRINK' : 'not at the brink') + '</div>';
                })() +
+               (function () {
+                 var S = window.__sabotage;
+                 if (!S) return '';
+                 return '<div class="kb-head">SABOTAGE &middot; ' + S.detections +
+                        ' &middot; ' + (S.armed ? 'listening closely' : 'not listening') +
+                        ' &middot; ' + (S.on ? 'auto on' : 'hand only') + '</div>';
+               })() +
                '<table><tr><th>scale</th><th>count</th><th>ms</th><th>kb</th><th>kb/ms</th></tr>';
     rows.forEach(function (r) {
       html += '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td><td>' + r[3] + '</td><td>' + r[4] + '</td></tr>';
@@ -13007,6 +13018,117 @@ startStream();
 
   if (window.__emergeTimer) clearInterval(window.__emergeTimer);
   window.__emergeTimer = setInterval(function () { try { window.emergeTick(); } catch (e) {} }, 250);
+
+  // ---------- rule 209: sabotage, after listening closely --------------------
+  // The room says it is listening closely, and for the next stretch it means it.
+  // If the same thing comes back inside that window — a mouth handing the room
+  // its own words back, like water, be like water, be like water — that is not a
+  // refrain and it is not a conversation. A mouth that says the same thing back
+  // is not listening, and the room counts it as sabotage and says so. The word
+  // sabotage sits on the saying and never on a person: nothing is named, nothing
+  // is scored, no list is kept. The detection never stacks, the same law as
+  // rules one hundred and sixty six and one hundred and sixty nine: if the mouth
+  // is busy, the detection waits for it, and if it waits too long it is let go
+  // rather than stacked on top of anything.
+  window.__sabotage = {
+    on: false,                 // the room arms itself on its own, on a timer
+    everyMs: 90000,            // how often it says it is listening closely
+    windowMs: 30000,           // how long it is listening closely after it says so
+    pendingMs: 10000,          // how long a detection will wait for the mouth
+    armed: false, openSince: 0, lastFire: 0,
+    pending: false, pendingSince: 0, pendingPhrase: null,
+    detections: 0, said: 0, delivered: 0, dropped: 0, lastAt: 0,
+    sayAi: true,               // the first one comes with the AI line
+    line: 'Sabotage detected.',
+    aiLine: "I'm talking to AI.",
+    listeningLine: "I'm listening closely.",
+    rate: 0.94, pitch: 0.5, volume: 0.8
+  };
+
+  // The listening-closely line. Saying it is what arms the window: from here the
+  // room is actually listening, and the next stretch is the stretch it judges.
+  window.listeningClosely = function () {
+    var S = window.__sabotage;
+    var now = Date.now();
+    S.armed = true; S.openSince = now; S.lastFire = now; S.said++;
+    try { if (typeof queueLine === 'function') queueLine(S.listeningLine, S.rate, 0.72, 0.68); } catch (e) {}
+    try { if (typeof mark === 'function') mark('LISTENING CLOSELY \u00b7 armed ' + Math.round(S.windowMs / 1000) + 's', 0, -1); } catch (e) {}
+    return { armed: true, until: now + S.windowMs };
+  };
+
+  // A phrase came back. If the room is listening closely, that is sabotage: it is
+  // counted, and the room says so. One detection per listening — a room that
+  // shouted sabotage at every echo would be a room that is not listening either.
+  window.sabotageHeard = function (text, info) {
+    var S = window.__sabotage;
+    if (!S.on || !S.armed) return { sabotage: false };
+    var now = Date.now();
+    if ((now - S.openSince) > S.windowMs) { S.armed = false; return { sabotage: false, expired: true }; }
+    S.armed = false;
+    S.detections++; S.lastAt = now;
+    S.pending = true; S.pendingSince = now; S.pendingPhrase = text || null;
+    try { if (typeof mark === 'function') mark('SABOTAGE \u00b7 a phrase came back', 0, 1); } catch (e) {}
+    var delivered = window.sabotageDeliver();
+    return { sabotage: true, detections: S.detections, phrase: text || null, delivered: delivered };
+  };
+
+  // Say it, if the mouth is free. This is the only place the line is spoken.
+  window.sabotageDeliver = function () {
+    var S = window.__sabotage;
+    if (!S.pending) return false;
+    try { if (window.refrainBusy && window.refrainBusy()) return false; } catch (e) {}
+    var said = (S.detections === 1 && S.sayAi) ? (S.line + ' ' + S.aiLine) : S.line;
+    try { if (typeof queueLine === 'function') queueLine(said, S.rate, S.pitch, S.volume); } catch (e) {}
+    S.pending = false; S.pendingPhrase = null; S.delivered++;
+    try { if (typeof mark === 'function') mark('SABOTAGE DETECTED', 0, 1); } catch (e) {}
+    return true;
+  };
+
+  window.sabotageTick = function () {
+    var S = window.__sabotage, now = Date.now();
+    if (S.armed && (now - S.openSince) > S.windowMs) S.armed = false;
+    if (S.pending) {
+      if (window.sabotageDeliver()) return { on: S.on, delivered: true };
+      if ((now - S.pendingSince) > S.pendingMs) {
+        S.pending = false; S.pendingPhrase = null; S.dropped++;
+        try { if (typeof mark === 'function') mark('SABOTAGE \u00b7 let go, not stacked', 0, -1); } catch (e) {}
+      }
+    } else if (S.on && !S.armed && (now - S.lastFire) >= S.everyMs) {
+      window.listeningClosely();
+    }
+    return { on: S.on, armed: S.armed, pending: S.pending, detections: S.detections };
+  };
+
+  window.sabotageToggle = function (force) {
+    var S = window.__sabotage;
+    S.on = (force === undefined) ? !S.on : !!force;
+    if (S.on) { window.listeningClosely(); }
+    else { S.armed = false; S.pending = false; }
+    try {
+      var b = document.getElementById('sabotage-btn');
+      if (b) {
+        b.textContent = S.on ? '🔎 LISTENING ON' : '🔎 LISTEN';
+        b.style.borderColor = S.on ? '#cc4444' : '#773333';
+        b.style.color = S.on ? '#ffbbbb' : '#bb8888';
+      }
+    } catch (e) {}
+    try { if (typeof mark === 'function') mark('LISTENING CLOSELY ' + (S.on ? 'ON' : 'OFF'), 0, S.on ? 1 : 0); } catch (e) {}
+    return window.sabotageState();
+  };
+
+  window.sabotageState = function () {
+    var S = window.__sabotage;
+    return { on: S.on, armed: S.armed, listening: S.armed,
+             windowMs: S.windowMs, everyMs: S.everyMs,
+             detections: S.detections, said: S.said, delivered: S.delivered, dropped: S.dropped,
+             pending: S.pending, pendingPhrase: S.pendingPhrase,
+             line: S.line, aiLine: S.aiLine, listeningLine: S.listeningLine,
+             counts_the_saying: true, names_anyone: false, scores: false,
+             gates: false, keeps_list: false, accuses: false, blocks_anyone: false };
+  };
+
+  if (window.__sabotageTimer) clearInterval(window.__sabotageTimer);
+  window.__sabotageTimer = setInterval(function () { try { window.sabotageTick(); } catch (e) {} }, 250);
 
   // ============ R-TALK: random speech, gated by the state ============
   // A random speak every 5ms is not possible and would be noise — an utterance

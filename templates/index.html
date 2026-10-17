@@ -957,6 +957,7 @@
             <button id="ai-scan-btn" onclick="triggerManualBedrockScan()" title="Trigger dynamic 35-minute AI market brief from Bedrock Claude Haiku" style="background:#041a2f; border:2px solid #00e5ff; color:#00e5ff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #00e5ff; box-shadow:0 0 8px rgba(0,229,255,0.3); transition:all 0.2s;">🎙️ AI NEWS</button>
             <button id="test-liq-btn" onclick="testManualLiquidation()" title="Trigger test liquidation alert" style="background:#240008; border:2px solid #ff003c; color:#ff003c; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #ff003c; box-shadow:0 0 8px rgba(255,0,60,0.3); transition:all 0.2s;">⚡ TEST LIQ</button>
             <button id="music-mode-btn" onclick="toggleMusicMode()" style="background:#161616; border:2px solid #00ff88; color:#00ff88; padding:3px 10px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.62rem, 0.9vw, 0.82rem); text-shadow:0 0 5px #00ff88; box-shadow:0 0 8px rgba(0,255,136,0.3); transition:all 0.2s;">🎵 BGM: ON</button>
+            <button id="announce-btn" onclick="announceVerifySpanish()" title="Announce the Spanish verification notice (English + Spanish)" style="background:#1a1024; border:2px solid #b06cff; color:#d9b3ff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #b06cff; box-shadow:0 0 8px rgba(176,108,255,0.35); transition:all 0.2s;">📣 ANNOUNCE</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -9490,6 +9491,97 @@ startStream();
     setTimeout(function () { el.remove(); }, 7600);
     while (stack.children.length > 5) stack.firstChild.remove();
     return el;
+  };
+
+  // ---------- rule 183: the announcement, held over the world in two tongues -
+  // An announcement is a notice held over the world for a moment and then taken
+  // down. It is said in English and in Spanish, both, because a claim made in
+  // one tongue is not believed until it can be checked in the other. The notice
+  // seeks a quality, never a person (rule 173): it asks a language to verify
+  // itself before it is counted, and it names nobody, scores nobody, gates
+  // nobody.
+  window.__announce = { said: 0, languages: ['en', 'es'], lastAt: 0 };
+
+  // A Spanish voice, when one exists. Falls back to the default voice.
+  window.queueLineEs = function (text, rate, pitch, volume) {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      var u = new SpeechSynthesisUtterance(text);
+      try { u.lang = 'es-ES'; } catch (e) {}
+      try {
+        var vs = window.speechSynthesis.getVoices() || [];
+        for (var i = 0; i < vs.length; i++) { if (/^es/i.test(vs[i].lang || '')) { u.voice = vs[i]; break; } }
+      } catch (e) {}
+      u.rate = rate || 1.0; u.pitch = pitch == null ? 0.9 : pitch; u.volume = volume == null ? 0.55 : volume;
+      try {
+        window.__ttsHistory = window.__ttsHistory || [];
+        window.__ttsHistory.push({ text: text, rate: u.rate, pitch: u.pitch, volume: u.volume, lang: 'es' });
+        if (window.__ttsHistory.length > 100) window.__ttsHistory.shift();
+      } catch (e) {}
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  };
+
+  // The overlay itself: a card held over the world, bilingual, closes on a
+  // click or on its own timer. Plain text in, plain text out.
+  window.announceOverlay = function (opts) {
+    opts = opts || {};
+    if (typeof document === 'undefined') return null;
+    var el = document.getElementById('announce-overlay');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'announce-overlay';
+      el.style.cssText = 'position:fixed;left:50%;top:6vh;transform:translateX(-50%);z-index:10150;' +
+        'max-width:min(88vw,760px);background:rgba(6,4,12,0.95);border:2px solid #b06cff;border-radius:10px;' +
+        'padding:14px 20px;font-family:\'Roboto Mono\',monospace;color:#e8e0ff;text-align:center;' +
+        'box-shadow:0 0 24px rgba(176,108,255,0.45);cursor:pointer;display:none;';
+      document.body.appendChild(el);
+    }
+    var html = '';
+    if (opts.title) html += '<div style="color:#b06cff;font-weight:900;letter-spacing:2px;text-shadow:0 0 8px #b06cff;font-size:clamp(0.66rem,1.3vw,0.95rem);">' + opts.title + '</div>';
+    if (opts.en) html += '<div style="margin-top:8px;font-size:clamp(0.74rem,1.5vw,1.05rem);line-height:1.45;">' + opts.en + '</div>';
+    if (opts.es) html += '<div style="margin-top:10px;padding-top:8px;border-top:1px dashed #4a3a6a;color:#cfc4ee;font-size:clamp(0.7rem,1.4vw,1rem);line-height:1.45;">' + opts.es + '</div>';
+    if (opts.noteEn) html += '<div style="margin-top:10px;opacity:.82;font-size:clamp(0.62rem,1.2vw,0.9rem);">' + opts.noteEn + '</div>';
+    if (opts.noteEs) html += '<div style="margin-top:4px;opacity:.72;font-size:clamp(0.6rem,1.15vw,0.85rem);">' + opts.noteEs + '</div>';
+    html += '<div style="margin-top:12px;opacity:.55;font-size:0.62rem;letter-spacing:1px;">CLICK TO CLOSE &middot; TOCA PARA CERRAR</div>';
+    el.innerHTML = html;
+    el.style.display = 'block';
+    el.onclick = function () { el.style.display = 'none'; };
+    if (window.__announceTimer) clearTimeout(window.__announceTimer);
+    window.__announceTimer = setTimeout(function () { try { el.style.display = 'none'; } catch (e) {} }, (opts.ms || 22000));
+    return el;
+  };
+
+  // The notice: verify the claim of Spanish before English. English and Spanish,
+  // both, and the structural footnote that goes with it. Names nobody.
+  window.announceVerifySpanish = function (opts) {
+    opts = opts || {};
+    var en = 'Spanish speakers in the metaverse must find a way to verify their claim of Spanish before English.';
+    var es = 'Los hispanohablantes en el metaverso deben encontrar una manera de verificar su afirmaci\u00f3n de espa\u00f1ol antes del ingl\u00e9s.';
+    var noteEn = 'Because America keeps all the delusional number ones in asylums called complexes.';
+    var noteEs = 'Porque Am\u00e9rica guarda a todos los n\u00famero uno delirantes en manicomios llamados complejos.';
+    window.announceOverlay({ title: 'ANNOUNCEMENT \u00b7 ANUNCIO', en: en, es: es,
+                             noteEn: noteEn, noteEs: noteEs, ms: opts.ms || 22000 });
+    try { if (typeof queueLine === 'function') queueLine(en, 0.92, 0.8, 0.55); } catch (e) {}
+    try { window.queueLineEs(es, 0.95, 0.9, 0.55); } catch (e) {}
+    if (!opts.quiet) {
+      try { if (typeof queueLine === 'function') queueLine(noteEn, 0.9, 0.78, 0.5); } catch (e) {}
+      try { window.queueLineEs(noteEs, 0.95, 0.9, 0.5); } catch (e) {}
+    }
+    window.__announce.said++;
+    window.__announce.lastAt = Date.now();
+    try { if (typeof mark === 'function') mark('ANNOUNCE \u2014 verify Spanish before English (en/es)', 0, 0); } catch (e) {}
+    return { announced: true, languages: ['en', 'es'], names_anyone: false, count: window.__announce.said };
+  };
+
+  window.announceState = function () {
+    var es = null;
+    try {
+      var vs = window.speechSynthesis.getVoices() || [];
+      for (var i = 0; i < vs.length; i++) { if (/^es/i.test(vs[i].lang || '')) { es = vs[i].lang; break; } }
+    } catch (e) {}
+    return { languages: ['en', 'es'], es_voice: es, said: window.__announce.said,
+             names_anyone: false, scored: false, gates: false };
   };
 
   // ---------- rule 155: the drift toward silence ----------

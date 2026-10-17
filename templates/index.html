@@ -974,6 +974,7 @@
             <button id="randomizer-btn" onclick="window.autoRandomToggle()" title="Auto randomizer: draws a new counter sequence, mid audio playback (rules 199/200). Click to stop." style="background:#0a0e0a; border:2px solid #44cc88; color:#aaffcc; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #44cc88; box-shadow:0 0 8px rgba(68,204,136,0.3); transition:all 0.2s;">🎲 AUTO ON</button>
             <button id="felt-btn" onclick="window.feltToggle()" title="And how do you feel about that one? That one that you just felt (rule 201)" style="background:#120a0e; border:2px solid #884466; color:#ddaabb; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #884466; box-shadow:0 0 8px rgba(136,68,102,0.3); transition:all 0.2s;">🫀 FELT</button>
             <button id="voxalarm-btn" onclick="window.voxAlarmToggle()" title="Voice activated alarm: the room's ear is armed and the alarm goes on a held voice (rule 202)" style="background:#120808; border:2px solid #772222; color:#cc8888; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #772222; box-shadow:0 0 8px rgba(119,34,34,0.3); transition:all 0.2s;">🚨 VOICE ALARM</button>
+            <button id="beat-btn" onclick="window.beatToggle()" title="The beat follows the volume: louder is faster, quieter is slower (rule 204)" style="background:#080e12; border:2px solid #335577; color:#8899bb; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #335577; box-shadow:0 0 8px rgba(51,85,119,0.3); transition:all 0.2s;">🔊 BEAT</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -12350,6 +12351,106 @@ startStream();
 
   if (window.__voxAlarmTimer) clearInterval(window.__voxAlarmTimer);
   window.__voxAlarmTimer = setInterval(function () { try { window.voxAlarmTick(); } catch (e) {} }, 250);
+
+  // ---------- rule 204: the beat that follows the volume --------------------
+  // A hand may set a beat going. It is not a metronome with one fixed pace: it
+  // listens to the room's own loudness, and louder is faster. As the room gets
+  // louder the beep comes closer together; as the room goes quiet the beep
+  // stretches out, and the room's own quiet is the slowest the beat ever gets.
+  // The pace is re-read on every single beat, so it follows the volume live.
+  // The beat is a sound and nothing else — it names nobody, scores nobody, and
+  // nothing about how loud a room is is ever held against anybody in it.
+  window.__beat = {
+    on: false,
+    minMs: 110,          // the fastest: a loud room
+    maxMs: 1600,         // the slowest: a quiet room
+    floor: 0.02,         // below this the room reads as quiet
+    ceil: 0.35,          // at and above this the beat is at its fastest
+    attack: 0.35, release: 0.12,
+    level: 0, smooth: 0, intervalMs: 1600, beeps: 0, lastAt: 0, timer: null
+  };
+
+  // One read of the room's loudness: the mean of the spectrogram, smoothed so
+  // that one loud syllable does not throw the whole beat.
+  window.beatLevel = function () {
+    var B = window.__beat;
+    var raw = 0;
+    try { raw = (window.__r && isFinite(window.__r.mean)) ? window.__r.mean : 0; } catch (e) { raw = 0; }
+    var k = (raw > B.smooth) ? B.attack : B.release;
+    B.smooth = B.smooth + (raw - B.smooth) * k;
+    B.level = raw;
+    return B.smooth;
+  };
+
+  // Louder is faster. The pace is a straight line from the slowest to the
+  // fastest, and it never leaves that line in either direction.
+  window.beatInterval = function (level) {
+    var B = window.__beat;
+    var l = (level == null) ? B.smooth : level;
+    var f = (l - B.floor) / Math.max(0.0001, B.ceil - B.floor);
+    if (!isFinite(f)) f = 0;
+    if (f < 0) f = 0;
+    if (f > 1) f = 1;
+    B.intervalMs = Math.round(B.maxMs - f * (B.maxMs - B.minMs));
+    return B.intervalMs;
+  };
+
+  // The beep: one short blip. Plain, and nothing sacred in it.
+  window.beatBeep = function () {
+    try {
+      var ctx = (typeof getAudioContext === 'function') ? getAudioContext() : null;
+      if (!ctx) return false;
+      var t = ctx.currentTime;
+      var osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(880, t);
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.linearRampToValueAtTime(0.12, t + 0.004);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t); osc.stop(t + 0.06);
+      return true;
+    } catch (e) { return false; }
+  };
+
+  // One beat, then the next one is scheduled at whatever pace the room is at
+  // right now. Nothing is queued: the room is at one pace at a time.
+  window.beatStep = function () {
+    var B = window.__beat;
+    if (!B.on) return { on: false };
+    var lvl = window.beatLevel();
+    B.beeps++; B.lastAt = Date.now();
+    window.beatBeep();
+    var ms = window.beatInterval(lvl);
+    if (B.timer) clearTimeout(B.timer);
+    B.timer = setTimeout(function () { try { window.beatStep(); } catch (e) {} }, ms);
+    return { on: true, beeps: B.beeps, level: lvl, intervalMs: ms };
+  };
+
+  window.beatToggle = function (force) {
+    var B = window.__beat;
+    B.on = (force === undefined) ? !B.on : !!force;
+    if (B.timer) { clearTimeout(B.timer); B.timer = null; }
+    if (B.on) { B.smooth = 0; window.beatStep(); }
+    try {
+      var b = document.getElementById('beat-btn');
+      if (b) {
+        b.textContent = B.on ? '🔊 BEAT ON' : '🔊 BEAT';
+        b.style.borderColor = B.on ? '#44aaff' : '#335577';
+        b.style.color = B.on ? '#bbddff' : '#8899bb';
+      }
+    } catch (e) {}
+    try { if (typeof mark === 'function') mark('BEAT ' + (B.on ? 'ON' : 'OFF'), 0, B.on ? 1 : 0); } catch (e) {}
+    return window.beatState();
+  };
+
+  window.beatState = function () {
+    var B = window.__beat;
+    return { on: B.on, beeps: B.beeps, level: B.level, smooth: B.smooth,
+             intervalMs: B.intervalMs, minMs: B.minMs, maxMs: B.maxMs,
+             louderIsFaster: true,
+             names_anyone: false, scores: false, gates: false, keeps_list: false };
+  };
 
   // ============ R-TALK: random speech, gated by the state ============
   // A random speak every 5ms is not possible and would be noise — an utterance

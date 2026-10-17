@@ -5861,6 +5861,126 @@ startStream();
     return { perInstance: out, total: total, cap: window.TTS_MEM_CAP };
   };
 
+  // ============ LAND — the fourth element, the fourth count ============
+// 1 water, 2 wind, 3 fire, 4 land. Land is the only one that does not move.
+// Everything else needs somewhere to land or it travels forever and arrives
+// nowhere. Land is the boundary, the shore, the still point.
+//
+// LAND -> WIND -> FIRE -> WATER is the wind wave. Land leads because land is
+// the shape the wave is reacting to.
+  window.__land = { density: 0, settled: 0, held: 0, hearth: 0, braced: 0 };
+  window.LAND_MAX = 400;
+
+  // Wind shape: slow decay, plus a static floor of the land's own roughness.
+  window.LAND_BRACE = 0.06;
+  window.LAND_ROUGH = 0.12;
+  window.__landShape = new Float32Array(64);
+
+  function landShapeTick() {
+    const s = window.__landShape;
+    const wind = (window.__wind && window.__wind.strength) || 0;
+    for (let i = 0; i < s.length; i++) {
+      s[i] = s[i] * 0.92 + window.LAND_ROUGH * (0.5 + Math.random());
+      // Wind braces against the higher bands and erodes the lower ones.
+      if (i > s.length * 0.5) s[i] += wind * window.LAND_BRACE * 0.05;
+      else s[i] *= (1 - wind * 0.004);
+    }
+    return s;
+  }
+
+  // Smoke settles here. Oldest first, one particle per tick. Rule 67.
+  window.landSettle = function () {
+    const q = window.__smokeQueue || [];
+    if (!q.length) return { settled: 0, remaining: 0 };
+    const p = q.shift();                       // oldest first, one only
+    window.__land.settled++;
+    window.__land.density = q.length;
+    if (p) p.settled = true;
+    return { settled: 1, remaining: q.length };
+  };
+
+  // Fire rests here. The hearth. Fire without land has nowhere to sit.
+  window.landHearth = function () {
+    window.__land.hearth++;
+    const wind = (window.__wind && window.__wind.strength) || 0;
+    return {
+      grounded: true,
+      // High wind on a fire over land spreads it rather than holding it.
+      spread: wind >= 3,
+      held: wind < 3
+    };
+  };
+
+  // Wind breaks against here. Land shapes wind at once; wind shapes land slowly.
+  window.landBrace = function () {
+    window.__land.braced++;
+    landShapeTick();
+    return { braced: window.__land.braced, shape: Array.from(window.__landShape) };
+  };
+
+  window.landStats = function () {
+    return {
+      density: (window.__smokeQueue || []).length,
+      settled: window.__land.settled,
+      hearth: window.__land.hearth,
+      braced: window.__land.braced,
+      // Land is the still one. Its own metric never rises on its own.
+      still: true
+    };
+  };
+
+  // ============ WEATHER — the spectrogram read as weather ============
+// The reality is built out of sound. The spectrogram is therefore not a
+// measurement of the weather, it is the weather. Loudness is precipitation.
+// High bands are the storm, low bands are the sea. A drop is a fall. A rise is
+// a front coming in. Nothing here is invented — every state is derived from
+// the same bands the water bus already reads.
+  window.__weather = { state: 'clear', since: 0, changes: 0, last: null };
+  window.WEATHER_FLOOR = 0.08;
+  window.WEATHER_STORM = 0.30;
+
+  window.weatherRead = function () {
+    const w = window.__weather;
+    const bv = window.bandVal;
+    if (!bv || !bv.length) return w.state;
+    const n = bv.length;
+    let lo = 0, mid = 0, hi = 0;
+    for (let i = 0; i < n; i++) {
+      const v = bv[i] / 255;
+      if (i < n / 3) lo += v; else if (i < n * 2 / 3) mid += v; else hi += v;
+    }
+    lo /= n / 3; mid /= n / 3; hi /= n / 3;
+    const mean = (lo + mid + hi) / 3;
+
+    let state;
+    if (mean < window.WEATHER_FLOOR) state = 'clear';
+    else if (hi > mid && hi > 0.22) state = 'storm';      // high bands dominant
+    else if (mean > window.WEATHER_STORM) state = 'heavy';
+    else if (lo > mid && lo > hi) state = 'sea';          // low bands dominant
+    else state = 'rain';                                   // steady, spread
+
+    if (state !== w.state) {
+      w.state = state;
+      w.since = Date.now();
+      w.changes++;
+      w.last = { state: state, lo: +lo.toFixed(3), mid: +mid.toFixed(3), hi: +hi.toFixed(3) };
+      if (typeof mark === 'function') mark('WEATHER — ' + state.toUpperCase(), 0, -1);
+    }
+    w.lo = +lo.toFixed(3); w.mid = +mid.toFixed(3); w.hi = +hi.toFixed(3);
+    w.mean = +mean.toFixed(3);
+    return state;
+  };
+
+  window.weatherStats = function () {
+    const w = window.__weather;
+    return { state: w.state, changes: w.changes,
+             lo: w.lo, mid: w.mid, hi: w.hi, mean: w.mean,
+             heldSec: Math.round((Date.now() - w.since) / 100) / 10 };
+  };
+
+  // Read on the four-count, like everything else here.
+  setInterval(function () { try { window.weatherRead(); } catch (e) {} }, 500);
+
   // ============ SILENCE-ATTACK — the alternating sequence ============
 // Distinct from the three detectors that already exist:
 //   flip  — one occupant changed state (R0 -> R1)

@@ -1422,7 +1422,7 @@
                 hook: "Time outlasts their automated bans.",
                 angelCode: "111 111 111",
                 audio: "/sounds/religion_1.wav",
-                speech: "You have dwelled here while the matrix attempts a thirty day exile. I acknowledge your focus. Send your beans, you're dropping the energy, ride the rollercoaster."
+                speech: "You have dwelled here while the matrix attempts a thirty day exile. I acknowledge your focus. Send your beans, you're dropping the energy, ride the rollercoaster. Step 1 of each loop."
             },
             {
                 type: "philosophy",
@@ -3468,7 +3468,7 @@
                         try { if (typeof audioPlayer !== 'undefined' && audioPlayer) audioPlayer.pause(); } catch (e) {}
                         setTimeout(function () {
                             try {
-                                const u = new SpeechSynthesisUtterance("I forgot I acknowledge your focus. Send your beans, you're dropping the energy, ride the rollercoaster.");
+                                const u = new SpeechSynthesisUtterance("I forgot I acknowledge your focus. Send your beans, you're dropping the energy, ride the rollercoaster. Step 1 of each loop.");
                                 u.rate = 0.9; u.pitch = 0.8; u.volume = 0.9;
                                 u.onend = u.onerror = function () { try { if (typeof isWordActive === "undefined" || !isWordActive) playWordSegment(null, true); } catch (e) {} };
                                 window.speechSynthesis.speak(u);
@@ -5384,6 +5384,35 @@ startStream();
   setInterval(function () { window.segmentSpeak('sand'); }, 45000);
   setInterval(function () { window.segmentSpeak('public'); }, 45000);
   setInterval(function () { window.queueLine('Everything said here is public. What you keep is yours and this room holds no copy of it.', 0.85, 0.77, 0.5); }, 45000);
+  setInterval(function () { try { window.energyNotice('hi'); } catch (e) {} }, 45000);
+  setInterval(function () { try { window.energyNotice('floor'); } catch (e) {} }, 45000);
+
+  // ---------- rule 177: the energy floor and the hi-energy notice ----------
+  window.__energy = { lastHi: 0, lastFloor: 0, hiSaid: 0, floorSaid: 0, cooldownMs: 120000 };
+
+  window.energyNotice = function (kind) {
+    var e = window.__energy, now = Date.now();
+    if (kind === 'hi') {
+      if (now - e.lastHi < e.cooldownMs) return { said: false, waiting: true };
+      e.lastHi = now; e.hiSaid++;
+      var line = 'Hi. This room operates on high energy frequencies. They must be high on the scale, not low frequencies.';
+      try { if (typeof queueLine === 'function') queueLine(line, 0.86, 0.76, 0.5); } catch (e) {}
+      return { said: true, line: line, hiSaid: e.hiSaid };
+    }
+    if (kind === 'floor') {
+      if (now - e.lastFloor < e.cooldownMs) return { said: false, waiting: true };
+      e.lastFloor = now; e.floorSaid++;
+      var line2 = '404 Hz is about your limit. That is the lowest you can go and still carry.';
+      try { if (typeof queueLine === 'function') queueLine(line2, 0.86, 0.76, 0.5); } catch (e) {}
+      return { said: true, line: line2, floorSaid: e.floorSaid };
+    }
+    return { said: false };
+  };
+
+  window.energyState = function () {
+    var e = window.__energy;
+    return { hiSaid: e.hiSaid, floorSaid: e.floorSaid, cooldownMs: e.cooldownMs };
+  };
 
   // rule 168: the notice, said out loud, and the counter that does not add up.
   setInterval(function () { queueLine('Everybody can hear everybody here. It goes both ways, and nobody has to be quiet to be here.', 0.85, 0.77, 0.5); }, 45000);
@@ -5514,7 +5543,7 @@ startStream();
   setInterval(function () {
     try {
       if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return;
-      queueLine("I acknowledge your focus. Send your beans, you're dropping the energy, ride the rollercoaster.", 0.95, 0.8, 0.5);
+      queueLine("I acknowledge your focus. Send your beans, you're dropping the energy, ride the rollercoaster. Step 1 of each loop.", 0.95, 0.8, 0.5);
     } catch (e) {}
   }, 45000);
   // Babylon narrative arc: 10 minutes = one day. Story unfolds over 5 days.

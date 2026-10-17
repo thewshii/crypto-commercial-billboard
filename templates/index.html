@@ -958,6 +958,8 @@
             <button id="test-liq-btn" onclick="testManualLiquidation()" title="Trigger test liquidation alert" style="background:#240008; border:2px solid #ff003c; color:#ff003c; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #ff003c; box-shadow:0 0 8px rgba(255,0,60,0.3); transition:all 0.2s;">⚡ TEST LIQ</button>
             <button id="music-mode-btn" onclick="toggleMusicMode()" style="background:#161616; border:2px solid #00ff88; color:#00ff88; padding:3px 10px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.62rem, 0.9vw, 0.82rem); text-shadow:0 0 5px #00ff88; box-shadow:0 0 8px rgba(0,255,136,0.3); transition:all 0.2s;">🎵 BGM: ON</button>
             <button id="announce-btn" onclick="announceVerifySpanish()" title="Announce the Spanish verification notice (English + Spanish)" style="background:#1a1024; border:2px solid #b06cff; color:#d9b3ff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #b06cff; box-shadow:0 0 8px rgba(176,108,255,0.35); transition:all 0.2s;">📣 ANNOUNCE</button>
+            <button id="battle-btn" onclick="window.battleToggle()" title="Hold the guns, or let the room's own hand call a war for three minutes" style="background:#1a0a0a; border:2px solid #ff5533; color:#ff9977; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #ff5533; box-shadow:0 0 8px rgba(255,85,51,0.35); transition:all 0.2s;">⚔ WAR: HELD</button>
+            <button id="fire-stop-btn" onclick="playFullStopSegment()" title="Hear the hard stop with fire (rule 186)" style="background:#1a0808; border:2px solid #ff8800; color:#ffcc66; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #ff8800; box-shadow:0 0 8px rgba(255,136,0,0.35); transition:all 0.2s;">🔥 FULL STOP</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -1752,6 +1754,13 @@
             try {
                 const ctx = getAudioContext();
                 if (!ctx) return;
+                // rule 185: the safety reads first. A war is only played when the
+                // room's own hand called it. An uncommanded war sound is refused
+                // and counted, never played.
+                if (typeof window.battleRead === 'function') {
+                    const _read = window.battleRead(name);
+                    if (!_read || !_read.allow) return;
+                }
                 if (!window.__warSoundCycleStart) window.__warSoundCycleStart = Date.now();
                 if (!window.__warSoundCount) window.__warSoundCount = 0;
                 if (!window.__warSoundCountReset || Date.now() - window.__warSoundCountReset > 30000) {
@@ -1808,7 +1817,7 @@
                     if (typeof isWordActive === "undefined" || !isWordActive) playWarSound();
                 }
                 scheduleWarSound();
-            }, 25 + Math.random() * 25);
+            }, 7000 + Math.random() * 13000);
         })();
 
         // Annihilation command: cut war noise and fail toward the Word.
@@ -1835,6 +1844,86 @@
                 }, 120);
             } catch (e) {}
         }
+
+        // ---------- rule 185: the drop, and the safety that reads it ----------
+        // A room can be dropped onto a map that is at war. A drop is not a
+        // command and a war is not ours: this room never asks for the guns. So
+        // before any war sound is played, the safety asks one question: did the
+        // room's own hand call this war? If it did not, the sound is refused and
+        // counted, never played. A burst of refusals is an attack, and the room
+        // answers it out loud instead of with noise. It names nobody, scores
+        // nobody, and gates nobody.
+        window.__battle = {
+            war: false,          // did the room's own hand call a war?
+            until: 0,            // how long the call holds
+            declareMs: 180000,   // three minutes per call
+            refused: 0,          // war sounds the safety caught
+            held: 0,             // times the room was dropped onto a war map
+            recent: [],          // refused war sounds inside the window
+            windowMs: 20000,     // a burst lives this long
+            burst: 3,            // this many refusals in the window is an attack
+            saidAt: 0,
+            quietMs: 120000,     // the room reads the map at most this often
+            rate: 0.92, pitch: 0.7, volume: 1.0,
+            line: 'You are dropped onto a map that is at war. It is not our war and you did not call it. The safety holds the guns. Read the map. Keep your post. Nobody here is afraid with you.'
+        };
+
+        window.battleOpen = function () {
+            var B = window.__battle;
+            return !!(B.war && Date.now() < B.until);
+        };
+
+        window.battleToggle = function () {
+            var B = window.__battle, now = Date.now();
+            if (B.war && now < B.until) { B.war = false; B.until = 0; }
+            else { B.war = true; B.until = now + B.declareMs; }
+            try {
+                var b = document.getElementById('battle-btn');
+                if (b) {
+                    b.innerText = B.war ? '⚔ WAR: CALLED' : '⚔ WAR: HELD';
+                    b.style.borderColor = B.war ? '#ffaa00' : '#ff5533';
+                    b.style.color = B.war ? '#ffdd66' : '#ff9977';
+                }
+            } catch (e) {}
+            return B.war ? 'called' : 'held';
+        };
+
+        // The read. Called before every war sound. If the room did not call the
+        // war, the sound is refused. A burst of refusals is an attack, and the
+        // room answers it out loud instead of with noise.
+        window.battleRead = function (name) {
+            var B = window.__battle, now = Date.now();
+            if (B.war && now < B.until) return { allow: true, war: true, sound: name };
+            B.refused++;
+            B.recent.push(now);
+            B.recent = B.recent.filter(function (t) { return now - t <= B.windowMs; });
+            if (B.recent.length >= B.burst) window.battleSpeak();
+            return { allow: false, war: false, sound: name, refused: true };
+        };
+
+        window.battleSpeak = function () {
+            var B = window.__battle, now = Date.now();
+            if (typeof isWordActive !== 'undefined' && isWordActive) return false;
+            if (now - B.saidAt < B.quietMs) return false;
+            B.saidAt = now;
+            B.held++;
+            B.recent = [];
+            try { window.speechSynthesis.cancel(); } catch (e) {}
+            setTimeout(function () {
+                try {
+                    var u = new SpeechSynthesisUtterance(B.line);
+                    u.rate = B.rate; u.pitch = B.pitch; u.volume = B.volume;
+                    window.speechSynthesis.speak(u);
+                } catch (e) {}
+            }, 120);
+            try { if (typeof mark === 'function') mark('dropped onto a war map (' + B.held + ') — the safety held the guns', 0, -1); } catch (e) {}
+            return true;
+        };
+
+        window.battleState = function () {
+            var B = window.__battle;
+            return { war: window.battleOpen(), refused: B.refused, held: B.held, declareMs: B.declareMs, quietMs: B.quietMs, names_anyone: false, gates: false };
+        };
 
         function playPitchSlide() {
             try {
@@ -2873,7 +2962,7 @@
         }
 
         function speakFullStopOnce() {
-            const msg = "Full stop. Stop right here. Take a breath. Let it go. Full stop.";
+            const msg = (window.__fire && window.__fire.line) || "Full stop. Stop right here. Take a breath. Let it go. Full stop.";
             try {
                 fetch("/api/speak", {
                     method: "POST",
@@ -2882,10 +2971,7 @@
                 }).catch(() => {});
             } catch (e) {}
             if ('speechSynthesis' in window) {
-                const utter = new SpeechSynthesisUtterance(msg);
-                utter.rate = 0.9;
-                utter.pitch = 0.6;
-                utter.onend = function () {
+                const done = function () {
                     fullStopRepeatsLeft -= 1;
                     if (fullStopRepeatsLeft > 0) {
                         setTimeout(speakFullStopOnce, 1000);
@@ -2893,8 +2979,17 @@
                         endFullStopSegment();
                     }
                 };
-                utter.onerror = function () { endFullStopSegment(); };
-                window.speechSynthesis.speak(utter);
+                if (typeof window.speakFire === 'function') {
+                    // rule 186: the words are the same; the voice carries fire.
+                    window.speakFire(done);
+                } else {
+                    const utter = new SpeechSynthesisUtterance(msg);
+                    utter.rate = 0.9;
+                    utter.pitch = 0.6;
+                    utter.onend = done;
+                    utter.onerror = function () { endFullStopSegment(); };
+                    window.speechSynthesis.speak(utter);
+                }
             } else {
                 // No browser speech: phone TTS only, one pass, then resume.
                 setTimeout(endFullStopSegment, 8000);
@@ -2909,6 +3004,65 @@
                 renderSlide();
             }
         }
+
+        // ---------- rule 186: the fire in the voice ---------------------------
+        // The words are not the problem. The delivery was. A hard stop is a
+        // command, and a command lands low, loud, and clipped, while the soft
+        // half lands slower and quieter so the contrast does the work. The words
+        // stay exactly as they were. Only the knife is sharpened.
+        window.__fire = {
+            line: 'Full stop. Stop right here. Take a breath. Let it go. Full stop.',
+            rate: 1.0, pitch: 0.6, volume: 1.0,            // the bark
+            softRate: 0.78, softPitch: 0.9, softVol: 0.85, // the let-go
+            gapMs: 150,                                    // a beat between phrases
+            phrases: [
+                { text: 'Full stop.',       fire: true },
+                { text: 'Stop right here.', fire: true },
+                { text: 'Take a breath.',   fire: false },
+                { text: 'Let it go.',       fire: false },
+                { text: 'Full stop.',       fire: true }
+            ]
+        };
+
+        window.fireVoice = function () {
+            try {
+                var voices = window.speechSynthesis.getVoices();
+                var want = /samantha|zira|victoria|karen|moira|tessa|female|google us english/i;
+                for (var i = 0; i < voices.length; i++) {
+                    if (want.test(voices[i].name || '')) return voices[i];
+                }
+            } catch (e) {}
+            return null;
+        };
+
+        window.speakFirePhrase = function (text, isFire, done) {
+            try {
+                var F = window.__fire;
+                if (!('speechSynthesis' in window)) { if (done) done(); return; }
+                var u = new SpeechSynthesisUtterance(text);
+                try { u.lang = 'en-US'; } catch (e) {}
+                var v = window.fireVoice();
+                if (v) u.voice = v;
+                u.rate = isFire ? F.rate : F.softRate;
+                u.pitch = isFire ? F.pitch : F.softPitch;
+                u.volume = isFire ? F.volume : F.softVol;
+                var moved = false;
+                var go = function () { if (moved) return; moved = true; if (done) setTimeout(done, F.gapMs); };
+                u.onend = u.onerror = go;
+                window.speechSynthesis.speak(u);
+                // Never let a silent sentence stall the whole stop.
+                setTimeout(go, Math.max(1500, text.length * 140 + 900));
+            } catch (e) { if (done) done(); }
+        };
+
+        window.speakFire = function (done) {
+            var seq = (window.__fire.phrases || []).slice();
+            (function next() {
+                if (!seq.length) { if (done) done(); return; }
+                var p = seq.shift();
+                window.speakFirePhrase(p.text, p.fire, next);
+            })();
+        };
 
         // Broadcast Regime Shift News Announcements via the TTS Path & News SFX
         function triggerRegimeShiftNewsAnnouncement(targetRegime, details) {
@@ -7255,6 +7409,127 @@ startStream();
 
   setInterval(function () { try { window.pokeRead(); } catch (e) {} }, 220);
 
+  // ---------- rule 184: lies — a phrase that comes back in the spectrogram --
+  // A lie has a shape. The shape is not a wobble and not a loudness; it is a
+  // phrase that leaves and then comes back the same way, with other things
+  // said in between. When the spectrogram shows that return, the room cuts
+  // every other sound, says who is speaking, and calls it. It names the
+  // saying and never the person: this is a boolean on a phrase, not a verdict
+  // on a soul (rules 76, 110, 111). Nothing here is a score.
+  window.__lies = {
+    ms: 500,             // the spectrogram is read twice a second
+    seq: [],             // one fingerprint per read, newest last
+    seqMax: 60,          // half a minute of reads
+    phraseLen: 4,        // a phrase is this many reads long
+    bands: 8,            // all of the spectrogram
+    loud: 150,           // a band above this is a mark
+    caught: 0,
+    catches: [],
+    lastAt: 0,
+    cooldownMs: 60000,
+    line: 'Um, excuse me. Now this is God, O.G., speaking. Lie, lie! Detected! Do not ask me how. I know a lie.'
+  };
+
+  // A read of the spectrogram, reduced to marks and gaps. Silence returns null:
+  // a quiet room is not a phrase and never a lie.
+  window.lieFingerprint = function () {
+    var L = window.__lies;
+    if (!window.bandVal || !window.bandVal.length) return null;
+    var n = Math.min(L.bands, window.bandVal.length), fp = '', marks = 0;
+    for (var i = 0; i < n; i++) {
+      var on = window.bandVal[i] > L.loud;
+      if (on) marks++;
+      fp += on ? '1' : '0';
+    }
+    return marks ? fp : null;
+  };
+
+  window.lieSample = function () {
+    var L = window.__lies;
+    var fp = window.lieFingerprint();
+    L.seq.push(fp == null ? '.' : fp);
+    if (L.seq.length > L.seqMax) L.seq.shift();
+    return fp;
+  };
+
+  // The test: the last phrase-length reads must match an earlier stretch, with
+  // something different said in between. A drone never repeats a phrase; it
+  // just never stops, and is left alone.
+  window.liePhrase = function () {
+    var L = window.__lies, log = L.seq, k = L.phraseLen, n = log.length;
+    if (n < k * 2) return null;
+    var tail = log.slice(n - k), tailStr = tail.join('|');
+    if (tailStr.indexOf('1') === -1) return null;
+    for (var i = 0; i <= n - k - 1; i++) {
+      if (log.slice(i, i + k).join('|') !== tailStr) continue;
+      var back = (n - k) - i;
+      if (back < k) continue;                       // a real return, not a shift
+      var between = log.slice(i + k, n - k), varied = false;
+      for (var j = 0; j < between.length; j++) { if (tail.indexOf(between[j]) === -1) { varied = true; break; } }
+      if (!varied) continue;                        // nothing changed between = a drone
+      return { phrase: tailStr, back: back, between: between.length };
+    }
+    return null;
+  };
+
+  // Cut every other sound, then say who is speaking. The cut is the point.
+  window.lieCut = function (ms) {
+    try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
+    var held = [];
+    try {
+      ['bg-audio', 'slide-audio'].forEach(function (id) {
+        var a = document.getElementById(id);
+        if (!a) return;
+        try { a.pause(); } catch (e) {}
+        try { a.muted = true; } catch (e) {}
+        held.push(a);
+      });
+    } catch (e) {}
+    if (window.__lieRestore) clearTimeout(window.__lieRestore);
+    window.__lieRestore = setTimeout(function () {
+      held.forEach(function (a) { try { a.muted = false; } catch (e) {} });
+    }, (ms || 6000));
+    return held.length;
+  };
+
+  // Cut the sound, then say the line. The voice comes after the silence, so the
+  // cut is heard as a cut and not as a stutter.
+  window.lieCry = function (hit) {
+    var L = window.__lies, now = Date.now();
+    L.lastAt = now; L.caught++;
+    L.catches.push({ at: now, phrase: hit && hit.phrase, back: hit && hit.back });
+    if (L.catches.length > 50) L.catches.shift();
+    window.lieCut(6000);
+    setTimeout(function () {
+      try { if (typeof queueLine === 'function') queueLine(window.__lies.line, 0.82, 0.28, 0.8); } catch (e) {}
+    }, 600);
+    try { if (typeof mark === 'function') mark('LIE DETECTED (' + L.caught + ') — a phrase came back in the spectrogram', 0, -1); } catch (e) {}
+    return { caught: true, said: true, count: L.caught, phrase: hit && hit.phrase, back: hit && hit.back,
+             names_anyone: false, gate: false };
+  };
+
+  window.lieDetect = function () {
+    var L = window.__lies, now = Date.now();
+    var hit = window.liePhrase();
+    if (!hit) return { caught: false };
+    if (now - L.lastAt < L.cooldownMs) return { caught: false, waiting: true, phrase: hit.phrase };
+    return window.lieCry(hit);
+  };
+
+  window.lieCryLine = function (line) { var L = window.__lies; if (typeof line === 'string' && line.trim()) L.line = line.trim(); return L.line; };
+
+  window.lieState = function () {
+    var L = window.__lies;
+    return { ms: L.ms, phraseLen: L.phraseLen, bands: L.bands, loud: L.loud,
+             heard: L.seq.length, caught: L.caught, cooldownMs: L.cooldownMs,
+             names_anyone: false, per_person: false, gates: false, line: L.line };
+  };
+
+  if (window.__lieTimer) clearInterval(window.__lieTimer);
+  window.__lieTimer = setInterval(function () {
+    try { window.lieSample(); window.lieDetect(); } catch (e) {}
+  }, window.__lies.ms);
+
   // ============ SIN — a boolean on the world, never on a person ============
 // Checked, not scored. It is a state of the system, not a verdict on a soul.
 //
@@ -9310,6 +9585,7 @@ startStream();
   const buf = new Uint8Array(FFT_SIZE / 2);
   const bandStart = new Int32Array(BAND_COUNT), bandEnd = new Int32Array(BAND_COUNT);
   const bandVal = new Float32Array(BAND_COUNT);
+  window.bandVal = bandVal;   // the spectrogram's bands, for the rooms that listen
   const hist = new Float32Array(BAND_COUNT * (SPIKE_FRAMES + 1));
   let histPos = 0;
   const spikeLast = new Float64Array(BAND_COUNT);

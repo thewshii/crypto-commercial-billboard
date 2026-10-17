@@ -6966,6 +6966,11 @@ startStream();
           if (b.saidAt != null && (now - b.saidAt) < b.coolMs) return { burst: true, tooFast: true };
           b.saidAt = now;
           b.said++;
+          if (b.last.length === 5 && b.fiveSaidAt == null) {
+            b.fiveSaidAt = now;
+            try { if (typeof queueLine === 'function') queueLine('Five bursts. You are making a small pattern in the spectrogram.', 0.86, 0.76, 0.5); } catch (e) {}
+            try { if (typeof mark === 'function') mark('POKE five — spectrogram pattern', 0, -1); } catch (e) {}
+          }
           try { if (typeof queueLine === 'function') queueLine('I see you.', 0.88, 0.74, 0.5); } catch (e) {}
           try { if (typeof mark === 'function') mark('POKE ' + b.said + ' (bursts in window ' + b.last.length + ')', 0, -1); } catch (e) {}
           return { burst: true, replied: true, said: b.said, inWindow: b.last.length };

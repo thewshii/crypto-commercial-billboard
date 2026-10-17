@@ -5284,6 +5284,7 @@ startStream();
 
   // rule 170: one piece of the long saying per turn, wherever the turn lands.
   setInterval(function () { window.segmentSpeak('money'); }, 45000);
+  setInterval(function () { window.segmentSpeak('sand'); }, 45000);
 
   // rule 168: the notice, said out loud, and the counter that does not add up.
   setInterval(function () { queueLine('Everybody can hear everybody here. It goes both ways, and nobody has to be quiet to be here.', 0.85, 0.77, 0.5); }, 45000);
@@ -8916,18 +8917,30 @@ startStream();
   // and nothing times them. They segment themselves.
   window.__seg = { pools: {}, cursor: {}, said: {}, taken: 0 };
 
-  window.segmentSplit = function (text) {
-    var s = String(text || ''), out = [], cur = '';
+  // Cut at the sentence edges, then pull any scrap shorter than a breath back
+  // into its neighbour, so nothing gets said on its own as one word.
+  window.segmentSplit = function (text, minLen) {
+    var floor = minLen || 28;
+    var raw = [], cur = '', s = String(text || '');
     for (var i = 0; i < s.length; i++) {
       var ch = s.charAt(i);
       cur += ch;
-      if ((ch === '.' || ch === '!' || ch === '?') && (s.charAt(i + 1) === ' ' || i + 1 >= s.length)) {
-        if (cur.trim()) out.push(cur.trim());
-        cur = '';
+      if (ch === '.' || ch === '!' || ch === '?') {
+        if (s.charAt(i + 1) === ' ' || s.charAt(i + 1) === '') { raw.push(cur.trim()); cur = ''; }
       }
     }
-    if (cur.trim()) out.push(cur.trim());
-    return out.filter(function (x) { return x.length > 0; });
+    if (cur.trim()) raw.push(cur.trim());
+    raw = raw.filter(function (x) { return x.length > 0; });
+    var out = [];
+    raw.forEach(function (p) {
+      if (out.length && out[out.length - 1].length < floor) out[out.length - 1] += ' ' + p;
+      else out.push(p);
+    });
+    if (out.length > 1 && out[out.length - 1].length < floor) {
+      out[out.length - 2] += ' ' + out[out.length - 1];
+      out.pop();
+    }
+    return out;
   };
 
   window.segmentPool = function (id, parts) {
@@ -8969,14 +8982,24 @@ startStream();
   };
 
   // The long saying, in the order it was given, cut where it breathes.
-  window.segmentPool('money',
-    'Hey. Do you like money? Okay. Well, talk to you later. ' +
+  window.segmentPool('money',    'Hey. Do you like money? Okay. Well, talk to you later. ' +
     'Hey. Do you love money? Well. Did you know that is the root of all evil? ' +
     'In this simulation that is hard to believe. ' +
     'I know. That is because we want to like it. ' +
     'Money is not inherently bad. ' +
     'That is why it gets switched to gifting, where there is an absolute you cannot cross. ' +
     'Commodities expire. Commodities do not restore.'
+  );
+
+  // The beach, cut the same way. One piece per turn, wherever the turn lands.
+  window.segmentPool('sand',
+    'A beach is a long doing, and the sand has been doing it the whole time. ' +
+    'Underfoot there are two feelings and the same material gives both, and the water decides which one you get. ' +
+    'Dry, it is loose and it gives, and it takes the shape of the step and then lets the shape go. ' +
+    'Wet, it is packed and it holds, and it carries a person without making a sound about it. ' +
+    'The same grains, two manners, and neither one is a fault. ' +
+    'You can hear which one you have before you finish the step. ' +
+    'Nothing in sand is counted, and a step is a reading and not a mark.'
   );
 
   window.__markLines = {

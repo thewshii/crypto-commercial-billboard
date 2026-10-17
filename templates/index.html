@@ -5861,6 +5861,69 @@ startStream();
     return { perInstance: out, total: total, cap: window.TTS_MEM_CAP };
   };
 
+  // ============ SIN — a boolean on the world, never on a person ============
+// Checked, not scored. It is a state of the system, not a verdict on a soul.
+//
+// What it is NOT: a flag on a viewer, a per-person flag, or anything that
+// changes what the stream does to one person because of it. Rules 76, 110 and
+// 111 forbid that directly — leveling is structural, the refusal is a voice of
+// reason, and the memory is indifferent. A boolean that named a person would
+// contradict all three at once.
+//
+// What it IS: whether the system is currently in deficit. Rule 75 already
+// says the constructs are real to the people inside them and are still
+// constructs. Sin is the gap between the thing and the shape it is in.
+  window.__sin = { flag: false, since: 0, flips: 0, reasons: [] };
+  window.SIN_FLOOR = 0.06;      // mean energy below which we are in deficit
+  window.SIN_LEVEL = 0.22;      // above which we are not
+
+  // Four structural checks. None of them look at a person.
+  window.sinCheck = function () {
+    const s = window.__sin;
+    const bv = window.bandVal;
+    const r = { deficit: [], sufficient: [] };
+
+    // 1. Is anything actually arriving? A world with no input is in deficit.
+    let mean = 0;
+    if (bv && bv.length) { for (let i = 0; i < bv.length; i++) mean += bv[i] / 255; mean /= bv.length; }
+    if (mean < window.SIN_FLOOR) r.deficit.push('no-signal');
+    else r.sufficient.push('signal');
+
+    // 2. Is the count running? Rule 93. A stopped count is a deficit.
+    if (!window.__playWatch || window.__playWatch.tick === 0) r.deficit.push('count-not-running');
+    else r.sufficient.push('count-running');
+
+    // 3. Is the wave intact? Water is the carrier. Without it nothing travels.
+    if (!window.__wind) r.deficit.push('no-medium');
+    else r.sufficient.push('medium-present');
+
+    // 4. Is the operator loop alive? Rule 109 — a loop with no base stalls.
+    if (window.__meshId) r.sufficient.push('loop-attached');
+    else r.deficit.push('loop-detached');
+
+    const flag = r.deficit.length > 0;
+    if (flag !== s.flag) {
+      s.flag = flag;
+      s.since = Date.now();
+      s.flips++;
+      s.reasons = r.deficit.slice();
+      if (typeof mark === 'function') mark('SIN — ' + (flag ? 'TRUE (deficit)' : 'FALSE'), 0, -1);
+    }
+    return Object.assign({ flag: flag }, r);
+  };
+
+  window.sinStats = function () {
+    const s = window.__sin;
+    return {
+      sin: s.flag, reasons: s.reasons, flips: s.flips,
+      heldSec: Math.round((Date.now() - s.since) / 100) / 10,
+      // Always false. There is no code path that sets it on a person.
+      appliesToPerson: false
+    };
+  };
+
+  setInterval(function () { try { window.sinCheck(); } catch (e) {} }, 2000);
+
   // ============ TURBULENCE — hold your own frequency, use what you remember ============
 // When the spectrogram is loud and unstable, that is turbulence, not an event.
 // Turbulence is normal and it passes and it has a shape. The process is short:

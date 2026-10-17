@@ -7654,12 +7654,13 @@ startStream();
   function ttsReadoutRender() {
     const el = ttsReadoutEnsure();
     const c = window.__ttsCurrent;
-    const ss = ('speechSynthesis' in window) ? window.speechSynthesis : null;
-    const speaking = ss ? !!ss.speaking : false;
-    const pending = ss ? ss.pending : false;
 
-    const state = speaking ? '● SPEAKING' : (pending ? '○ QUEUED' : '— IDLE');
-    const color = speaking ? '#00ff88' : (pending ? '#ffdd00' : '#5a7a8a');
+    // A live stream at zero is STILL LIVE. Never render that as "off".
+    const ssNow = ('speechSynthesis' in window) ? window.speechSynthesis : null;
+    const speaking = ssNow ? !!ssNow.speaking : false;
+    const pending = ssNow ? ssNow.pending : false;
+    const state = speaking ? '● SPEAKING' : (pending ? '○ QUEUED' : '● LIVE');
+    const color = speaking ? '#00ff88' : (pending ? '#ffdd00' : '#7fe0c0');
 
     let html = '<div style="display:flex;justify-content:space-between;align-items:center;' +
       'border-bottom:1px solid #00d0ff33;padding-bottom:4px;margin-bottom:5px;">' +
@@ -7892,9 +7893,12 @@ startStream();
     const one = m.bit === 1;
     const uns = m.state === 'U';
     el.textContent = m.state;
-    el.style.color = uns ? '#b06cff' : (one ? '#ffdd00' : '#00d0ff');
-    el.style.borderColor = uns ? '#b06cff' : (one ? '#ffdd00' : '#00d0ff');
-    el.style.boxShadow = uns ? '0 0 10px #b06cff44' : (one ? '0 0 12px #ffdd0055' : 'none');
+    // R0 must not read as "off". It is a live reading of a calm room, and it
+    // is styled like every other state so nobody mistakes calm for dead.
+    el.style.color = uns ? '#b06cff' : (one ? '#ffdd00' : '#7fe0c0');
+    el.style.borderColor = uns ? '#b06cff' : (one ? '#ffdd00' : '#7fe0c0');
+    el.style.opacity = (uns || one) ? '1' : '0.85';
+    el.style.boxShadow = uns ? '0 0 10px #b06cff44' : (one ? '0 0 12px #ffdd0055' : '0 0 6px #7fe0c033');
     if (d) {
       const held = Math.round((m.bit === 1 ? window.__r.holdMs : 0) / 100) / 10;
       d.textContent = m.mean.toFixed(3) + ' | flips ' + m.flips + ' | held ' + held + 's' +
@@ -7972,8 +7976,11 @@ startStream();
   window.R_TALK_LINES = {
     R0: [
       'The room is at zero. Still water underneath.',
-      'R0. Below the line. Nothing is moving yet.',
-      'Quiet is not empty. It is the wave before it goes anywhere.'
+      'R0. Nothing is loud and nothing is missing.',
+      'Quiet is not empty. It is the wave before it goes anywhere.',
+      'The line is still. That is a reading, not an absence.',
+      'Low energy is not nothing happening. It is the room at rest.',
+      'Still water carries more than a whitecap does.'
     ],
     R1: [
       'The room is at one. The surface is carrying it.',

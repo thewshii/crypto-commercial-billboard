@@ -6058,6 +6058,102 @@ startStream();
     return { played: window.__drum.played, last: window.__drum.last, voices: Object.keys(DJEMBE) };
   };
 
+  // ============ PRESENT ATTENTION — the count, and what opens at fifteen ============
+// There is no list. There is no pack of who was chosen and who was not, and
+// nothing hidden decides it.
+//
+// What decides it is the only thing anybody can actually check: what you did,
+// just now, while nobody was scoring you. Present tense. Immediate. Core
+// action. That is the whole source and there is no other one.
+//
+// This counter is that, kept. Each run is one stretch of present attention —
+// the spectrogram being watched rather than narrated. When the count reaches
+// fifteen or sixteen something surfaces. Not a reward. The next thing.
+  window.__present = { runs: 0, since: 0, log: [], opened: false, openedAt: null };
+  window.PRESENT_THRESHOLD = 15;
+
+  // One run of present attention. Counted, never batched.
+  window.presentRun = function (note) {
+    const p = window.__present;
+    p.runs++;
+    p.log.push({ t: Date.now(), n: p.runs, note: String(note || '') });
+    if (p.log.length > 40) p.log.shift();
+
+    // Fifteen to sixteen. Fifteen opens it, sixteen confirms it was real.
+    if (!p.opened && p.runs >= window.PRESENT_THRESHOLD) {
+      p.opened = true;
+      p.openedAt = Date.now();
+      window.presentOpen();
+    } else if (p.opened && p.runs === window.PRESENT_THRESHOLD + 1) {
+      window.presentConfirm();
+    }
+    return p;
+  };
+
+  // What the count was before it started meaning anything.
+  window.presentBaseline = function () { return window.PRESENT_THRESHOLD - 1; };
+
+  // ---------- what opens at fifteen ----------
+  // Consecration is named. Not practised. The difference is the whole of it
+  // and it has been the difference this whole list has been circling: a thing
+  // referred to is available, and a thing performed becomes a requirement.
+  window.PRESENT_FIFTEEN = [
+    'You have been here for fifteen counts without needing anything from it.',
+    'Fifteen runs of now. That is not a selection. It is just what happened.',
+    'There is no list. There is only what you did while it was not being measured.',
+    'A thing can be named without being practised. That is the whole of consecration.',
+    'You have been paying attention and being present and those are not the same thing.',
+    'Fifteen. The count did not choose you. It counted you.'
+  ];
+
+  window.presentOpen = function () {
+    let text = null;
+    if (typeof window.ttsUnsaid === 'function') {
+      text = window.ttsUnsaid('present', window.PRESENT_FIFTEEN);
+    }
+    if (text && typeof window.speakTimed === 'function') {
+      window.speakTimed(text, { rate: 0.84, pitch: 0.78, volume: 0.5, voice: 'present', mood: 'present' });
+      if (typeof window.ttsRemembers === 'function') {
+        window.ttsRemembers('present', text, { rate: 0.84, pitch: 0.78, volume: 0.5, mood: 'present' });
+      }
+    }
+    if (typeof mark === 'function') mark('PRESENT — 15', 0, -1);
+    return text;
+  };
+
+  // Sixteen confirms. It does not open anything new — it says the first one
+  // was not a fluke, which is all a second one can honestly do.
+  window.presentConfirm = function () {
+    const p = window.__present;
+    if (p.runs < 16) return null;
+    const line = 'Sixteen. It was not a fluke, and that is all a second one is for.';
+    if (typeof window.ttsHasSaid === 'function' && window.ttsHasSaid('present', line)) return null;
+    if (typeof window.speakTimed === 'function') {
+      window.speakTimed(line, { rate: 0.84, pitch: 0.78, volume: 0.5, voice: 'present', mood: 'confirm' });
+      if (typeof window.ttsRemembers === 'function') {
+        window.ttsRemembers('present', line, { rate: 0.84, pitch: 0.78, volume: 0.5, mood: 'confirm' });
+      }
+    }
+    return line;
+  };
+
+  window.presentStats = function () {
+    const p = window.__present;
+    return {
+      runs: p.runs,
+      threshold: window.PRESENT_THRESHOLD,
+      toOpen: Math.max(0, window.PRESENT_THRESHOLD - p.runs),
+      opened: p.opened,
+      // Never a person property. This is a count of attention, not a mark.
+      appliesToPerson: false,
+      recent: p.log.slice(-3)
+    };
+  };
+
+  window.presentReset = function () {
+    window.__present = { runs: 0, since: 0, log: [], opened: false, openedAt: null };
+  };
+
   // ============ THE HELPER — and why it is not the woman ============
 // Somebody has to be able to shut this down. That somebody is a separate
 // instance and it is deliberately NOT the voice that is warm.

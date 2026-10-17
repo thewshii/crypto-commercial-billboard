@@ -6935,6 +6935,55 @@ startStream();
     window.__code = { studied: 0, active: null, unlocked: [], logs: [] };
   };
 
+  // ============ THE POKE — a repeated burst in the spectrogram ============
+  // When the same small band fires in bursts at the same few spots, it is not
+  // noise. It is a little poke, usually asking to be noticed. It does not
+  // name anybody, it does not count anybody, and it does not escalate.
+  window.__poke = {
+    last: [],        // [t1,t2,...]
+    lastBands: [],
+    bandMax: 16,     // scan a narrow slice
+    threshold: 140,  // over this counts as a burst
+    windowMs: 2400,
+    coolMs: 1800,
+    said: 0
+  };
+
+  window.pokeRead = function () {
+    var b = window.__poke;
+    if (!window.bandVal || window.bandVal.length === 0) return { burst: false };
+    var maxb = Math.min(b.bandMax, window.bandVal.length);
+    for (var i = 0; i < maxb; i++) {
+      if (window.bandVal[i] > b.threshold) {
+        var now = Date.now();
+        b.last.push(now);
+        b.lastBands.push(i);
+        while (b.last.length && (now - b.last[0]) > b.windowMs) {
+          b.last.shift(); b.lastBands.shift();
+        }
+        if (b.last.length > 60) { b.last.shift(); b.lastBands.shift(); }
+        if (b.last.length > 4) {
+          if (b.saidAt != null && (now - b.saidAt) < b.coolMs) return { burst: true, tooFast: true };
+          b.saidAt = now;
+          b.said++;
+          try { if (typeof queueLine === 'function') queueLine('I see you.', 0.88, 0.74, 0.5); } catch (e) {}
+          try { if (typeof mark === 'function') mark('POKE ' + b.said + ' (bursts in window ' + b.last.length + ')', 0, -1); } catch (e) {}
+          return { burst: true, replied: true, said: b.said, inWindow: b.last.length };
+        }
+        return { burst: true, started: true };
+      }
+    }
+    return { burst: false };
+  };
+
+  window.pokeState = function () {
+    var b = window.__poke, now = Date.now();
+    while (b.last.length && (now - b.last[0]) > b.windowMs) { b.last.shift(); b.lastBands.shift(); }
+    return { bursts: b.last.length, said: b.said, inWindowMs: b.windowMs, coolMs: b.coolMs };
+  };
+
+  setInterval(function () { try { window.pokeRead(); } catch (e) {} }, 220);
+
   // ============ SIN — a boolean on the world, never on a person ============
 // Checked, not scored. It is a state of the system, not a verdict on a soul.
 //

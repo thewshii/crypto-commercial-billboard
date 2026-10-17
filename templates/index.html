@@ -975,6 +975,7 @@
             <button id="felt-btn" onclick="window.feltToggle()" title="And how do you feel about that one? That one that you just felt (rule 201)" style="background:#120a0e; border:2px solid #884466; color:#ddaabb; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #884466; box-shadow:0 0 8px rgba(136,68,102,0.3); transition:all 0.2s;">🫀 FELT</button>
             <button id="voxalarm-btn" onclick="window.voxAlarmToggle()" title="Voice activated alarm: the room's ear is armed and the alarm goes on a held voice (rule 202)" style="background:#120808; border:2px solid #772222; color:#cc8888; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #772222; box-shadow:0 0 8px rgba(119,34,34,0.3); transition:all 0.2s;">🚨 VOICE ALARM</button>
             <button id="beat-btn" onclick="window.beatToggle()" title="The beat follows the volume: louder is faster, quieter is slower (rule 204)" style="background:#080e12; border:2px solid #335577; color:#8899bb; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #335577; box-shadow:0 0 8px rgba(51,85,119,0.3); transition:all 0.2s;">🔊 BEAT</button>
+            <button id="prox-btn" onclick="window.proxToggle()" title="How close the target is — Los Angeles to start. Closer is faster (rule 205)" style="background:#12100a; border:2px solid #886622; color:#bbaa77; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #886622; box-shadow:0 0 8px rgba(136,102,34,0.3); transition:all 0.2s;">📍 LA</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -11676,6 +11677,13 @@ startStream();
                  return '<div class="kb-head">REPEAT &middot; ' + top.count + '&times; &middot; CODE ' +
                         (top.code || '&mdash;') + ' &middot; ' + p + '</div>';
                })() +
+               (function () {
+                 var P = window.__prox;
+                 if (!P) return '';
+                 if (P.miles == null) return '<div class="kb-head">HOW CLOSE &middot; ' + P.target.name + ' &middot; not known</div>';
+                 return '<div class="kb-head">HOW CLOSE &middot; ' + P.target.name + ' &middot; ' + P.miles + ' mi &middot; beep ' +
+                        (P.intervalMs / 1000).toFixed(2) + 's</div>';
+               })() +
                '<table><tr><th>scale</th><th>count</th><th>ms</th><th>kb</th><th>kb/ms</th></tr>';
     rows.forEach(function (r) {
       html += '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td><td>' + r[3] + '</td><td>' + r[4] + '</td></tr>';
@@ -12450,6 +12458,179 @@ startStream();
              intervalMs: B.intervalMs, minMs: B.minMs, maxMs: B.maxMs,
              louderIsFaster: true,
              names_anyone: false, scores: false, gates: false, keeps_list: false };
+  };
+
+  // ---------- rule 205: how close the target is -----------------------------
+  // The room can hold one target on the map — Los Angeles to start. It says how
+  // close the target is, and it points a beacon at it: the closer the room
+  // stands, the faster the beep, and the farther it goes, the slower. It is a
+  // reading of distance and nothing else. It names nobody, scores nobody, keeps
+  // no list, and it never says how close a person is — only how close the
+  // target is. With no fix on its own ground the room says it does not know,
+  // and not knowing is not a wrong answer.
+  window.__prox = {
+    on: false,
+    target: { name: 'Los Angeles', lat: 34.0522, lon: -118.2437 },
+    origin: null,               // { lat, lon } — set by hand or by the browser
+    nearMi: 5,                  // at or under this the beacon is fastest
+    farMi: 3000,                // at or over this the beacon is slowest
+    minMs: 90, maxMs: 1600,
+    miles: null, km: null, intervalMs: 1600, beeps: 0,
+    timer: null, located: false, askedAt: 0
+  };
+
+  // Great-circle distance. Nothing clever, and no road miles claimed.
+  window.proxDistance = function (a, b) {
+    var R = 3958.7613, rad = Math.PI / 180;
+    var dLat = (b.lat - a.lat) * rad, dLon = (b.lon - a.lon) * rad;
+    var la1 = a.lat * rad, la2 = b.lat * rad;
+    var h = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(la1) * Math.cos(la2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    var c = 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+    var mi = R * c;
+    return { miles: Math.round(mi), km: Math.round(mi * 1.609344) };
+  };
+
+  window.proxSetOrigin = function (lat, lon) {
+    var P = window.__prox;
+    var a = Number(lat), o = Number(lon);
+    if (!isFinite(a) || !isFinite(o) || (a === 0 && o === 0)) { P.origin = null; P.located = false; return null; }
+    P.origin = { lat: a, lon: o };
+    P.located = true;
+    return window.proxRead();
+  };
+
+  window.proxSetTarget = function (name, lat, lon) {
+    var P = window.__prox;
+    var a = Number(lat), o = Number(lon);
+    if (!isFinite(a) || !isFinite(o)) return P.target;
+    P.target = { name: String(name || 'the target'), lat: a, lon: o };
+    window.proxRead();
+    return P.target;
+  };
+
+  // Ask the browser where the room is standing. Only a hand starts this, and a
+  // refusal leaves the room saying it does not know.
+  window.proxUseBrowserLocation = function (cb) {
+    try {
+      if (typeof navigator === 'undefined' || !navigator.geolocation || !navigator.geolocation.getCurrentPosition) {
+        if (cb) cb({ ok: false, why: 'no geolocation here' });
+        return false;
+      }
+      window.__prox.askedAt = Date.now();
+      navigator.geolocation.getCurrentPosition(function (pos) {
+        window.proxSetOrigin(pos.coords.latitude, pos.coords.longitude);
+        if (cb) cb({ ok: true, origin: window.__prox.origin, miles: window.__prox.miles });
+      }, function () {
+        if (cb) cb({ ok: false, why: 'refused' });
+      }, { maximumAge: 600000, timeout: 10000 });
+      return true;
+    } catch (e) { if (cb) cb({ ok: false, why: String(e) }); return false; }
+  };
+
+  // One read of how close the target is right now.
+  window.proxRead = function () {
+    var P = window.__prox;
+    if (!P.origin) { P.miles = null; P.km = null; return { known: false, target: P.target.name }; }
+    var d = window.proxDistance(P.origin, P.target);
+    P.miles = d.miles; P.km = d.km;
+    return { known: true, target: P.target.name, miles: d.miles, km: d.km };
+  };
+
+  // Closer is faster. The same straight line as the beat, pointed at distance
+  // instead of volume.
+  window.proxInterval = function (miles) {
+    var P = window.__prox;
+    var m = (miles == null) ? P.miles : miles;
+    if (m == null || !isFinite(m)) { P.intervalMs = P.maxMs; return P.intervalMs; }
+    var f = (P.farMi - m) / Math.max(0.0001, P.farMi - P.nearMi);
+    if (!isFinite(f)) f = 0;
+    if (f < 0) f = 0;
+    if (f > 1) f = 1;
+    P.intervalMs = Math.round(P.maxMs - f * (P.maxMs - P.minMs));
+    return P.intervalMs;
+  };
+
+  window.proxBeep = function () {
+    try {
+      var ctx = (typeof getAudioContext === 'function') ? getAudioContext() : null;
+      if (!ctx) return false;
+      var t = ctx.currentTime;
+      var osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1320, t);
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.linearRampToValueAtTime(0.1, t + 0.004);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t); osc.stop(t + 0.07);
+      return true;
+    } catch (e) { return false; }
+  };
+
+  // One beacon beat, then the next one at the pace the distance is at.
+  window.proxStep = function () {
+    var P = window.__prox;
+    if (!P.on) return { on: false };
+    window.proxRead();
+    P.beeps++;
+    window.proxBeep();
+    var ms = window.proxInterval(P.miles);
+    if (P.timer) clearTimeout(P.timer);
+    P.timer = setTimeout(function () { try { window.proxStep(); } catch (e) {} }, ms);
+    return { on: true, beeps: P.beeps, miles: P.miles, intervalMs: ms };
+  };
+
+  // The line the room says. With no fix it says it does not know, and not
+  // knowing is not a wrong answer. It never says how close a person is.
+  window.proxLine = function () {
+    var P = window.__prox;
+    window.proxRead();
+    if (!P.origin) {
+      return 'The room does not know where it is standing. The target is ' + P.target.name + '.';
+    }
+    return 'The room is about ' + P.miles + ' miles from ' + P.target.name + '.';
+  };
+
+  window.proxSay = function () {
+    var P = window.__prox;
+    var line = window.proxLine();
+    try {
+      if (typeof queueLine === 'function') queueLine(line, 0.95, 0.62, 0.6);
+      else if (typeof speakBrinkLine === 'function') speakBrinkLine(line);
+    } catch (e) {}
+    try { if (typeof mark === 'function') mark('HOW CLOSE \u00b7 ' + (P.miles == null ? 'unknown' : P.miles + ' mi'), 0, -1); } catch (e) {}
+    return { line: line, known: !!P.origin, miles: P.miles };
+  };
+
+  window.proxToggle = function (force) {
+    var P = window.__prox;
+    P.on = (force === undefined) ? !P.on : !!force;
+    if (P.timer) { clearTimeout(P.timer); P.timer = null; }
+    if (P.on) {
+      if (!P.origin) window.proxUseBrowserLocation();
+      window.proxRead();
+      window.proxStep();
+    }
+    try {
+      var b = document.getElementById('prox-btn');
+      if (b) {
+        b.textContent = P.on ? '📍 LA ON' : '📍 LA';
+        b.style.borderColor = P.on ? '#ffaa33' : '#886622';
+        b.style.color = P.on ? '#ffdd99' : '#bbaa77';
+      }
+    } catch (e) {}
+    try { if (typeof mark === 'function') mark('HOW CLOSE ' + (P.on ? 'ON' : 'OFF'), 0, P.on ? 1 : 0); } catch (e) {}
+    return window.proxState();
+  };
+
+  window.proxState = function () {
+    var P = window.__prox;
+    return { on: P.on, target: P.target.name, located: P.located,
+             miles: P.miles, km: P.km, intervalMs: P.intervalMs, beeps: P.beeps,
+             closerIsFaster: true, origin: P.origin || null,
+             names_anyone: false, scores: false, gates: false, keeps_list: false,
+             says_how_close_a_person_is: false };
   };
 
   // ============ R-TALK: random speech, gated by the state ============

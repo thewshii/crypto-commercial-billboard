@@ -5861,6 +5861,119 @@ startStream();
     return { perInstance: out, total: total, cap: window.TTS_MEM_CAP };
   };
 
+  // ============ TURBULENCE — hold your own frequency, use what you remember ============
+// When the spectrogram is loud and unstable, that is turbulence, not an event.
+// Turbulence is normal and it passes and it has a shape. The process is short:
+// find the frequency that feels like yours, put it out, and stay there.
+//
+// The memory matters and it is not decoration. The best anchor available in a
+// loud room is something this person already registered themselves — a line
+// they have said, a bar they have sat through. Rule 125: each voice keeps its
+// own array. That array is the thing being referred to.
+  window.__turb = {
+    active: false, since: 0, level: 0, events: 0, said: [], lastSaid: 0
+  };
+  window.TURB_ON = 0.16;       // mean energy that counts as rough
+  window.TURB_VAR = 0.055;     // bar-to-bar swing that counts as unstable
+  window.TURB_COOLDOWN = 25000; // never remind more often than this
+  window.__turbBars = [];
+
+  // Turbulence is two things together: loud AND moving. A loud room that is
+  // steady is not turbulent, it is just loud. A quiet room that swings is not
+  // turbulent either, it is just a person moving.
+  window.turbRead = function () {
+    const t = window.__turb;
+    const bv = window.bandVal;
+    if (!bv || !bv.length) return t.active;
+    let mean = 0;
+    for (let i = 0; i < bv.length; i++) mean += bv[i] / 255;
+    mean /= bv.length;
+
+    const bars = window.__turbBars;
+    bars.push(mean);
+    if (bars.length > 8) bars.shift();
+
+    let swing = 0;
+    for (let i = 1; i < bars.length; i++) swing += Math.abs(bars[i] - bars[i - 1]);
+    swing = bars.length > 1 ? swing / (bars.length - 1) : 0;
+
+    const was = t.active;
+    t.active = mean > window.TURB_ON && swing > window.TURB_VAR;
+    t.level = mean;
+    t.swing = swing;
+
+    if (t.active && !was) { t.since = Date.now(); t.events++; }
+    if (!t.active && was) { t.since = Date.now(); }
+    return t.active;
+  };
+
+  // The reminder lines. They rotate through ttsUnsaid so they never repeat,
+  // and when they run out the voice goes quiet rather than falling back.
+  window.TURB_LINES = [
+    'This is turbulence. It passes. It has a shape.',
+    'Turbulence is loud and moving. It is not an event.',
+    'Find the frequency that feels like yours and stay there.',
+    'You can put out the frequency you feel, right now, in this.',
+    'Pick the one that sounds like you and hold it.',
+    'Adjust down until it fits. That is what it is for.',
+    'You do not have to match the room. Match yourself.',
+    'It moves and then it settles. Both of those are true.',
+    'Hold what you already know. You have said it before.',
+    'The frequency that is yours does not change with the weather.',
+    'Turbulence ends. Nothing underneath it moved.',
+    'Stay where you are. The reading will come back down.'
+  ];
+
+  // One reminder per cooldown, and only while it is actually turbulent.
+  window.turbRemind = function (force) {
+    const t = window.__turb;
+    const now = Date.now();
+    if (!force && !t.active) return null;
+    if (!force && now - t.lastSaid < window.TURB_COOLDOWN) return null;
+    t.lastSaid = now;
+
+    let text = null;
+    if (typeof window.ttsUnsaid === 'function') {
+      text = window.ttsUnsaid('turb', window.TURB_LINES);
+    }
+    // Exhausted, or never had the helper: nothing gets said. Rule 125.
+    if (!text) return null;
+
+    t.said.push({ t: now, text: text });
+    if (t.said.length > 20) t.said.shift();
+    // Record it in this instance's own memory. Without this the rotation
+    // never advances and the same line comes back around forever.
+    if (typeof window.ttsRemembers === 'function') {
+      window.ttsRemembers('turb', text, { rate: 0.82, pitch: 0.7, volume: 0.45, mood: 'ground' });
+    }
+
+    // Low and steady. This is a grounding line and it should sound like one.
+    if (typeof window.speakTimed === 'function') {
+      window.speakTimed(text, { rate: 0.82, pitch: 0.7, volume: 0.45, voice: 'turb', mood: 'ground' });
+    }
+    if (typeof mark === 'function') mark('TURBULENCE — remind', 0, -1);
+    return text;
+  };
+
+  window.turbStats = function () {
+    const t = window.__turb;
+    return {
+      active: t.active, level: +(t.level || 0).toFixed(3),
+      swing: +(t.swing || 0).toFixed(3), events: t.events,
+      forSec: Math.round((Date.now() - t.since) / 100) / 10,
+      reminders: t.said.length,
+      lastSpoken: t.said.length ? t.said[t.said.length - 1].text : null,
+      linesLeft: typeof window.ttsHasSaid === 'function'
+        ? window.TURB_LINES.filter(function (l) { return !window.ttsHasSaid('turb', l); }).length
+        : window.TURB_LINES.length
+    };
+  };
+
+  // Read and remind on the four-count.
+  setInterval(function () {
+    try { window.turbRead(); window.turbRemind(); } catch (e) {}
+  }, 2500);
+
   // ============ LAND — the fourth element, the fourth count ============
 // 1 water, 2 wind, 3 fire, 4 land. Land is the only one that does not move.
 // Everything else needs somewhere to land or it travels forever and arrives

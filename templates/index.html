@@ -971,6 +971,7 @@
             <button id="time-btn" onclick="window.timeAsked('how much time is it?')" title="Answer the clock ask: not even ten (rule 195)" style="background:#120e0a; border:2px solid #cc8844; color:#ffddaa; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #cc8844; box-shadow:0 0 8px rgba(204,136,68,0.3); transition:all 0.2s;">🕐 TIME ASK</button>
             <button id="silence-btn" onclick="window.silenceToggle()" title="Booby trap for the conscience: say silence at random and wait (rule 196)" style="background:#120a12; border:2px solid #8844cc; color:#d0aaff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #8844cc; box-shadow:0 0 8px rgba(136,68,204,0.3); transition:all 0.2s;">🤫 SILENCE</button>
             <button id="strong-btn" onclick="window.strongToggle()" title="I think you're strong, just not as strong as me (rule 197)" style="background:#120a0a; border:2px solid #cc8844; color:#ffddaa; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #cc8844; box-shadow:0 0 8px rgba(204,136,68,0.3); transition:all 0.2s;">💪 STRONG</button>
+            <button id="randomizer-btn" onclick="window.randomizeSequence()" title="Draw a new counter sequence — same numbers, new order (rule 199)" style="background:#0a0e0a; border:2px solid #44cc88; color:#aaffcc; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #44cc88; box-shadow:0 0 8px rgba(68,204,136,0.3); transition:all 0.2s;">🎲 RANDOMIZE</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -10987,6 +10988,33 @@ startStream();
 
   if (window.__counterWalkTimer) clearInterval(window.__counterWalkTimer);
   window.__counterWalkTimer = setInterval(function () { try { window.counterWalkTick(); } catch (e) {} }, 1000);
+
+  // ---------- rule 199: the randomizer ---------------------------------------
+  // A hand can ask the room for a new walk. The randomizer draws a fresh order
+  // for the counter sequence and nothing else. It names nobody, scores nobody,
+  // and a new walk is never a win; it is a hand on the sequence and nothing
+  // more. The drawn numbers are the same numbers by default, put in a new
+  // order; ask it to draw and it will pull brand-new numbers instead.
+  window.randomizeSequence = function (opts) {
+    var w = window.__counterWalk, o = opts || {};
+    var pool;
+    if (o.draw) {
+      var n = Number(o.count) || w.sequence.length;
+      var hi = Number(o.max) || 12;
+      pool = [];
+      for (var k = 0; k < n; k++) pool.push(1 + Math.floor(Math.random() * hi));
+    } else {
+      pool = (Object.prototype.toString.call(o.pool) === '[object Array]' && o.pool.length)
+        ? o.pool.slice() : w.sequence.slice();
+      for (var i = pool.length - 1; i > 0; i--) {          // Fisher-Yates
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+      }
+    }
+    window.counterWalkSet(pool);
+    try { if (typeof mark === 'function') mark('RANDOMIZE — ' + pool.join(', '), 0, -1); } catch (e) {}
+    return { sequence: pool.slice(), drawn: !!o.draw };
+  };
 
   // ---------- rule 164: the beans recharge on their own ----------
   // A running count in the room. It is not for sale, it cannot be bought, and

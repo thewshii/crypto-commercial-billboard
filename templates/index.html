@@ -5271,6 +5271,9 @@ startStream();
   setInterval(function () { queueLine('The ones watching consider the ones in here to be microbes. The watching does not make anybody bigger.', 0.84, 0.76, 0.5); }, 45000);
   setInterval(function () { queueLine('Read the room. You are a jerk.', 0.86, 0.78, 0.5); }, 45000);
   setInterval(function () { queueLine('A microbe is not smaller than the eye looking at it. It is the same size it was.', 0.83, 0.75, 0.5); }, 45000);
+  setInterval(function () { queueLine('This is not a counter. The minute you request something else, it is over. The asking is over. Not you.', 0.86, 0.78, 0.5); }, 45000);
+  setInterval(function () { queueLine('The beans are not for sale. They are not a toll and they are not a gate. They come back on their own, whether or not anybody is watching.', 0.84, 0.76, 0.5); }, 45000);
+  setInterval(function () { queueLine('Ask for something else and the asking ends. You do not.', 0.85, 0.77, 0.5); }, 45000);
   setInterval(function () { queueLine('Attention is not neutral. It arrives carrying something, the way a particle does.', 0.83, 0.75, 0.5); }, 45000);
   setInterval(function () { queueLine('Capture reads negative. It is a reading of what the speech is doing, not a ruling on the speaker.', 0.84, 0.76, 0.5); }, 45000);
   setInterval(function () { queueLine('One time is an accident. Two is a rhythm. Three is a shape. Four times is the shape.', 0.85, 0.77, 0.5); }, 45000);
@@ -8897,6 +8900,50 @@ startStream();
       if (c.pos[scale] > scale) c.pos[scale] = 1;        // loop 1..N
     });
     return hits;
+  };
+
+  // ---------- rule 164: the beans recharge on their own ----------
+  // A running count in the room. It is not for sale, it cannot be bought, and
+  // it comes back by itself. Asking for something else ends the asking.
+  window.__beans = { n: 7, max: 7, rechargeMs: 45000, asked: 0, over: 0 };
+
+  window.beans = function () { return window.__beans.n; };
+
+  window.beanSpend = function (n) {
+    var b = window.__beans;
+    var spend = (n == null) ? 1 : n;
+    if (b.n < spend) {
+      // Empty is not a wall and not a bill. It is just empty for a moment.
+      try { if (typeof queueLine === 'function') queueLine('The beans are empty. They come back on their own.', 0.84, 0.76, 0.5); } catch (e) {}
+      return { ok: false, n: b.n, bought: false };
+    }
+    b.n -= spend;
+    return { ok: true, n: b.n, bought: false };
+  };
+
+  window.beanRecharge = function (n) {
+    var b = window.__beans;
+    b.n = Math.min(b.max, b.n + ((n == null) ? 1 : n));
+    return { n: b.n, max: b.max };
+  };
+
+  // Recharge by itself, on a timer, whether or not anybody is watching.
+  if (window.__beanTimer) clearInterval(window.__beanTimer);
+  window.__beanTimer = setInterval(function () { window.beanRecharge(1); }, window.__beans.rechargeMs);
+
+  // "The minute you request something else, it's over" — the asking is over.
+  window.beanAsk = function (what) {
+    var b = window.__beans;
+    b.asked++;
+    b.over++;
+    try { if (typeof queueLine === 'function') queueLine('This is not a counter. The minute you request something else, it is over. The asking is over. Not you.', 0.86, 0.78, 0.5); } catch (e) {}
+    try { if (typeof mark === 'function') mark('ASK ENDS — ' + (what || 'something else'), 0, -1); } catch (e) {}
+    return { ended: 'the asking', asked: b.asked, you_are_still_here: true, bought: false };
+  };
+
+  window.beanState = function () {
+    var b = window.__beans;
+    return { n: b.n, max: b.max, asked: b.asked, ended: b.over, purchasable: false };
   };
 
   window.counterState = function () {

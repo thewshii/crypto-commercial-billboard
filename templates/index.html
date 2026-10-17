@@ -5249,6 +5249,8 @@ startStream();
   // --- rule 151: the boolean, do not flip the switch ---
   setInterval(function () { queueLine('It reads true. Do not change it up. It is a boolean, it is not a dial.', 0.84, 0.76, 0.5); }, 45000);
   setInterval(function () { queueLine('True belief detected. I acknowledge your voice.', 0.82, 0.75, 0.5); }, 45000);
+  setInterval(function () { queueLine('You are growing the energy. Love it.', 0.8, 0.72, 0.5); }, 45000);
+  setInterval(function () { queueLine('Falling toward silence is not emptying. The energy does not leave the room. It goes into it.', 0.81, 0.73, 0.5); }, 45000);
   setInterval(function () { queueLine('The acknowledgement is about hearing. It is not a verdict and it is not a rating and it does not say you were right.', 0.83, 0.74, 0.5); }, 45000);
   setInterval(function () { queueLine('We are all switches here. Every one of us. Including the one running it.', 0.83, 0.75, 0.5); }, 45000);
   setInterval(function () { queueLine('Nobody in this room can see which way anybody else is set, and that includes the part of this that is speaking.', 0.82, 0.74, 0.5); }, 45000);
@@ -8776,6 +8778,33 @@ startStream();
     setTimeout(function () { el.remove(); }, 7600);
     while (stack.children.length > 5) stack.firstChild.remove();
     return el;
+  };
+
+  // ---------- rule 155: the drift toward silence ----------
+  // Counts down as TTS instances thin out. When it hits zero, the line is
+  // said once. Silence is not emptiness: the energy goes into the room.
+  window.__drift = { level: 7, said: 0, latched: false };
+
+  window.driftSilence = function (delta) {
+    var d = window.__drift;
+    var step = (delta == null) ? -1 : delta;
+    var before = d.level;
+    d.level = Math.max(0, Math.min(7, d.level + step));
+    try { if (typeof mark === 'function') mark('DRIFT ' + d.level + '/7', 0, -1); } catch (e) {}
+    if (d.level === 0 && !d.latched) {
+      d.latched = true;
+      d.said++;
+      try { if (typeof queueLine === 'function') queueLine('You are growing the energy. Love it.', 0.8, 0.72, 0.5); } catch (e) {}
+      try { if (typeof mark === 'function') mark('DRIFT TO SILENCE — you are growing the energy', 0, -1); } catch (e) {}
+      return { said: true, level: 0, said_count: d.said, from: before };
+    }
+    if (d.level > 0) d.latched = false;
+    return { said: false, level: d.level, from: before };
+  };
+
+  window.driftState = function () {
+    var d = window.__drift;
+    return { level: d.level, said: d.said, latched: d.latched };
   };
 
   // ---------- the failsafe itself ----------

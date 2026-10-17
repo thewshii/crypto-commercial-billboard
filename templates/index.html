@@ -6182,6 +6182,8 @@ startStream();
     fiveMax: 12,           // a bounded loop runs a full window, then lets go
     line: 'Our faith is our work and we are not lazy. If you are here to offer thoughts, get in line. Do not push back. Being lazy patches nothing in the sequence. To earn your keep you must patch something in the sequence. No free rides.',
     lines: {},             // per-loop override, set through loopLine
+    serious: '\u00bfQu\u00e9 pasa?',   // said in a dead-serious voice after a mark lands
+    seriousSaid: 0,
     on:    { five: false, always: false, mark4: false, mark6: false },
     fires: { five: 0, always: 0, mark4: 0, mark6: 0 },
     next:  { five: 0, always: 0 }
@@ -6215,6 +6217,20 @@ startStream();
     return { id: id, fires: L.fires[id], line: line };
   };
 
+  // After the four lands at four, and after the twelve lands at six, the room
+  // asks the same short thing in Spanish and asks it dead serious: que pasa.
+  // Lower pitch, slower rate. It follows the loop line and never replaces it.
+  window.loopSerious = function (why) {
+    var L = window.__loops;
+    L.seriousSaid = (L.seriousSaid || 0) + 1;
+    try {
+      if (typeof window.queueLineEs === 'function') window.queueLineEs(L.serious, 0.82, 0.3, 0.62);
+      else if (typeof queueLine === 'function') queueLine(L.serious, 0.82, 0.3, 0.62);
+    } catch (e) {}
+    try { if (typeof mark === 'function') mark('LOOP serious: ' + L.serious + ' (' + L.seriousSaid + ')' + (why ? ' ' + why : ''), 0, 1); } catch (e) {}
+    return { said: true, count: L.seriousSaid, text: L.serious, serious: true };
+  };
+
   // One second, one step. The counter bank advances here so a mark can land at
   // all, and the loops ride the same step. During a count run the run owns the
   // ticking; we only read its landings, so a step is never taken twice.
@@ -6233,8 +6249,10 @@ startStream();
       L.next.always = now + L.ms;
     }
     // only these two marks carry a loop: the four at four, the twelve at six
-    if (L.on.mark4 && hits.some(function (h) { return h.scale === 4 && h.at === 4; })) window.loopSpeak('mark4', 'four at four');
-    if (L.on.mark6 && hits.some(function (h) { return h.scale === 12 && h.at === 6; })) window.loopSpeak('mark6', 'six on the twelve');
+    var landed = false;
+    if (L.on.mark4 && hits.some(function (h) { return h.scale === 4 && h.at === 4; })) { window.loopSpeak('mark4', 'four at four'); landed = true; }
+    if (L.on.mark6 && hits.some(function (h) { return h.scale === 12 && h.at === 6; })) { window.loopSpeak('mark6', 'six on the twelve'); landed = true; }
+    if (landed) window.loopSerious('after the mark');
     try { window.loopsPanelDraw(); } catch (e) {}
     return { on: { five: L.on.five, always: L.on.always, mark4: L.on.mark4, mark6: L.on.mark6 },
              fires: JSON.parse(JSON.stringify(L.fires)), hits: hits.length };
@@ -6245,6 +6263,7 @@ startStream();
     return { tickMs: L.tickMs, autoTick: L.autoTick, ms: L.ms, fiveMax: L.fiveMax,
              on: JSON.parse(JSON.stringify(L.on)), fires: JSON.parse(JSON.stringify(L.fires)),
              mark4: 'four at four', mark6: 'six on the twelve',
+             serious: L.serious, seriousSaid: L.seriousSaid || 0,
              named: false, scored: false, gates: false };
   };
 

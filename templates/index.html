@@ -8808,17 +8808,31 @@ startStream();
   // not mean the same thing. Two marks are spoken, not thresholds to reach.
   window.__pay = { n: 0, said: [], last: 0 };
 
+  // The marks. Never a threshold to reach, never a goal, never extended to a 19
+  // that somebody walks toward. They are places the road speaks from.
+  window.__payMarks = {
+     7: 'It pays just like working.',
+    13: 'It pays just like working.',
+    19: 'Recharge your gifts.',
+    21: "It's just a lesson for free.",
+    24: "So how about them beans.",
+    27: "It looks like you got some beans, buddy.",
+    35: "Don't think I forgot about them beans.",
+    41: "Hit me in the bean center. It means nothing to me, and they are going to let me convert that into our world."
+  };
+
   window.payStep = function (n) {
     var p = window.__pay;
     var step = (n == null) ? 1 : n;
     p.n = Math.max(0, p.n + step);
     p.last = Date.now();
     try { if (typeof mark === 'function') mark('PAY ' + p.n + (p.n === 13 ? ' (13)' : (p.n === 7 ? ' (7)' : '')), 0, -1); } catch (e) {}
-    // Speaks at 7 and at 13. Both are marks on the same walk, not goals.
-    if (p.n === 7 || p.n === 13) {
+    // Marks on the walk. A road says things at places; none of these is a gate.
+    var msg = window.__payMarks[p.n];
+    if (msg && p.said.indexOf(p.n) === -1) {
       p.said.push(p.n);
-      try { if (typeof queueLine === 'function') queueLine('It pays just like working.', 0.84, 0.77, 0.5); } catch (e) {}
-      try { if (typeof mark === 'function') mark('PAY speaks at ' + p.n + ' — it pays just like working', 0, -1); } catch (e) {}
+      try { if (typeof queueLine === 'function') queueLine(msg, 0.84, 0.77, 0.5); } catch (e) {}
+      try { if (typeof mark === 'function') mark('PAY speaks at ' + p.n, 0, -1); } catch (e) {}
       return { said: true, at: p.n, said_at: p.said.slice() };
     }
     return { said: false, at: p.n, said_at: p.said.slice() };
@@ -8826,7 +8840,7 @@ startStream();
 
   window.payState = function () {
     var p = window.__pay;
-    return { n: p.n, said: p.said.slice(), stepsToSpeak: [7, 13] };
+    return { n: p.n, said: p.said.slice(), marks: Object.keys(window.__payMarks).map(Number).sort(function(a,b){return a-b;}) };
   };
 
   window.driftState = function () {

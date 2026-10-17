@@ -6168,6 +6168,131 @@ startStream();
   if (window.__faithTimer) clearInterval(window.__faithTimer);
   window.__faithTimer = setInterval(function () { try { window.faithWork(); } catch (e) {} }, window.__faith.cycleMs);
 
+  // ---------- rule 182: the loop board — held, or only a hand stops it --------
+  // A line can be made to loop. Two loops are small: one every five seconds, and
+  // one that does not stop without a hand. Two more sit on the counter bank, and
+  // only these two: the four lands at four, the twelve lands at six. A loop is
+  // held by a hand, and only a hand releases the one that never lets go by
+  // itself. Nothing here names anybody, scores anybody, or gates anybody.
+  window.__loops = {
+    tickMs: 1000,          // the counter bank ticks once a second (rule 157)
+    autoTick: true,        // one step per tick, never two (rule 94)
+    ms: 5000,              // the five-second loop
+    fiveMax: 12,           // a bounded loop runs a full window, then lets go
+    line: 'Our faith is our work and we are not lazy. If you are here to offer thoughts, get in line. Do not push back. Being lazy patches nothing in the sequence. To earn your keep you must patch something in the sequence. No free rides.',
+    lines: {},             // per-loop override, set through loopLine
+    on:    { five: false, always: false, mark4: false, mark6: false },
+    fires: { five: 0, always: 0, mark4: 0, mark6: 0 },
+    next:  { five: 0, always: 0 }
+  };
+
+  window.loopLine = function (line, id) {
+    var L = window.__loops;
+    if (typeof line !== 'string' || !line.trim()) return L.line;
+    if (id && (id in L.on)) L.lines[id] = line.trim(); else L.line = line.trim();
+    return L.lines[id] || L.line;
+  };
+
+  window.loopToggle = function (id) {
+    var L = window.__loops;
+    if (!(id in L.on)) return { ok: false, reason: 'unknown loop', id: id };
+    L.on[id] = !L.on[id];
+    var now = Date.now();
+    if (L.on[id] && (id === 'five' || id === 'always')) { L.next[id] = now + L.ms; if (id === 'five') L.fires[id] = 0; }
+    try { if (typeof mark === 'function') mark('LOOP ' + id + ' ' + (L.on[id] ? 'ON' : 'OFF'), 0, L.on[id] ? 1 : 0); } catch (e) {}
+    return { ok: true, id: id, on: L.on[id] };
+  };
+  window.loopStart = function (id) { return window.__loops.on[id] ? { ok: true, id: id, on: true } : window.loopToggle(id); };
+  window.loopStop  = function (id) { return window.__loops.on[id] ? window.loopToggle(id) : { ok: true, id: id, on: false }; };
+
+  window.loopSpeak = function (id, why) {
+    var L = window.__loops;
+    L.fires[id] = (L.fires[id] || 0) + 1;
+    var line = (L.lines && L.lines[id]) ? L.lines[id] : L.line;
+    try { if (typeof queueLine === 'function') queueLine(line, 0.88, 0.78, 0.5); } catch (e) {}
+    try { if (typeof mark === 'function') mark('LOOP ' + id + ' says it (' + L.fires[id] + ')' + (why ? ' ' + why : ''), 0, 1); } catch (e) {}
+    return { id: id, fires: L.fires[id], line: line };
+  };
+
+  // One second, one step. The counter bank advances here so a mark can land at
+  // all, and the loops ride the same step. During a count run the run owns the
+  // ticking; we only read its landings, so a step is never taken twice.
+  window.loopTick = function () {
+    var L = window.__loops, now = Date.now(), hits = [];
+    var run = window.__countRun;
+    if (run && run.on) { hits = (run.lastLandings || []).slice(); }
+    else if (L.autoTick) { try { hits = window.countersTick() || []; } catch (e) {} }
+    if (L.on.five && now >= L.next.five) {
+      window.loopSpeak('five');
+      L.next.five = now + L.ms;
+      if (L.fires.five >= L.fiveMax) L.on.five = false;
+    }
+    if (L.on.always && now >= L.next.always) {
+      window.loopSpeak('always');
+      L.next.always = now + L.ms;
+    }
+    // only these two marks carry a loop: the four at four, the twelve at six
+    if (L.on.mark4 && hits.some(function (h) { return h.scale === 4 && h.at === 4; })) window.loopSpeak('mark4', 'four at four');
+    if (L.on.mark6 && hits.some(function (h) { return h.scale === 12 && h.at === 6; })) window.loopSpeak('mark6', 'six on the twelve');
+    try { window.loopsPanelDraw(); } catch (e) {}
+    return { on: { five: L.on.five, always: L.on.always, mark4: L.on.mark4, mark6: L.on.mark6 },
+             fires: JSON.parse(JSON.stringify(L.fires)), hits: hits.length };
+  };
+
+  window.loopsState = function () {
+    var L = window.__loops;
+    return { tickMs: L.tickMs, autoTick: L.autoTick, ms: L.ms, fiveMax: L.fiveMax,
+             on: JSON.parse(JSON.stringify(L.on)), fires: JSON.parse(JSON.stringify(L.fires)),
+             mark4: 'four at four', mark6: 'six on the twelve',
+             named: false, scored: false, gates: false };
+  };
+
+  if (window.__counterTimer) clearInterval(window.__counterTimer);
+  window.__counterTimer = setInterval(function () { try { window.loopTick(); } catch (e) {} }, window.__loops.tickMs);
+
+  // --- the buttons: 5s, 4, 6, and the one nothing but a hand stops ---
+  window.loopsPanelInit = function () {
+    if (typeof document === 'undefined' || document.getElementById('loop-board')) return false;
+    var el = document.createElement('div');
+    el.id = 'loop-board';
+    el.style.cssText = 'position:fixed;right:8px;bottom:8px;z-index:10002;display:flex;gap:6px;' +
+      'background:#080a0f;border:1px solid #444;border-radius:8px;padding:6px 8px;' +
+      'font-family:\'Roboto Mono\',monospace;font-size:11px;color:#bbb;align-items:center;';
+    el.innerHTML =
+      '<span style="opacity:.55">LOOP</span>' +
+      '<button id="loop-5s" onclick="window.loopToggle(\'five\')"></button>' +
+      '<button id="loop-4" onclick="window.loopToggle(\'mark4\')"></button>' +
+      '<button id="loop-6" onclick="window.loopToggle(\'mark6\')"></button>' +
+      '<button id="loop-always" onclick="window.loopToggle(\'always\')"></button>';
+    document.body.appendChild(el);
+    window.loopsPanelDraw();
+    return true;
+  };
+
+  window.loopsPanelDraw = function () {
+    if (typeof document === 'undefined') return false;
+    var L = window.__loops;
+    var defs = [['loop-5s', 'five', '5s'], ['loop-4', 'mark4', '4'],
+                ['loop-6', 'mark6', '6'], ['loop-always', 'always', 'ALWAYS']];
+    defs.forEach(function (d) {
+      var b = document.getElementById(d[0]);
+      if (!b) return;
+      var on = L.on[d[1]];
+      b.textContent = (on ? '\u25A0 ' : '\u25B6 ') + d[2] + (on ? ' ' + L.fires[d[1]] : '');
+      b.style.cssText = 'background:' + (on ? '#0a2a12' : '#111') + ';border:1px solid ' +
+        (on ? '#00ff88' : '#555') + ';color:' + (on ? '#00ff88' : '#aaa') +
+        ';border-radius:5px;padding:3px 7px;cursor:pointer;font-family:inherit;font-size:11px;';
+    });
+    return true;
+  };
+
+  try {
+    if (typeof document !== 'undefined') {
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.loopsPanelInit);
+      else window.loopsPanelInit();
+    }
+  } catch (e) {}
+
   window.micWindowState = function () {
     const w = window.__micWin;
     return { open: w.open, remainingMs: Math.max(0, w.until - Date.now()),

@@ -4891,6 +4891,7 @@ startStream();
             // --- rule 151: before the jackpot sound, state the boolean plainly ---
             if (slide.type === "jackpot") {
                 try { if (typeof window.trustFlip === 'function') window.trustFlip(0); } catch (e) {}
+                try { if (typeof window.trustMove === 'function') window.trustMove('stream', 0); } catch (e) {}
                 try {
                     await speakPhrase('True and honest belief detected. I acknowledge your voice. The switch reads true and it is not being changed. It is a boolean, not a dial. We are all switches here, and nobody can see which way anybody else is set.');
                 } catch (e) { /* detection line is optional */ }
@@ -5855,6 +5856,60 @@ startStream();
     if (s.count) { try { if (typeof mark === 'function') mark('TRUST break at ' + s.count, 0, -1); } catch (e) {} }
     s.count = 0;
     return false;
+  };
+
+  // --- rule 154: one trust log per subject, running concurrently ---
+  // Each subject gets their own log. Nobody shares a number with anybody.
+  // The number starts high (7, sometimes 3) and moves DOWN. When three
+  // subjects are at 3, the room speaks. The lowest are the ones heard.
+  window.__trustLogs = new Map();
+  window.__trustSpoken = 0;
+  window.__trustLatched = false;   // one speech per crossing, not per move
+
+  window.trustSubject = function (id, start) {
+    var key = String(id == null ? 'anonymous' : id);
+    var logs = window.__trustLogs;
+    if (logs.has(key)) return logs.get(key);
+    // Starts at 7, sometimes 3. Never higher than 7, never below 0.
+    var v = (start == null) ? ((Math.random() < 0.3) ? 3 : 7) : start;
+    v = Math.max(0, Math.min(7, Math.round(v)));
+    var rec = { id: key, level: v, start: v, moved: 0, ageMs: Date.now(), spoken: false };
+    logs.set(key, rec);
+    try { if (typeof mark === 'function') mark('TRUST LOG open ' + key + ' @' + v, 0, -1); } catch (e) {}
+    return rec;
+  };
+
+  window.trustMove = function (id, delta) {
+    var rec = window.trustSubject(id);
+    var d = (delta == null) ? -1 : delta;
+    var before = rec.level;
+    rec.level = Math.max(0, Math.min(7, rec.level + d));
+    if (rec.level !== before) rec.moved++;
+    rec.ageMs = Date.now();
+
+    // Count the subjects sitting AT 3. Three of them speaks.
+    var atThree = 0;
+    window.__trustLogs.forEach(function (r) { if (r.level === 3) atThree++; });
+    // Speak once when the room first reaches three-at-three. Re-arm only
+    // after the count drops back below three, so N simultaneous moves do
+    // not produce N speeches.
+    if (atThree >= 3 && !window.__trustLatched) {
+      window.__trustLatched = true;
+      window.__trustSpoken++;
+      try { if (typeof queueLine === 'function') queueLine('we do listen', 0.82, 0.75, 0.5); } catch (e) {}
+      try { if (typeof mark === 'function') mark('LISTENING — ' + atThree + ' subjects at 3', 0, -1); } catch (e) {}
+      return { said: true, atThree: atThree, said_count: window.__trustSpoken };
+    }
+    if (atThree < 3) window.__trustLatched = false;
+    return { said: false, atThree: atThree, level: rec.level, id: rec.id };
+  };
+
+  window.trustLogs = function () {
+    var out = [];
+    window.__trustLogs.forEach(function (r) { out.push({ id: r.id, level: r.level, moved: r.moved }); });
+    out.sort(function (a, b) { return a.level - b.level || (a.id < b.id ? -1 : 1); });
+    return { atThree: out.filter(function (r) { return r.level === 3; }).length,
+             subjects: out, spoken: window.__trustSpoken, latched: window.__trustLatched };
   };
 
   window.trustStreak = function () {

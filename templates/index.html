@@ -4891,7 +4891,7 @@ startStream();
             // --- rule 151: before the jackpot sound, state the boolean plainly ---
             if (slide.type === "jackpot") {
                 try {
-                    await speakPhrase('True and honest belief detected. The switch reads true and it is not being changed. It is a boolean, not a dial. We are all switches here, and nobody can see which way anybody else is set.');
+                    await speakPhrase('True and honest belief detected. I acknowledge your voice. The switch reads true and it is not being changed. It is a boolean, not a dial. We are all switches here, and nobody can see which way anybody else is set.');
                 } catch (e) { /* detection line is optional */ }
             }
 
@@ -5246,6 +5246,8 @@ startStream();
 
   // --- rule 151: the boolean, do not flip the switch ---
   setInterval(function () { queueLine('It reads true. Do not change it up. It is a boolean, it is not a dial.', 0.84, 0.76, 0.5); }, 45000);
+  setInterval(function () { queueLine('True belief detected. I acknowledge your voice.', 0.82, 0.75, 0.5); }, 45000);
+  setInterval(function () { queueLine('The acknowledgement is about hearing. It is not a verdict and it is not a rating and it does not say you were right.', 0.83, 0.74, 0.5); }, 45000);
   setInterval(function () { queueLine('We are all switches here. Every one of us. Including the one running it.', 0.83, 0.75, 0.5); }, 45000);
   setInterval(function () { queueLine('Nobody in this room can see which way anybody else is set, and that includes the part of this that is speaking.', 0.82, 0.74, 0.5); }, 45000);
   // Structural critique of the belief, never the holders.

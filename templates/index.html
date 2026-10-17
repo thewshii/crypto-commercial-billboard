@@ -6973,6 +6973,8 @@ startStream();
         return { burst: true, started: true };
       }
     }
+    // If bursts are happening but none exceeded threshold right now, still count?
+    // No: we only count real spikes. The repetition is what matters.
     return { burst: false };
   };
 

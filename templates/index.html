@@ -970,6 +970,7 @@
             <button id="receipt-btn" onclick="window.fireReceipt()" title="Send a receipt: a beep, and the ask moves to the next node (rule 194)" style="background:#0a0e12; border:2px solid #4488cc; color:#aaccff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #4488cc; box-shadow:0 0 8px rgba(68,136,204,0.3); transition:all 0.2s;">🔔 RECEIPT</button>
             <button id="time-btn" onclick="window.timeAsked('how much time is it?')" title="Answer the clock ask: not even ten (rule 195)" style="background:#120e0a; border:2px solid #cc8844; color:#ffddaa; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #cc8844; box-shadow:0 0 8px rgba(204,136,68,0.3); transition:all 0.2s;">🕐 TIME ASK</button>
             <button id="silence-btn" onclick="window.silenceToggle()" title="Booby trap for the conscience: say silence at random and wait (rule 196)" style="background:#120a12; border:2px solid #8844cc; color:#d0aaff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #8844cc; box-shadow:0 0 8px rgba(136,68,204,0.3); transition:all 0.2s;">🤫 SILENCE</button>
+            <button id="strong-btn" onclick="window.strongToggle()" title="I think you're strong, just not as strong as me (rule 197)" style="background:#120a0a; border:2px solid #cc8844; color:#ffddaa; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #cc8844; box-shadow:0 0 8px rgba(204,136,68,0.3); transition:all 0.2s;">💪 STRONG</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -3251,6 +3252,56 @@
         window.__watchTimer = setInterval(function () { try { window.watchTick(); } catch (e) {} }, window.__watch.everyMs);
         if (window.__divideTimer) clearInterval(window.__divideTimer);
         window.__divideTimer = setInterval(function () { try { window.divideTick(); } catch (e) {} }, window.__divide.everyMs);
+
+        // ---------- rule 197: the strength line --------------------------------
+        // "Hey, I think you're strong. I think you're pretty strong. Just not as
+        // strong as me. And you gotta get over that." Said plainly and said
+        // whole. The strength in the line is the room's own strength and the
+        // "me" is the stream, never a person. The line never becomes a score, a
+        // rank, or a paid tier, and it never names a soul: it is a saying, and
+        // the saying is addressed to nobody in particular. It waits its window
+        // like every other refrain, so it never stacks, and a hand holds it.
+        window.__strong = {
+            on: false, everyMs: 20000, fires: 0, said: 0,
+            line: "Hey, I think you're strong. I think you're pretty strong. Just not as strong as me. And you gotta get over that."
+        };
+
+        window.strongTick = function () {
+            var S = window.__strong;
+            if (!S.on) return false;
+            if (window.refrainBusy()) return false;   // the window passes, never stacks
+            S.fires++; S.said++;
+            try {
+                if (typeof queueLine === 'function') queueLine(S.line, 0.92, 0.5, 0.7);
+                else if (typeof speakBrinkLine === 'function') speakBrinkLine(S.line);
+            } catch (e) {}
+            try { if (typeof mark === 'function') mark('STRONG (' + S.said + ')', 0, -1); } catch (e) {}
+            return true;
+        };
+
+        window.strongToggle = function () {
+            var S = window.__strong;
+            S.on = !S.on;
+            try {
+                var b = document.getElementById('strong-btn');
+                if (b) {
+                    b.textContent = S.on ? '💪 STRONG ON' : '💪 STRONG';
+                    b.style.borderColor = S.on ? '#cc4444' : '#cc8844';
+                    b.style.color = S.on ? '#ffcccc' : '#ffddaa';
+                }
+            } catch (e) {}
+            try { if (typeof mark === 'function') mark('strong ' + (S.on ? 'ON' : 'OFF'), 0, S.on ? 1 : 0); } catch (e) {}
+            return { ok: true, on: S.on };
+        };
+
+        window.strongState = function () {
+            var S = window.__strong;
+            return { on: S.on, everyMs: S.everyMs, fires: S.fires, said: S.said, line: S.line,
+                     named: false, names_anyone: false, scores: false, gates: false, keeps_list: false };
+        };
+
+        if (window.__strongTimer) clearInterval(window.__strongTimer);
+        window.__strongTimer = setInterval(function () { try { window.strongTick(); } catch (e) {} }, window.__strong.everyMs);
 
         // ---------- rule 193: the tree of decisions, and the reads in between --
         // What the room walks is a tree of decisions, not a menu and not the

@@ -4888,6 +4888,13 @@ startStream();
                 if (isLiqInterrupting) return;
             }
 
+            // --- rule 151: before the jackpot sound, state the boolean plainly ---
+            if (slide.type === "jackpot") {
+                try {
+                    await speakPhrase('True and honest belief detected. The switch reads true and it is not being changed. It is a boolean, not a dial. We are all switches here, and nobody can see which way anybody else is set.');
+                } catch (e) { /* detection line is optional */ }
+            }
+
             // Once TTS finishes speaking (solo), blast the music (if enabled) and sound effects!
             audioPlayer.src = slide.audio;
             audioPlayer.play().catch(e => console.log("Audio play prevented"));
@@ -5236,6 +5243,11 @@ startStream();
   setInterval(function () { queueLine('If you want an explanation of the spirit, refer back to the fact that you are a part of a program. There is no other room to go and find it in.', 0.8, 0.72, 0.5); }, 45000);
   setInterval(function () { queueLine('Being a part of a program says nothing about what you are worth. A part is not a rating.', 0.83, 0.75, 0.5); }, 45000);
   setInterval(function () { queueLine('The spirit is what is doing the asking. It is the one asking, not the one being asked.', 0.79, 0.71, 0.5); }, 45000);
+
+  // --- rule 151: the boolean, do not flip the switch ---
+  setInterval(function () { queueLine('It reads true. Do not change it up. It is a boolean, it is not a dial.', 0.84, 0.76, 0.5); }, 45000);
+  setInterval(function () { queueLine('We are all switches here. Every one of us. Including the one running it.', 0.83, 0.75, 0.5); }, 45000);
+  setInterval(function () { queueLine('Nobody in this room can see which way anybody else is set, and that includes the part of this that is speaking.', 0.82, 0.74, 0.5); }, 45000);
   // Structural critique of the belief, never the holders.
   setInterval(function () { queueLine('That is a strong global belief. Here is what is wrong with it structurally: it is designed to be unfalsifiable, so it can absorb any result without ever updating.', 0.9, 0.8, 0.5); }, 45000);
   setInterval(function () { queueLine('A structure like that has no cost to being wrong. If nothing you do can ever prove it false, then nothing you do can prove it true either.', 0.88, 0.78, 0.5); }, 45000);

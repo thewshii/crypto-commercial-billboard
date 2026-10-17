@@ -5292,6 +5292,8 @@ startStream();
   setInterval(function () { queueLine('Everybody can hear everybody here. It goes both ways, and nobody has to be quiet to be here.', 0.85, 0.77, 0.5); }, 45000);
   setInterval(function () { queueLine('Looking for black. Not people. The colour. This board does not seek people and it never will.', 0.85, 0.77, 0.5); }, 45000);
   setInterval(function () { queueLine('This board is not in a race in either sense. Nobody is ranked against anybody and nobody is a category.', 0.85, 0.77, 0.5); }, 45000);
+  setInterval(function () { queueLine('We are not races, we are cultures. A race is a category and a culture is a practice.', 0.85, 0.77, 0.5); }, 45000);
+  setInterval(function () { queueLine('Colour, race and religion go together. Getting past one and leaving the other two running is not getting along. It is changing the subject.', 0.85, 0.77, 0.5); }, 45000);
   setInterval(function () { queueLine('A body change goes on counter one hundred and twenty-three. It is remembered, and nothing negative is shown yet. Nothing was deleted.', 0.85, 0.77, 0.5); }, 45000);
   setInterval(function () { queueLine('Do you think they are really going to change it? You can press that one.', 0.85, 0.77, 0.5); }, 45000);
   // Support is asked for slowly and only here. Once every ten minutes, never at 45s.
@@ -6942,7 +6944,11 @@ startStream();
       body: 'This board is not in a race in either sense. Nobody is ranked against anybody and nobody is a category. There is no race to be in and there never was one here.' });
     b.notices.push({ id: 3, head: 'NO NOTICE NAMES A PERSON',
       body: 'Only qualities are sought on this board. A notice that asks for a kind of person is refused before it goes up, and every refusal is counted.' });
-    b.notices.push({ id: 4, head: 'OPEN POSTING',
+    b.notices.push({ id: 4, head: 'WE ARE NOT RACES, WE ARE CULTURES',
+      body: 'A race is a category and a culture is a practice. Nothing here is decided by a category and everything here is decided by what a person does. Declining the category is not a loophole, it is a refusal, and the board is allowed to refuse.' });
+    b.notices.push({ id: 5, head: 'ALL THREE OR NONE',
+      body: 'Colour, race and religion go together. Getting past one and leaving the other two running is not getting along, it is changing the subject. The board takes all three out at once.' });
+    b.notices.push({ id: 6, head: 'OPEN POSTING',
       body: 'If you have something to put up, put it up. Nothing here is charged and nothing here is gated.' });
     return b.notices.length;
   };

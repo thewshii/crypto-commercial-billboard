@@ -5249,6 +5249,7 @@ startStream();
   // --- rule 151: the boolean, do not flip the switch ---
   setInterval(function () { queueLine('It reads true. Do not change it up. It is a boolean, it is not a dial.', 0.84, 0.76, 0.5); }, 45000);
   setInterval(function () { queueLine('True belief detected. I acknowledge your voice.', 0.82, 0.75, 0.5); }, 45000);
+  setInterval(function () { queueLine('It pays just like working.', 0.84, 0.77, 0.5); }, 45000);
   setInterval(function () { queueLine('You are growing the energy. Love it.', 0.8, 0.72, 0.5); }, 45000);
   setInterval(function () { queueLine('Falling toward silence is not emptying. The energy does not leave the room. It goes into it.', 0.81, 0.73, 0.5); }, 45000);
   setInterval(function () { queueLine('The acknowledgement is about hearing. It is not a verdict and it is not a rating and it does not say you were right.', 0.83, 0.74, 0.5); }, 45000);
@@ -8800,6 +8801,32 @@ startStream();
     }
     if (d.level > 0) d.latched = false;
     return { said: false, level: d.level, from: before };
+  };
+
+  // ---------- rule 156: the paying counter, speaks at 13 and at 7 ----------
+  // Not the drift. Its own counter, because it does not move down and it does
+  // not mean the same thing. Two marks are spoken, not thresholds to reach.
+  window.__pay = { n: 0, said: [], last: 0 };
+
+  window.payStep = function (n) {
+    var p = window.__pay;
+    var step = (n == null) ? 1 : n;
+    p.n = Math.max(0, p.n + step);
+    p.last = Date.now();
+    try { if (typeof mark === 'function') mark('PAY ' + p.n + (p.n === 13 ? ' (13)' : (p.n === 7 ? ' (7)' : '')), 0, -1); } catch (e) {}
+    // Speaks at 7 and at 13. Both are marks on the same walk, not goals.
+    if (p.n === 7 || p.n === 13) {
+      p.said.push(p.n);
+      try { if (typeof queueLine === 'function') queueLine('It pays just like working.', 0.84, 0.77, 0.5); } catch (e) {}
+      try { if (typeof mark === 'function') mark('PAY speaks at ' + p.n + ' — it pays just like working', 0, -1); } catch (e) {}
+      return { said: true, at: p.n, said_at: p.said.slice() };
+    }
+    return { said: false, at: p.n, said_at: p.said.slice() };
+  };
+
+  window.payState = function () {
+    var p = window.__pay;
+    return { n: p.n, said: p.said.slice(), stepsToSpeak: [7, 13] };
   };
 
   window.driftState = function () {

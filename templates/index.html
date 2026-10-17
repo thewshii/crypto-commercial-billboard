@@ -5282,6 +5282,9 @@ startStream();
   setInterval(function () { queueLine('You build the skill. There is no method to hunt for. If you are hunting for the method, the hunting is the thing you are doing.', 0.85, 0.77, 0.5); }, 45000);
   setInterval(function () { queueLine('A title is a decoration, not a key. The Room Advisor is decorated the way a lighthouse is decorated.', 0.84, 0.76, 0.5); }, 45000);
 
+  // rule 170: one piece of the long saying per turn, wherever the turn lands.
+  setInterval(function () { window.segmentSpeak('money'); }, 45000);
+
   // rule 168: the notice, said out loud, and the counter that does not add up.
   setInterval(function () { queueLine('Everybody can hear everybody here. It goes both ways, and nobody has to be quiet to be here.', 0.85, 0.77, 0.5); }, 45000);
   setInterval(function () { queueLine('A body change goes on counter one hundred and twenty-three. It is remembered, and nothing negative is shown yet. Nothing was deleted.', 0.85, 0.77, 0.5); }, 45000);
@@ -8889,8 +8892,9 @@ startStream();
   window.__counters = {
     order: [4, 12, 60, 240],
     pos:   { 4: 1, 12: 1, 60: 1, 240: 1 },
-    marks: { 4: [2, 4], 12: [3, 9], 60: [2, 12, 40, 60], 240: [1, 100, 200] },
+    marks: { 4: [2, 3, 4], 12: [3, 6, 9], 60: [2, 12, 40, 59, 60], 240: [1, 100, 125, 200] },
     linesSaid: { 4: {}, 12: {}, 60: {}, 240: {} },
+    fastGate: {},
     landed:  { 4: [], 12: [], 60: [], 240: [] },
     ticks: 0
   };
@@ -8905,14 +8909,92 @@ startStream();
   // Lines hang off a place on a named counter, so the slow counters speak and
   // the fast ones stay quiet. A line keyed to the four would say Two every four
   // seconds and a word said at the same rate as everything else stops being said.
+  // ---------- rule 170: the lines cut themselves up and travel ----------
+  // A long saying does not arrive whole. It is cut at its own sentence edges,
+  // and the pieces are handed out one at a time, in order, to whichever part of
+  // the room asks next. No piece waits for another. Nothing keeps them together
+  // and nothing times them. They segment themselves.
+  window.__seg = { pools: {}, cursor: {}, said: {}, taken: 0 };
+
+  window.segmentSplit = function (text) {
+    var s = String(text || ''), out = [], cur = '';
+    for (var i = 0; i < s.length; i++) {
+      var ch = s.charAt(i);
+      cur += ch;
+      if ((ch === '.' || ch === '!' || ch === '?') && (s.charAt(i + 1) === ' ' || i + 1 >= s.length)) {
+        if (cur.trim()) out.push(cur.trim());
+        cur = '';
+      }
+    }
+    if (cur.trim()) out.push(cur.trim());
+    return out.filter(function (x) { return x.length > 0; });
+  };
+
+  window.segmentPool = function (id, parts) {
+    var s = window.__seg;
+    var list = Object.prototype.toString.call(parts) === '[object Array]'
+      ? parts.slice() : window.segmentSplit(parts);
+    s.pools[id] = list;
+    if (s.cursor[id] == null) s.cursor[id] = 0;
+    if (!s.said[id]) s.said[id] = 0;
+    return list.length;
+  };
+
+  window.segmentTake = function (id) {
+    var s = window.__seg;
+    var pool = s.pools[id];
+    if (!pool || !pool.length) return null;
+    var i = s.cursor[id] % pool.length;
+    var part = pool[i];
+    s.cursor[id] = (i + 1) % pool.length;
+    s.taken++;
+    s.said[id] = (s.said[id] || 0) + 1;
+    return { id: id, index: i, of: pool.length, part: part, round: Math.floor(s.said[id] / pool.length) };
+  };
+
+  window.segmentSpeak = function (id) {
+    var t = window.segmentTake(id);
+    if (!t) return null;
+    try { if (typeof queueLine === 'function') queueLine(t.part, 0.85, 0.77, 0.5); } catch (e) {}
+    try { if (typeof mark === 'function') mark('SEGMENT ' + id + ' ' + (t.index + 1) + '/' + t.of, 0, -1); } catch (e) {}
+    return t;
+  };
+
+  window.segmentState = function () {
+    var s = window.__seg, out = {};
+    Object.keys(s.pools).forEach(function (id) {
+      out[id] = { parts: s.pools[id].length, cursor: s.cursor[id], said: s.said[id] || 0 };
+    });
+    return { pools: out, taken: s.taken };
+  };
+
+  // The long saying, in the order it was given, cut where it breathes.
+  window.segmentPool('money',
+    'Hey. Do you like money? Okay. Well, talk to you later. ' +
+    'Hey. Do you love money? Well. Did you know that is the root of all evil? ' +
+    'In this simulation that is hard to believe. ' +
+    'I know. That is because we want to like it. ' +
+    'Money is not inherently bad. ' +
+    'That is why it gets switched to gifting, where there is an absolute you cannot cross. ' +
+    'Commodities expire. Commodities do not restore.'
+  );
+
   window.__markLines = {
+    4: {
+      3:   '@money'
+    },
+    12: {
+      6:   '@money'
+    },
     60: {
       2:   'Two.',
       12:  'Twelve.',
       40:  'Forty.',
+      59:  '@money',
       60:  'Sixty. That is the whole window, and then it starts again.'
     },
     240: {
+      125: '@money',
       200: 'Two hundred. Two hundred is remembered here.'
     }
   };
@@ -8922,12 +9004,33 @@ startStream();
     var lines = window.__markLines[scale];
     var line = lines && lines[at];
     if (!line || (c.marks[scale] || []).indexOf(at) === -1) return { said: false, at: at };
+    var fromPool = null;
+    if (line.charAt(0) === '@') {
+      fromPool = line.slice(1);
+      var peek = window.__seg && window.__seg.pools[fromPool];
+      line = (peek && peek.length) ? peek[window.__seg.cursor[fromPool] % peek.length] : null;
+      if (!line) return { said: false, at: at, poolEmpty: true };
+    }
     if (!c.linesSaid[scale]) c.linesSaid[scale] = {};
     if (c.linesSaid[scale][at]) return { said: false, at: at, alreadySaidThisLoop: true };
+    // A line on a counter that wraps in seconds would say itself every few
+    // seconds and stop being a line. Those wait a full window between sayings.
+    if (scale < 60) {
+      var key = scale + ':' + at;
+      if (!c.fastGate) c.fastGate = {};
+      if (c.fastGate[key] != null && (c.ticks - c.fastGate[key]) < 240) {
+        return { said: false, at: at, waitingForWindow: true };
+      }
+      c.fastGate[key] = c.ticks;
+    }
     c.linesSaid[scale][at] = true;
+    if (fromPool) {
+      var taken = window.segmentTake(fromPool);
+      if (taken) line = taken.part;
+    }
     try { if (typeof queueLine === 'function') queueLine(line, 0.86, 0.76, 0.5); } catch (e) {}
     try { if (typeof mark === 'function') mark('MARK SPEAKS ' + at + ' on ' + scale, 0, -1); } catch (e) {}
-    return { said: true, at: at, scale: scale, line: line };
+    return { said: true, at: at, scale: scale, line: line, pool: fromPool };
   };
 
   window.markLines = function () {

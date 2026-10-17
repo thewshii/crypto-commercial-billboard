@@ -5974,6 +5974,129 @@ startStream();
     };
   };
 
+  // ============ SEQUENCE RECURRENCE — and what was done about it ============
+// A sequence that happens once is noise. A sequence that happens again has a
+// fix, and the fix is the only part of it worth keeping. So every recurrence
+// is logged WITH the remediation attached, and the memory is per-pattern:
+// what worked the first time is offered before anything new is tried.
+  window.__seqRec = { byName: {}, log: [], suppressed: 0 };
+
+  // Log a recurrence and, if we have one, what fixed it last time.
+  window.seqRecur = function (name, fix) {
+    const r = window.__seqRec;
+    const key = name || 'unnamed';
+    if (!r.byName[key]) r.byName[key] = { name: key, count: 0, fixes: [], last: null };
+    const e = r.byName[key];
+    e.count++;
+    e.last = Date.now();
+    const priorFix = e.fixes.length ? e.fixes[e.fixes.length - 1] : null;
+
+    const rec = { t: e.last, name: key, count: e.count, fix: fix || null,
+                  priorFix: priorFix, recurred: e.count > 1 };
+    r.log.push(rec);
+    if (r.log.length > 60) r.log.shift();
+
+    if (fix) {
+      e.fixes.push({ t: e.last, fix: fix });
+      if (e.fixes.length > 10) e.fixes.shift();
+      // Written to the TTS memory with its name, so the pattern and its
+      // remedy travel together into the same array.
+      if (typeof window.ttsRemembers === 'function') {
+        window.ttsRemembers('seqrec', key + ' x' + e.count + ' -> ' + fix,
+                            { rate: 0.9, pitch: 0.8, volume: 0.5, mood: 'sequence', count: e.count });
+      }
+    }
+    if (typeof mark === 'function') {
+      mark('SEQ ' + key + ' x' + e.count + (priorFix ? ' (known)' : ' (new)'), 0, -1);
+    }
+    return rec;
+  };
+
+  // Has this happened before, and what worked?
+  window.seqPrior = function (name) {
+    const e = (window.__seqRec || {}).byName[name];
+    if (!e || !e.fixes.length) return null;
+    return { count: e.count, fix: e.fixes[e.fixes.length - 1].fix };
+  };
+
+  // Do not re-announce something that has been said. Recurrence that produces
+  // the identical line is a loop, and rule 125 says the voice goes quiet.
+  window.seqShouldSpeak = function (name, line) {
+    if (!line) return false;
+    if (typeof window.ttsHasSaid !== 'function') return true;
+    return !window.ttsHasSaid('seqrec', line);
+  };
+
+  window.seqRecStats = function () {
+    const r = window.__seqRec;
+    const names = Object.keys(r.byName);
+    return {
+      patterns: names.length,
+      recurring: names.filter(function (n) { return r.byName[n].count > 1; }).length,
+      totalEvents: r.log.length,
+      named: names.map(function (n) {
+        return { name: n, count: r.byName[n].count, fix: (r.byName[n].fixes.slice(-1)[0] || {}).fix || null };
+      })
+    };
+  };
+
+  // ============ STARTUP CODE — the ramp, and what each step unlocks ============
+  // 1 water, 2 wind, 3 fire, 4 land. One step at a time, same as always.
+  // The code has to be studied before it is walked in. That is the whole of
+  // the order and it is not a formality: the four have to be known before
+  // you are standing on one of them.
+  window.STARTUP_ELEMENTS = [
+    { step: 1, id: 'water', reads: 0, known: false },
+    { step: 2, id: 'wind',  reads: 0, known: false },
+    { step: 3, id: 'fire',  reads: 0, known: false },
+    { step: 4, id: 'land',  reads: 0, known: false }
+  ];
+  window.__code = { studied: 0, active: null, unlocked: [], logs: [] };
+
+  // Reading a step's code. Reading is not the same as walking.
+  window.codeStudy = function (step, note) {
+    const c = window.__code;
+    const el = window.STARTUP_ELEMENTS.filter(function (e) { return e.step === step; })[0];
+    if (!el) return null;
+    el.reads++;
+    // Known once read more than once. Rule 93 — a thing counted once is a
+    // coincidence, counted twice is a reading.
+    if (el.reads >= 2) el.known = true;
+    c.studied++;
+    c.logs.push({ t: Date.now(), step: step, id: el.id, note: note || '' });
+    if (c.logs.length > 40) c.logs.shift();
+    return el;
+  };
+
+  // Can they be up and walking around? Only if all four are known.
+  window.codeCanWalk = function () {
+    const all = window.STARTUP_ELEMENTS.every(function (e) { return e.known; });
+    return {
+      canWalk: all,
+      known: window.STARTUP_ELEMENTS.filter(function (e) { return e.known; }).map(function (e) { return e.id; }),
+      missing: window.STARTUP_ELEMENTS.filter(function (e) { return !e.known; }).map(function (e) { return e.id; })
+    };
+  };
+
+  window.codeState = function () {
+    const w = window.codeCanWalk();
+    return {
+      active: window.__code.active,
+      studied: window.__code.studied,
+      elements: window.STARTUP_ELEMENTS.map(function (e) {
+        return { step: e.step, id: e.id, reads: e.reads, known: e.known };
+      }),
+      canWalk: w.canWalk, missing: w.missing,
+      // Walking without studying is refused, not warned about.
+      locked: !w.canWalk
+    };
+  };
+
+  window.codeReset = function () {
+    window.STARTUP_ELEMENTS.forEach(function (e) { e.reads = 0; e.known = false; });
+    window.__code = { studied: 0, active: null, unlocked: [], logs: [] };
+  };
+
   // ============ SIN — a boolean on the world, never on a person ============
 // Checked, not scored. It is a state of the system, not a verdict on a soul.
 //

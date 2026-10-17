@@ -5817,6 +5817,9 @@ startStream();
   // One instance registers one thing it said. One entry. No batching.
   window.ttsRemembers = function (fn, text, meta) {
     const m = (meta || {});
+    // Anything that reaches memory also lands in the startup lead-in ring, so
+    // "what was said before it" is answerable for every voice.
+    try { if (window.startupNoteSpeech) window.startupNoteSpeech(text, m); } catch (e) {}
     const arr = window.ttsMemory(fn);
     arr.push({
       t: Date.now(),
@@ -5859,6 +5862,116 @@ startStream();
     let total = 0;
     for (const k in m) { out[k] = m[k].length; total += m[k].length; }
     return { perInstance: out, total: total, cap: window.TTS_MEM_CAP };
+  };
+
+  // ============ STARTUP — the 1-2-3-4 ramp and what was said before it ============
+// Starting this world is not always easy. It goes 1, 2, 3, 4 — one step at a
+// time, the same count as everything else — and sometimes it takes more than
+// one pass to get there.
+//
+// Every attempt is logged to the TTS memory. And each one carries what was
+// said in the five seconds BEFORE it started, because that is the only useful
+// thing about a startup that goes wrong: what the room was doing just before.
+  window.__startup = {
+    at: 0, target: 4, current: 0, runs: 0, hard: 0, lastRun: null
+  };
+  window.STARTUP_LEAD_MS = 5000;    // look this far back
+  window.__speechRing = [];         // rolling 30s of what was said, with times
+
+  // Every utterance lands here regardless of which voice said it.
+  window.startupNoteSpeech = function (text, meta) {
+    const now = Date.now();
+    window.__speechRing.push({
+      t: now, text: String(text || ''),
+      voice: (meta && meta.voice) || '', rate: (meta && meta.rate) || null
+    });
+    // Keep a rolling buffer. Older than 30s and it is not a lead-in to anything.
+    while (window.__speechRing.length && now - window.__speechRing[0].t > 30000) {
+      window.__speechRing.shift();
+    }
+    return rec_len(window.__speechRing);
+  };
+  function rec_len(a) { return a.length; }
+
+  // Everything said in the window before `at`.
+  window.startupLeadIn = function (at, windowMs) {
+    const end = at || Date.now();
+    const start = end - (windowMs || window.STARTUP_LEAD_MS);
+    return window.__speechRing.filter(function (s) {
+      return s.t >= start && s.t <= end;
+    });
+  };
+
+  // One ramp step. EXACTLY one. 1,2,3,4 and then it is up.
+  window.startupStep = function (to) {
+    const s = window.__startup;
+    const now = Date.now();
+
+    // A ramp starts at 1. If one is already in progress, going back to 1 is the
+    // same run retrying — that is what makes a startup hard, not a new one.
+    if (to === 1) {
+      if (s.lastRun) {
+        // Restarted mid-ramp. Keep the original start time and lead-in.
+        s.lastRun.steps.push('x');   // the failed attempt
+      } else {
+        s.runs++;
+        s.lastRun = { t: now, steps: [], leadIn: window.startupLeadIn(now) };
+      }
+      s.current = 1;
+      s.at = now;
+    } else {
+      // One step, never a jump. If they ask for 4 from 1, it still is 4 from 1.
+      const want = (to == null) ? s.current + 1 : to;
+      s.current = Math.min(s.target, Math.max(s.current, want));
+      if (s.lastRun) s.lastRun.steps.push(s.current);
+    }
+    s.at = now;
+
+    if (s.current >= s.target && s.lastRun) {
+      const lead = window.startupLeadIn(s.lastRun.t);
+      const rec = {
+        n: s.runs, t: s.lastRun.t, steps: s.lastRun.steps.slice(),
+        leadIn: lead.map(function (x) { return { t: x.t, text: x.text, voice: x.voice }; }),
+        leadCount: lead.length,
+        // Hard = it took more than one pass through the bar to reach 4.
+        // Hard = it took more than one pass through the bar, or it restarted.
+        hard: s.lastRun.steps.indexOf('x') !== -1 || s.lastRun.steps.length > 3
+      };
+      if (rec.hard) s.hard++;
+
+      // Log it to the TTS memory WITH the lead-in attached. This is the
+      // record that makes a bad startup diagnosable rather than mysterious.
+      if (typeof window.ttsRemembers === 'function') {
+        window.ttsRemembers('startup',
+          'startup ' + rec.n + ' -> 4 in ' + rec.steps.length + ' step(s)' +
+          (rec.leadCount ? ' | before: ' + lead.map(function (x) { return x.text.slice(0, 40); }).join(' / ') : ' | before: (silence)'),
+          { rate: 0.9, pitch: 0.8, volume: 0.5, mood: 'startup', leadCount: rec.leadCount, hard: rec.hard });
+      }
+      window.__startupLog = window.__startupLog || [];
+      window.__startupLog.push(rec);
+      if (window.__startupLog.length > 30) window.__startupLog.shift();
+
+      if (typeof mark === 'function') {
+        mark('STARTUP ' + rec.n + ' -> 4 in ' + rec.steps.length +
+             (rec.hard ? ' (HARD)' : '') + ' | lead ' + rec.leadCount, 0, -1);
+      }
+      s.lastRun = null;
+    }
+    return s;
+  };
+
+  window.startupStats = function () {
+    const s = window.__startup;
+    const log = window.__startupLog || [];
+    return {
+      runs: s.runs, hard: s.hard,
+      current: s.current, at: s.at,
+      recent: log.slice(-5),
+      // How often the room said something in the 5s before a startup.
+      spokeFirst: log.filter(function (r) { return r.leadCount > 0; }).length,
+      silentFirst: log.filter(function (r) { return r.leadCount === 0; }).length,
+      leadWindowMs: window.STARTUP_LEAD_MS
+    };
   };
 
   // ============ SIN — a boolean on the world, never on a person ============

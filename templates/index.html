@@ -960,6 +960,7 @@
             <button id="announce-btn" onclick="announceVerifySpanish()" title="Announce the Spanish verification notice (English + Spanish)" style="background:#1a1024; border:2px solid #b06cff; color:#d9b3ff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #b06cff; box-shadow:0 0 8px rgba(176,108,255,0.35); transition:all 0.2s;">📣 ANNOUNCE</button>
             <button id="battle-btn" onclick="window.battleToggle()" title="Hold the guns, or let the room's own hand call a war for three minutes" style="background:#1a0a0a; border:2px solid #ff5533; color:#ff9977; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #ff5533; box-shadow:0 0 8px rgba(255,85,51,0.35); transition:all 0.2s;">⚔ WAR: HELD</button>
             <button id="fire-stop-btn" onclick="playFullStopSegment()" title="Hear the hard stop with fire (rule 186)" style="background:#1a0808; border:2px solid #ff8800; color:#ffcc66; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #ff8800; box-shadow:0 0 8px rgba(255,136,0,0.35); transition:all 0.2s;">🔥 FULL STOP</button>
+            <button id="no-turns-btn" onclick="window.turnsAnswer()" title="Answer a demand for a turn (rule 187)" style="background:#0d1208; border:2px solid #88cc44; color:#ccee99; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #88cc44; box-shadow:0 0 8px rgba(136,204,68,0.35); transition:all 0.2s;">🪑 NO TURNS</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -2943,6 +2944,53 @@
             }
         }
 
+        // ---------- rule 187: no turns ----------------------------------------
+        // The room is not a panel and there is no queue of speakers. Someone will
+        // stand up anyway and demand the floor: "are you going to listen to me?"
+        // The room does not argue and does not hand over a turn. It says what it
+        // is doing instead, and it names nobody while doing it.
+        window.__turns = {
+            line: 'Look, I am not listening to you. I am observing the person in the seat. Person in the game seat, please put your name in the comments.',
+            asked: 0, said: 0, lastAt: 0, cooldownMs: 60000,
+            patterns: [
+                /\bare you (going to|gonna) listen to me\b/i,
+                /\blisten to me\b/i,
+                /\bmy turn to (talk|speak)\b/i,
+                /\bit'?s my turn\b/i,
+                /\bturn to talk\b/i,
+                /\blet me (talk|speak)\b/i,
+                /\bi'?m talking now\b/i,
+                /\bnow it'?s my turn\b/i,
+                /\bcan i (talk|speak) now\b/i,
+                /\bare you listening\b/i
+            ]
+        };
+
+        window.turnsDemand = function (text) {
+            if (typeof text !== 'string' || !text) return false;
+            var T = window.__turns;
+            for (var i = 0; i < T.patterns.length; i++) {
+                if (T.patterns[i].test(text)) { T.asked++; return window.turnsAnswer(text); }
+            }
+            return false;
+        };
+
+        window.turnsAnswer = function (why) {
+            var T = window.__turns, now = Date.now();
+            if (typeof isWordActive !== 'undefined' && isWordActive) return { said: false, word: true };
+            if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return { said: false, busy: true };
+            if (now - T.lastAt < T.cooldownMs) return { said: false, waiting: true };
+            T.lastAt = now; T.said++;
+            try { speakBrinkLine(T.line, { rate: 0.98, pitch: 0.5 }); } catch (e) {}
+            try { if (typeof mark === 'function') mark('no turns (' + T.said + ') — the room does not hand over the floor', 0, -1); } catch (e) {}
+            return { said: true, count: T.said };
+        };
+
+        window.turnsState = function () {
+            var T = window.__turns;
+            return { asked: T.asked, said: T.said, cooldownMs: T.cooldownMs, names_anyone: false, gives_turns: false, gates: false };
+        };
+
         // FULL STOP SEGMENT: own schedule. Pauses the show, speaks a simple
         // English full-stop message three times, then resumes.
         let isFullStopActive = false;
@@ -4765,6 +4813,9 @@ startStream();
             if (typeof pulsationRecognizing !== "undefined" && pulsationRecognizing) return;
             loadMarkovChain(function () {
                 const line = generateMarkovLine();
+                // rule 187: when the chatter is demanding a turn, the room answers
+                // the demand instead of reading it aloud.
+                if (line && typeof window.turnsDemand === 'function' && window.turnsDemand(line)) return;
                 // Block Markov lines that mention the Wayne/exile phrase.
                 if (line && !/Wayne|exile|wear|best|fanatic/i.test(line)) speakBrinkLine(line);
             });

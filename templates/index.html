@@ -8838,6 +8838,95 @@ startStream();
     return { said: false, at: p.n, said_at: p.said.slice() };
   };
 
+  // ---------- rule 157: the counter, spoken from 41 to 72 ----------
+  // Each step is spoken so the room hears time counted rather than guessing at
+  // it. Two seconds per step. Accents land on the scales, not on the money.
+  window.__countRun = { on: false, step: 41, from: 41, to: 72, ms: 2000,
+                        handle: null, spoke: 0, accents: [], beats: [2, 4] };
+
+  // Position on a scale: the 1-based place a step sits at.
+  function scalePos(n, scale) { return ((n - 1) % scale) + 1; }
+  window.countAccents = function (n) {
+    var a = [];
+    // 12-scale: 3 and 9
+    if (scalePos(n, 12) === 3 || scalePos(n, 12) === 9) a.push('12:3/9');
+    // 60-scale: 1 and 12
+    var p60 = scalePos(n, 60);
+    if (p60 === 1 || p60 === 12) a.push('60:1/12');
+    // 240-scale: 1 and 240
+    var p240 = scalePos(n, 240);
+    if (p240 === 1 || p240 === 240) a.push('240:1/240');
+    return a;
+  };
+
+  // Beat grouping alternates 2 then 4, walked from the start of the run.
+  window.countBeat = function (n) {
+    var off = n - window.__countRun.from;
+    var i = 0, lens = window.__countRun.beats, pos = off;
+    var guard = 0;
+    while (guard++ < 500) {
+      var len = lens[i % lens.length];
+      if (pos < len) return { group: len, at: pos + 1 };
+      pos -= len; i++;
+    }
+    return { group: 2, at: 1 };
+  };
+
+  // Say the scales in words, never in notation.
+  var SCALE_WORDS = { '12:3/9': 'three and nine on the twelve',
+                      '60:1/12': 'one and twelve on the sixty',
+                      '240:1/240': 'one and two forty on the two forty' };
+  window.countWords = function (n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); };
+
+  window.countSpeak = function (n) {
+    var a = window.countAccents(n);
+    var b = window.countBeat(n);
+    var words = a.map(function (x) { return SCALE_WORDS[x] || x; });
+    var text = (a.length ? 'Mark ' : '') + window.countWords(n) + (a.length ? '. ' + words.join(', and ') + '.' : '.');
+    // Accents get less pitch movement and slightly slower delivery.
+    var rate  = a.length ? 0.86 : 0.95;
+    var pitch = a.length ? 0.72 : 0.82;
+    try { if (typeof queueLine === 'function') queueLine(text, rate, pitch, 0.5); } catch (e) {}
+    try { if (typeof mark === 'function') mark('COUNT ' + n + (a.length ? ' [' + a.join(',') + '] beat ' + b.at + '/' + b.group : ''), 0, -1); } catch (e) {}
+    return { n: n, text: text, accents: a, beat: b };
+  };
+
+  window.countStart = function (opts) {
+    var r = window.__countRun;
+    if (r.on) return null;
+    opts = opts || {};
+    r.from = (opts.from == null) ? 41 : opts.from;
+    r.to   = (opts.to   == null) ? 72 : opts.to;
+    r.ms   = (opts.ms   == null) ? 2000 : opts.ms;
+    r.step = r.from; r.on = true; r.spoke = 0; r.accents = [];
+    function tick() {
+      if (!r.on) return;
+      var out = window.countSpeak(r.step);
+      if (out.accents.length) r.accents.push(r.step);
+      r.spoke++;
+      if (r.step >= r.to) { r.on = false; r.handle = null;
+        try { if (typeof mark === 'function') mark('COUNT run complete ' + r.from + '..' + r.to, 0, -1); } catch (e) {}
+        return; }
+      r.step++;
+      r.handle = setTimeout(tick, r.ms);
+    }
+    tick();
+    return { from: r.from, to: r.to, ms: r.ms };
+  };
+
+  window.countStop = function () {
+    var r = window.__countRun;
+    r.on = false;
+    if (r.handle) { clearTimeout(r.handle); r.handle = null; }
+    return { stoppedAt: r.step, spoke: r.spoke };
+  };
+
+  window.countState = function () {
+    var r = window.__countRun;
+    return { on: r.on, step: r.step, from: r.from, to: r.to, ms: r.ms,
+             spoke: r.spoke, accents: r.accents.slice(), beats: r.beats.slice() };
+  };
+
   window.payState = function () {
     var p = window.__pay;
     return { n: p.n, said: p.said.slice(), marks: Object.keys(window.__payMarks).map(Number).sort(function(a,b){return a-b;}) };

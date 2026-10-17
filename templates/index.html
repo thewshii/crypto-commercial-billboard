@@ -6260,10 +6260,10 @@ startStream();
       'font-family:\'Roboto Mono\',monospace;font-size:11px;color:#bbb;align-items:center;';
     el.innerHTML =
       '<span style="opacity:.55">LOOP</span>' +
-      '<button id="loop-5s" onclick="window.loopToggle(\'five\')"></button>' +
-      '<button id="loop-4" onclick="window.loopToggle(\'mark4\')"></button>' +
-      '<button id="loop-6" onclick="window.loopToggle(\'mark6\')"></button>' +
-      '<button id="loop-always" onclick="window.loopToggle(\'always\')"></button>';
+      '<button id="loop-5s" title="loop every five seconds" onclick="window.loopToggle(\'five\')"></button>' +
+      '<button id="loop-4" title="four on the four" onclick="window.loopToggle(\'mark4\')"></button>' +
+      '<button id="loop-6" title="six on the twelve" onclick="window.loopToggle(\'mark6\')"></button>' +
+      '<button id="loop-always" title="does not stop without a hand" onclick="window.loopToggle(\'always\')"></button>';
     document.body.appendChild(el);
     window.loopsPanelDraw();
     return true;
@@ -6272,8 +6272,8 @@ startStream();
   window.loopsPanelDraw = function () {
     if (typeof document === 'undefined') return false;
     var L = window.__loops;
-    var defs = [['loop-5s', 'five', '5s'], ['loop-4', 'mark4', '4'],
-                ['loop-6', 'mark6', '6'], ['loop-always', 'always', 'ALWAYS']];
+    var defs = [['loop-5s', 'five', '5s'], ['loop-4', 'mark4', '4/4'],
+                ['loop-6', 'mark6', '6/12'], ['loop-always', 'always', 'ALWAYS']];
     defs.forEach(function (d) {
       var b = document.getElementById(d[0]);
       if (!b) return;

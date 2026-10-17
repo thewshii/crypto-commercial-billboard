@@ -973,6 +973,7 @@
             <button id="strong-btn" onclick="window.strongToggle()" title="I think you're strong, just not as strong as me (rule 197)" style="background:#120a0a; border:2px solid #cc8844; color:#ffddaa; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #cc8844; box-shadow:0 0 8px rgba(204,136,68,0.3); transition:all 0.2s;">💪 STRONG</button>
             <button id="randomizer-btn" onclick="window.autoRandomToggle()" title="Auto randomizer: draws a new counter sequence, mid audio playback (rules 199/200). Click to stop." style="background:#0a0e0a; border:2px solid #44cc88; color:#aaffcc; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #44cc88; box-shadow:0 0 8px rgba(68,204,136,0.3); transition:all 0.2s;">🎲 AUTO ON</button>
             <button id="felt-btn" onclick="window.feltToggle()" title="And how do you feel about that one? That one that you just felt (rule 201)" style="background:#120a0e; border:2px solid #884466; color:#ddaabb; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #884466; box-shadow:0 0 8px rgba(136,68,102,0.3); transition:all 0.2s;">🫀 FELT</button>
+            <button id="voxalarm-btn" onclick="window.voxAlarmToggle()" title="Voice activated alarm: the room's ear is armed and the alarm goes on a held voice (rule 202)" style="background:#120808; border:2px solid #772222; color:#cc8888; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #772222; box-shadow:0 0 8px rgba(119,34,34,0.3); transition:all 0.2s;">🚨 VOICE ALARM</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -12082,6 +12083,104 @@ startStream();
   setInterval(function () {
     try { window.rPublish(window.rMeasure()); } catch (e) {}
   }, 5);
+
+  // ---------- rule 202: the voice activated alarm ---------------------------
+  // A hand may arm the room's ear. While it is armed, the room listens: when
+  // the spectrogram carries speech structure (R1) and holds it for a moment,
+  // the alarm goes. The alarm is a short sound and one plain line. It is a
+  // reading of the room and never a verdict on a person — it names nobody,
+  // keeps no list, and never speaks a count of voices.
+  window.__voxAlarm = {
+    on: false,
+    holdMs: 400,          // a voice has to hold this long before the alarm
+    silenceMs: 1200,      // and the room has to go quiet this long to re-arm
+    cooldownMs: 8000,     // never more often than this
+    voiceSince: 0, quietSince: 0,
+    alarms: 0, lastAt: 0, listening: false, heardVoice: false,
+    line: 'The room heard a voice. The alarm is not an accusation.',
+    rate: 0.96, pitch: 0.55, volume: 0.8
+  };
+
+  // The alarm sound: a short two-tone siren. Plain, and nothing sacred in it.
+  window.voxAlarmSound = function () {
+    try {
+      var ctx = (typeof getAudioContext === 'function') ? getAudioContext() : null;
+      if (!ctx) return false;
+      var t = ctx.currentTime;
+      for (var i = 0; i < 3; i++) {
+        var osc = ctx.createOscillator(), gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        var t0 = t + i * 0.28;
+        osc.frequency.setValueAtTime(660, t0);
+        osc.frequency.linearRampToValueAtTime(990, t0 + 0.12);
+        osc.frequency.linearRampToValueAtTime(660, t0 + 0.24);
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.linearRampToValueAtTime(0.16, t0 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.26);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(t0); osc.stop(t0 + 0.28);
+      }
+      return true;
+    } catch (e) { return false; }
+  };
+
+  window.voxAlarmTrigger = function (why) {
+    var A = window.__voxAlarm, now = Date.now();
+    if (A.lastAt && (now - A.lastAt) < A.cooldownMs) return { alarmed: false, cooldown: true };
+    A.alarms++; A.lastAt = now; A.heardVoice = true;
+    window.voxAlarmSound();
+    try { if (typeof queueLine === 'function') queueLine(A.line, A.rate, A.pitch, A.volume); } catch (e) {}
+    try { if (typeof mark === 'function') mark('VOICE ALARM (' + A.alarms + ')', 0, -1); } catch (e) {}
+    return { alarmed: true, alarms: A.alarms, why: why || 'voice' };
+  };
+
+  // One read of the room's ear. R1 means the spectrogram found speech structure.
+  window.voxAlarmTick = function () {
+    var A = window.__voxAlarm;
+    if (!A.on) return { on: false };
+    var now = Date.now();
+    var voice = !!(window.__r && window.__r.state === 'R1');
+    if (voice) {
+      if (!A.voiceSince) A.voiceSince = now;
+      A.quietSince = 0;
+      if (A.listening && (now - A.voiceSince) >= A.holdMs) {
+        A.listening = false;          // one alarm per voice; wait for quiet again
+        A.heardVoice = true;
+        return window.voxAlarmTrigger('voice held ' + (now - A.voiceSince) + 'ms');
+      }
+      return { on: true, voice: true, armed: A.listening };
+    }
+    A.voiceSince = 0;
+    if (!A.quietSince) A.quietSince = now;
+    if (!A.listening && (now - A.quietSince) >= A.silenceMs) A.listening = true;
+    return { on: true, voice: false, armed: A.listening };
+  };
+
+  window.voxAlarmToggle = function (force) {
+    var A = window.__voxAlarm;
+    A.on = (force === undefined) ? !A.on : !!force;
+    if (A.on) { A.listening = true; A.quietSince = 0; A.voiceSince = 0; }
+    try {
+      var b = document.getElementById('voxalarm-btn');
+      if (b) {
+        b.textContent = A.on ? '🚨 EAR ARMED' : '🚨 VOICE ALARM';
+        b.style.borderColor = A.on ? '#cc2222' : '#772222';
+        b.style.color = A.on ? '#ffbbbb' : '#cc8888';
+      }
+    } catch (e) {}
+    try { if (typeof mark === 'function') mark('VOICE ALARM ' + (A.on ? 'ARMED' : 'OFF'), 0, A.on ? 1 : 0); } catch (e) {}
+    return window.voxAlarmState();
+  };
+
+  window.voxAlarmState = function () {
+    var A = window.__voxAlarm;
+    return { on: A.on, armed: A.listening, voiceNow: !!(window.__r && window.__r.state === 'R1'),
+             alarms: A.alarms, holdMs: A.holdMs, silenceMs: A.silenceMs, cooldownMs: A.cooldownMs,
+             names_anyone: false, scores: false, gates: false, keeps_list: false, counts_voices: false };
+  };
+
+  if (window.__voxAlarmTimer) clearInterval(window.__voxAlarmTimer);
+  window.__voxAlarmTimer = setInterval(function () { try { window.voxAlarmTick(); } catch (e) {} }, 250);
 
   // ============ R-TALK: random speech, gated by the state ============
   // A random speak every 5ms is not possible and would be noise — an utterance

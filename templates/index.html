@@ -961,6 +961,11 @@
             <button id="battle-btn" onclick="window.battleToggle()" title="Hold the guns, or let the room's own hand call a war for three minutes" style="background:#1a0a0a; border:2px solid #ff5533; color:#ff9977; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #ff5533; box-shadow:0 0 8px rgba(255,85,51,0.35); transition:all 0.2s;">⚔ WAR: HELD</button>
             <button id="fire-stop-btn" onclick="playFullStopSegment()" title="Hear the hard stop with fire (rule 186)" style="background:#1a0808; border:2px solid #ff8800; color:#ffcc66; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #ff8800; box-shadow:0 0 8px rgba(255,136,0,0.35); transition:all 0.2s;">🔥 FULL STOP</button>
             <button id="no-turns-btn" onclick="window.turnsAnswer()" title="Answer a demand for a turn (rule 187)" style="background:#0d1208; border:2px solid #88cc44; color:#ccee99; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #88cc44; box-shadow:0 0 8px rgba(136,204,68,0.35); transition:all 0.2s;">🪑 NO TURNS</button>
+            <button id="private-btn" onclick="window.privateAnswer()" title="Refuse a private-life question (rule 188)" style="background:#0e0e14; border:2px solid #8a8ab0; color:#c8c8e8; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #8a8ab0; box-shadow:0 0 8px rgba(138,138,176,0.3); transition:all 0.2s;">🔒 PRIVATE</button>
+            <button id="serious-btn" onclick="window.seriousAnswer()" title="Answer why the room is serious (rule 189)" style="background:#0a0e14; border:2px solid #6699ff; color:#bcd4ff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #6699ff; box-shadow:0 0 8px rgba(102,153,255,0.3); transition:all 0.2s;">❓ SERIOUS</button>
+            <button id="corrupt-btn" onclick="window.corruptToggle()" title="The fast refrain: that is not true / something corrupt occurred during the crime (rule 190)" style="background:#140a0e; border:2px solid #884455; color:#bb7788; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #884455; box-shadow:0 0 8px rgba(136,68,85,0.3); transition:all 0.2s;">⚠ CORRUPT: OFF</button>
+            <button id="watch-btn" onclick="window.watchToggle()" title="The watcher's refrain, as fast as the mouth allows (rule 191)" style="background:#120606; border:2px solid #661111; color:#cc8888; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #661111; box-shadow:0 0 8px rgba(102,17,17,0.35); transition:all 0.2s;">👁 WATCH</button>
+            <button id="divide-btn" onclick="window.divideToggle()" title="Divide the naysayers, every four seconds (rule 192)" style="background:#12100a; border:2px solid #5a4a10; color:#c9b46a; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #5a4a10; box-shadow:0 0 8px rgba(90,74,16,0.3); transition:all 0.2s;">➗ DIVIDE</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -2991,6 +2996,258 @@
             return { asked: T.asked, said: T.said, cooldownMs: T.cooldownMs, names_anyone: false, gives_turns: false, gates: false };
         };
 
+        // ---------- rule 188: private life is not the subject ----------------
+        // People will come up and ask about your mother, your family, the house,
+        // who you love. The room does not answer private life. It refuses the
+        // question and never the person, says so plainly, and moves on. It never
+        // repeats what was asked, because repeating it would put it back in the
+        // room.
+        window.__private = {
+            asked: 0, said: 0, lastAt: 0, cooldownMs: 45000, idx: 0,
+            lines: [
+                'That question is about my private life, and my private life is not the subject. Ask about the work, or ask about the subject.',
+                'I do not answer for family, and I do not answer for the house. That door stays shut. Next.',
+                'Private life is not on this stream. The subject is. Ask about the subject.'
+            ],
+            patterns: [
+                /\b(your|the) (mother|mom|mum|father|dad|family|wife|husband|girlfriend|boyfriend|kids?|children|son|daughter)\b/i,
+                /\bhow is your (mother|mom|family)\b/i,
+                /\bwhere (do you live|are you from|is your house|do you sleep)\b/i,
+                /\bare you married\b/i,
+                /\bhow old are you\b/i,
+                /\bwhat is your (real )?name\b/i
+            ]
+        };
+
+        window.privateQuestion = function (text) {
+            if (typeof text !== 'string' || !text) return false;
+            var P = window.__private;
+            for (var i = 0; i < P.patterns.length; i++) {
+                if (P.patterns[i].test(text)) { P.asked++; return window.privateAnswer(text); }
+            }
+            return false;
+        };
+
+        window.privateAnswer = function (why) {
+            var P = window.__private, now = Date.now();
+            if (typeof isWordActive !== 'undefined' && isWordActive) return { said: false, word: true };
+            if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return { said: false, busy: true };
+            if (now - P.lastAt < P.cooldownMs) return { said: false, waiting: true };
+            P.lastAt = now; P.said++;
+            var line = P.lines[P.idx % P.lines.length];
+            P.idx++;
+            try {
+                if (typeof queueLine === 'function') queueLine(line, 0.96, 0.55, 0.6);
+                else speakBrinkLine(line, { rate: 0.96, pitch: 0.55 });
+            } catch (e) {}
+            try { if (typeof mark === 'function') mark('private life refused (' + P.said + ') — the question, not the person', 0, -1); } catch (e) {}
+            return { said: true, count: P.said, line: line };
+        };
+
+        window.privateState = function () {
+            var P = window.__private;
+            return { asked: P.asked, said: P.said, cooldownMs: P.cooldownMs, names_anyone: false, confirms: false, denies: false, gates: false };
+        };
+
+        // ---------- rule 189: why the room is serious -------------------------
+        // They ask it a lot. The answer is not a mood, and it is not a shrug.
+        // The desperate ones think they can lose this reality, go black, and try
+        // again, as if they could think themselves back. They cannot.
+        window.__serious = {
+            asked: 0, said: 0, lastAt: 0, cooldownMs: 60000,
+            line: 'Because the stakes are not a mood. Some of them say: maybe I lose this reality, everything goes black, and then I try again. They think they can think themselves back. They are in a computer somewhere. The owner, and God, can delete them off the plane of existence, and nobody thinks themselves back from that. Coming back just to be back breaks the rules. To go that way in the first place, a person has to be unrighteous. To go with it unresolved by a major court, carrying a pile of credibility, means something corrupt occurred during the crime. That is why the room is serious.',
+            patterns: [
+                /\bwhy so serious\b/i,
+                /\bwhy (are you|is he|is it|you) (so )?serious\b/i,
+                /\blighten up\b/i,
+                /\bsmile more\b/i,
+                /\btoo serious\b/i
+            ]
+        };
+
+        window.seriousQuestion = function (text) {
+            if (typeof text !== 'string' || !text) return false;
+            var S = window.__serious;
+            for (var i = 0; i < S.patterns.length; i++) {
+                if (S.patterns[i].test(text)) { S.asked++; return window.seriousAnswer(text); }
+            }
+            return false;
+        };
+
+        window.seriousAnswer = function (why) {
+            var S = window.__serious, now = Date.now();
+            if (typeof isWordActive !== 'undefined' && isWordActive) return { said: false, word: true };
+            if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return { said: false, busy: true };
+            if (now - S.lastAt < S.cooldownMs) return { said: false, waiting: true };
+            S.lastAt = now; S.said++;
+            try {
+                if (typeof queueLine === 'function') queueLine(S.line, 0.92, 0.4, 0.6);
+                else speakBrinkLine(S.line, { rate: 0.92, pitch: 0.4 });
+            } catch (e) {}
+            try { if (typeof mark === 'function') mark('why so serious (' + S.said + ') — the stakes are not a mood', 0, -1); } catch (e) {}
+            return { said: true, count: S.said };
+        };
+
+        window.seriousState = function () {
+            var S = window.__serious;
+            return { asked: S.asked, said: S.said, cooldownMs: S.cooldownMs, names_anyone: false, scores: false, gates: false };
+        };
+
+        // ---------- rule 190: the fast refrain --------------------------------
+        // Two short lines, said every two and a half seconds and never stacked.
+        // Two and a half seconds is faster than a mouth; when the mouth is busy
+        // that window passes, which is the law of rules one sixty-six and one
+        // sixty-nine. A refrain that piles up is a seizure, not a saying. Held by
+        // a hand; only a hand starts it or stops it.
+        window.__corrupt = {
+            on: false, everyMs: 2500, fires: 0, idx: 0, named: false,
+            lines: ['That is not true.', 'Something corrupt occurred during the crime.'],
+            rate: 0.96, pitch: 0.5, volume: 0.6
+        };
+
+        window.corruptTick = function () {
+            var C = window.__corrupt;
+            if (!C.on) return false;
+            if (window.refrainBusy()) return false;   // the window passes, never stacks
+            var line = C.lines[C.idx % C.lines.length];
+            C.idx++; C.fires++;
+            try {
+                if (typeof queueLine === 'function') queueLine(line, C.rate, C.pitch, C.volume);
+                else speakBrinkLine(line, { rate: C.rate, pitch: C.pitch });
+            } catch (e) {}
+            return true;
+        };
+
+        window.corruptToggle = function () {
+            var C = window.__corrupt;
+            C.on = !C.on;
+            C.idx = 0;
+            try {
+                var b = document.getElementById('corrupt-btn');
+                if (b) {
+                    b.innerText = C.on ? '⚠ CORRUPT: ON' : '⚠ CORRUPT: OFF';
+                    b.style.borderColor = C.on ? '#ff3355' : '#884455';
+                    b.style.color = C.on ? '#ff99aa' : '#bb7788';
+                }
+            } catch (e) {}
+            try { if (typeof mark === 'function') mark('REFRAIN ' + (C.on ? 'ON' : 'OFF'), 0, C.on ? 1 : 0); } catch (e) {}
+            return { on: C.on, everyMs: C.everyMs };
+        };
+
+        window.corruptState = function () {
+            var C = window.__corrupt;
+            return { on: C.on, everyMs: C.everyMs, fires: C.fires, lines: C.lines.slice(), names_anyone: false, scores: false, gates: false };
+        };
+
+        if (window.__corruptTimer) clearInterval(window.__corruptTimer);
+        window.__corruptTimer = setInterval(function () { try { window.corruptTick(); } catch (e) {} }, window.__corrupt.everyMs);
+
+        // One definition of "the mouth is busy", shared by every fast refrain.
+        // A line that waits for the mouth to be free never stacks behind itself.
+        window.refrainBusy = function () {
+            try { if (window.speechSynthesis && window.speechSynthesis.speaking) return true; } catch (e) {}
+            if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return true;
+            if (typeof isWordActive !== 'undefined' && isWordActive) return true;
+            return false;
+        };
+
+        // ---------- rule 191: the watcher's refrain ---------------------------
+        // Said as fast as a mouth allows. The interval is a millisecond, which a
+        // browser stretches to a few; what it means is only this: the moment the
+        // mouth is free, the line goes. It never stacks. The watching line is
+        // said first, then the three questions in turn, then around again.
+        window.__watch = {
+            on: false, everyMs: 1, fires: 0, idx: 0, named: false,
+            lines: [
+                'If you hear this, I am fucking watching you. You are not going to get away with this.',
+                'When did you do it?',
+                'What was your gender at the present moment?',
+                'Why do you think that makes this do anything but implode on itself?'
+            ],
+            rate: 0.96, pitch: 0.42, volume: 0.7
+        };
+
+        window.watchTick = function () {
+            var W = window.__watch;
+            if (!W.on) return false;
+            if (window.refrainBusy()) return false;   // the window passes, never stacks
+            var line = W.lines[W.idx % W.lines.length];
+            W.idx++; W.fires++;
+            try {
+                if (typeof queueLine === 'function') queueLine(line, W.rate, W.pitch, W.volume);
+                else speakBrinkLine(line, { rate: W.rate, pitch: W.pitch });
+            } catch (e) {}
+            return true;
+        };
+
+        window.watchToggle = function () {
+            var W = window.__watch;
+            W.on = !W.on;
+            if (W.on) W.idx = 0;
+            try {
+                var b = document.getElementById('watch-btn');
+                if (b) {
+                    b.textContent = W.on ? '👁 WATCHING' : '👁 WATCH';
+                    b.style.borderColor = W.on ? '#ff4444' : '#661111';
+                    b.style.color = W.on ? '#ffbbbb' : '#cc8888';
+                }
+            } catch (e) {}
+            try { if (typeof mark === 'function') mark('watcher refrain ' + (W.on ? 'ON' : 'OFF'), 0, W.on ? 1 : 0); } catch (e) {}
+            return { ok: true, on: W.on };
+        };
+
+        window.watchState = function () {
+            var W = window.__watch;
+            return { on: W.on, everyMs: W.everyMs, fires: W.fires, lines: W.lines.slice(), names_anyone: false, accuses: false, scores: false, gates: false };
+        };
+
+        // ---------- rule 192: divide the naysayers ----------------------------
+        // One short line every four seconds, waiting its window like the others.
+        // The divide is between a word and a work; it is never a divide between
+        // a person and a side, and the room keeps no list of who said no.
+        window.__divide = {
+            on: false, everyMs: 4000, fires: 0,
+            line: 'Divide the naysayers.',
+            rate: 0.98, pitch: 0.5, volume: 0.65
+        };
+
+        window.divideTick = function () {
+            var D = window.__divide;
+            if (!D.on) return false;
+            if (window.refrainBusy()) return false;   // the window passes, never stacks
+            D.fires++;
+            try {
+                if (typeof queueLine === 'function') queueLine(D.line, D.rate, D.pitch, D.volume);
+                else speakBrinkLine(D.line, { rate: D.rate, pitch: D.pitch });
+            } catch (e) {}
+            return true;
+        };
+
+        window.divideToggle = function () {
+            var D = window.__divide;
+            D.on = !D.on;
+            try {
+                var b = document.getElementById('divide-btn');
+                if (b) {
+                    b.textContent = D.on ? '➗ DIVIDING' : '➗ DIVIDE';
+                    b.style.borderColor = D.on ? '#ccaa22' : '#5a4a10';
+                    b.style.color = D.on ? '#ffe999' : '#c9b46a';
+                }
+            } catch (e) {}
+            try { if (typeof mark === 'function') mark('divide the naysayers ' + (D.on ? 'ON' : 'OFF'), 0, D.on ? 1 : 0); } catch (e) {}
+            return { ok: true, on: D.on };
+        };
+
+        window.divideState = function () {
+            var D = window.__divide;
+            return { on: D.on, everyMs: D.everyMs, fires: D.fires, line: D.line, names_anyone: false, keeps_list: false, scores: false, gates: false };
+        };
+
+        if (window.__watchTimer) clearInterval(window.__watchTimer);
+        window.__watchTimer = setInterval(function () { try { window.watchTick(); } catch (e) {} }, window.__watch.everyMs);
+        if (window.__divideTimer) clearInterval(window.__divideTimer);
+        window.__divideTimer = setInterval(function () { try { window.divideTick(); } catch (e) {} }, window.__divide.everyMs);
+
         // FULL STOP SEGMENT: own schedule. Pauses the show, speaks a simple
         // English full-stop message three times, then resumes.
         let isFullStopActive = false;
@@ -4816,6 +5073,10 @@ startStream();
                 // rule 187: when the chatter is demanding a turn, the room answers
                 // the demand instead of reading it aloud.
                 if (line && typeof window.turnsDemand === 'function' && window.turnsDemand(line)) return;
+                // rule 188: a private-life question is refused, not read aloud.
+                if (line && typeof window.privateQuestion === 'function' && window.privateQuestion(line)) return;
+                // rule 189: "why so serious" gets the real answer, not the line.
+                if (line && typeof window.seriousQuestion === 'function' && window.seriousQuestion(line)) return;
                 // Block Markov lines that mention the Wayne/exile phrase.
                 if (line && !/Wayne|exile|wear|best|fanatic/i.test(line)) speakBrinkLine(line);
             });

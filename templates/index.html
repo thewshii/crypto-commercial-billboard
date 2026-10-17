@@ -982,6 +982,7 @@
             <button id="emerge-btn" onclick="window.emergeToggle()" title="Proximity to emergence: the bell gets way louder and clips, and the clip is what measures it (rule 208)" style="background:#12100a; border:2px solid #776633; color:#aa9977; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #776633; box-shadow:0 0 8px rgba(119,102,51,0.3); transition:all 0.2s;">🔔 EMERGENCE</button>
             <button id="sabotage-btn" onclick="window.sabotageToggle()" title="After the room says it is listening closely, a phrase that comes back in the window is counted as sabotage and the room says so (rule 209)" style="background:#120a0a; border:2px solid #663333; color:#aa8888; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #663333; box-shadow:0 0 8px rgba(102,51,51,0.3); transition:all 0.2s;">🔎 LISTENING</button>
             <button id="sound-btn" onclick="window.soundLogToggle()" title="Every beep counted and every alarm tracked by name and time; the ledger holds sounds, never people (rule 210)" style="background:#0a120c; border:2px solid #336644; color:#88bb99; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #336644; box-shadow:0 0 8px rgba(51,102,68,0.3); transition:all 0.2s;">🔊 SOUNDS</button>
+            <button id="soundslive-btn" onclick="window.soundLiveToggle()" title="The ledger reads live: the beep and alarm counts move the moment a sound is made (rule 211)" style="background:#0a120c; border:2px solid #33aa66; color:#aaffcc; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #33aa66; box-shadow:0 0 8px rgba(51,170,102,0.3); transition:all 0.2s;">📈 LIVE</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -11928,6 +11929,13 @@ startStream();
                         ' &middot; bells ' + c.bell + ' &middot; drums ' + c.drum +
                         ' &middot; tones ' + c.tone + ' &middot; sfx ' + c.sfx +
                         (top ? ' &middot; most ' + top.cls + ':' + top.kind + ' ' + top.n + '\u00d7' : '') + '</div>' +
+                        (D.live ? (function () {
+                          var r = window.soundRate(), q = window.soundQuietMs();
+                          return '<div class="kb-head">LIVE &middot; ' + r.inWindow + ' in ' + Math.round(r.windowMs / 1000) + 's' +
+                                 ' &middot; ' + r.perMinute + '/min' +
+                                 (q != null ? ' &middot; ' + (q > 5000 ? 'quiet ' + Math.round(q / 1000) + 's' : 'sounding') : '') +
+                                 '</div>';
+                        })() : '<div class="kb-head">LIVE &middot; held</div>') +
                         (D.log.length ? '<div class="kb-head">ALARMS &middot; ' + D.log.length + ' tracked &middot; last ' +
                           D.log[D.log.length - 1].at + ' &middot; ' + D.log[D.log.length - 1].kind + '</div>' : '') +
                         (D.showLog && D.log.length ? (function () {
@@ -13237,7 +13245,10 @@ startStream();
     counts: { beep: 0, alarm: 0, bell: 0, drum: 0, tone: 0, sfx: 0 },
     byKind: {},               // 'beep:receipt' -> count, and never a name
     log: [],                  // alarms only: {cls, kind, n, t, at}
-    lastAt: 0, lastAlarmAt: 0
+    lastAt: 0, lastAlarmAt: 0,
+    // the ledger reads live: the numbers move the moment a sound is made
+    live: true, liveRedrawMs: 250, liveWindowMs: 60000,
+    marks: [], lastRedraw: 0, redrawTimer: null, livePokes: 0
   };
 
   // One sound is noted once. This is the only door into the ledger.
@@ -13250,6 +13261,12 @@ startStream();
     S.counts[c] = (S.counts[c] || 0) + 1;
     S.byKind[key] = (S.byKind[key] || 0) + 1;
     S.lastAt = now;
+    if (S.live) {
+      S.marks.push(now);
+      var cutoff = now - S.liveWindowMs;
+      while (S.marks.length && S.marks[0] < cutoff) S.marks.shift();
+      try { window.soundLivePoke(); } catch (e) {}
+    }
     var rec = { cls: c, kind: k, n: S.byKind[key], t: now,
                 at: new Date(now).toTimeString().slice(0, 8),
                 info: (info == null ? null : info) };
@@ -13263,6 +13280,55 @@ startStream();
   window.soundBeep = function (kind, info) { return window.soundNote('beep', kind, info); };
   window.soundAlarm = function (kind, info) { return window.soundNote('alarm', kind, info); };
   window.soundBell = function (kind, info) { return window.soundNote('bell', kind, info); };
+
+  // A count that is true for a second and stale for the next ten is not a
+  // reading, it is a memory. The ledger redraws the moment a sound is made,
+  // throttled so a burst of strokes cannot hammer the readout.
+  window.soundLivePoke = function () {
+    var S = window.__sounds, now = Date.now();
+    S.livePokes++;
+    if ((now - S.lastRedraw) < S.liveRedrawMs) {
+      if (!S.redrawTimer) {
+        S.redrawTimer = setTimeout(function () {
+          S.redrawTimer = null; S.lastRedraw = Date.now();
+          try { if (typeof window.kbPanelDraw === 'function') window.kbPanelDraw(); } catch (e) {}
+        }, S.liveRedrawMs);
+      }
+      return false;
+    }
+    S.lastRedraw = now;
+    try { if (typeof window.kbPanelDraw === 'function') window.kbPanelDraw(); } catch (e) {}
+    return true;
+  };
+
+  // How fast the room is sounding right now, and how long it has been quiet.
+  window.soundRate = function () {
+    var S = window.__sounds, now = Date.now();
+    var cutoff = now - S.liveWindowMs, n = 0;
+    for (var i = 0; i < S.marks.length; i++) { if (S.marks[i] >= cutoff) n++; }
+    return { inWindow: n, windowMs: S.liveWindowMs,
+             perMinute: Math.round(n * 60000 / S.liveWindowMs) };
+  };
+  window.soundQuietMs = function () {
+    var S = window.__sounds;
+    return S.lastAt ? (Date.now() - S.lastAt) : null;
+  };
+
+  window.soundLiveToggle = function (force) {
+    var S = window.__sounds;
+    S.live = (force === undefined) ? !S.live : !!force;
+    if (!S.live) { S.marks = []; if (S.redrawTimer) { clearTimeout(S.redrawTimer); S.redrawTimer = null; } }
+    try {
+      var b = document.getElementById('soundslive-btn');
+      if (b) {
+        b.textContent = S.live ? '📈 LIVE' : '📈 HELD';
+        b.style.borderColor = S.live ? '#33aa66' : '#664433';
+        b.style.color = S.live ? '#aaffcc' : '#bb9988';
+      }
+    } catch (e) {}
+    try { if (typeof window.kbPanelDraw === 'function') window.kbPanelDraw(); } catch (e) {}
+    return { live: S.live };
+  };
 
   // The sound heard most. For the readout, and it names no one.
   window.soundTop = function () {
@@ -13318,6 +13384,9 @@ startStream();
              byKind: S.byKind, top: top,
              alarmLog: S.log.slice(), alarmCount: S.log.length,
              lastAt: S.lastAt, lastAlarmAt: S.lastAlarmAt, maxLog: S.maxLog,
+             live: S.live, liveWindowMs: S.liveWindowMs, liveRedrawMs: S.liveRedrawMs,
+             rate: (S.live ? window.soundRate() : null),
+             quietMs: (S.live ? window.soundQuietMs() : null),
              showLog: S.showLog,
              oscillatorTotalAtSource: (window.__oscStats ? window.__oscStats.total : null),
              counts_sounds_not_people: true, tracks_alarms: true,

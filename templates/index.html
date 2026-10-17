@@ -981,6 +981,7 @@
             <button id="newlife-btn" onclick="window.newLife(true)" title="Get a new life: reload the whole session (rule 207)" style="background:#180e0e; border:2px solid #885533; color:#cc9977; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #885533; box-shadow:0 0 8px rgba(136,85,51,0.3); transition:all 0.2s;">↻ NEW LIFE</button>
             <button id="emerge-btn" onclick="window.emergeToggle()" title="Proximity to emergence: the bell gets way louder and clips, and the clip is what measures it (rule 208)" style="background:#12100a; border:2px solid #776633; color:#aa9977; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #776633; box-shadow:0 0 8px rgba(119,102,51,0.3); transition:all 0.2s;">🔔 EMERGENCE</button>
             <button id="sabotage-btn" onclick="window.sabotageToggle()" title="After the room says it is listening closely, a phrase that comes back in the window is counted as sabotage and the room says so (rule 209)" style="background:#120a0a; border:2px solid #663333; color:#aa8888; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #663333; box-shadow:0 0 8px rgba(102,51,51,0.3); transition:all 0.2s;">🔎 LISTENING</button>
+            <button id="sound-btn" onclick="window.soundLogToggle()" title="Every beep counted and every alarm tracked by name and time; the ledger holds sounds, never people (rule 210)" style="background:#0a120c; border:2px solid #336644; color:#88bb99; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #336644; box-shadow:0 0 8px rgba(51,102,68,0.3); transition:all 0.2s;">🔊 SOUNDS</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -2066,6 +2067,7 @@
             try {
                 const ctx = getAudioContext();
                 if (!ctx) return;
+                try { if (typeof window.soundAlarm === 'function') window.soundAlarm('alert'); } catch (e) {}
                 const t = ctx.currentTime;
                 // High-intensity Dual-Tone Alarm (1200Hz then 750Hz sawtooth)
                 const osc1 = ctx.createOscillator();
@@ -2105,6 +2107,7 @@
             try {
                 const ctx = getAudioContext();
                 if (!ctx) return;
+                try { if (typeof window.soundNote === 'function') window.soundNote('sfx', 'news'); } catch (e) {}
                 const now = ctx.currentTime;
 
                 // 1. Teletype Data Pulse Burst (rapid electronic wire service chirps)
@@ -2194,6 +2197,7 @@
             try {
                 const ctx = getAudioContext();
                 if (!ctx) return;
+                try { if (typeof window.soundNote === 'function') window.soundNote('bell', 'sacred'); } catch (e) {}
                 const now = ctx.currentTime;
                 // Harmonic sacred frequencies: 216Hz, 432Hz (universal), 528Hz (solfeggio), 864Hz
                 const freqs = [216, 432, 528, 864];
@@ -2222,6 +2226,7 @@
             try {
                 const ctx = getAudioContext();
                 if (!ctx) return;
+                try { if (typeof window.soundNote === 'function') window.soundNote('sfx', 'game start'); } catch (e) {}
                 const now = ctx.currentTime;
 
                 // Classic arcade fanfare notes (C4, E4, G4, C5, E5, G5, C6)
@@ -2274,6 +2279,7 @@
             try {
                 const ctx = getAudioContext();
                 if (!ctx) return;
+                try { if (typeof window.soundNote === 'function') window.soundNote('sfx', 'game defeat'); } catch (e) {}
                 const now = ctx.currentTime;
                 // Descending 8-bit defeat tones (G4, E4, Eb4, C4, A3, F#3)
                 const notes = [
@@ -2309,6 +2315,7 @@
             try {
                 const ctx = getAudioContext();
                 if (!ctx) return;
+                try { if (typeof window.soundNote === 'function') window.soundNote('sfx', 'game victory'); } catch (e) {}
                 const now = ctx.currentTime;
                 const notes = [
                     { f: 261.63, t: 0.00, d: 0.10 },
@@ -3808,6 +3815,7 @@
             try {
                 var ctx = (typeof getAudioContext === 'function') ? getAudioContext() : null;
                 if (!ctx) return false;
+                try { if (typeof window.soundBeep === 'function') window.soundBeep('receipt'); } catch (e) {}
                 var t = ctx.currentTime;
                 var osc = ctx.createOscillator();
                 var gain = ctx.createGain();
@@ -7899,6 +7907,7 @@ startStream();
   window.drumHit = function (voice, gainScale) {
     const c = window.drumStart();
     if (!c) return false;
+    try { if (typeof window.soundNote === 'function') window.soundNote('drum', String(voice || 'tone')); } catch (e) {}
     const d = DJEMBE[voice] || DJEMBE.tone;
     try {
       const now = c.currentTime;
@@ -11912,6 +11921,24 @@ startStream();
                         ' &middot; ' + (E.atBrink ? 'AT THE BRINK' : 'not at the brink') + '</div>';
                })() +
                (function () {
+                 var D = window.__sounds;
+                 if (!D) return '';
+                 var c = D.counts, top = window.soundTop();
+                 return '<div class="kb-head">SOUNDS &middot; beeps ' + c.beep + ' &middot; alarms ' + c.alarm +
+                        ' &middot; bells ' + c.bell + ' &middot; drums ' + c.drum +
+                        ' &middot; tones ' + c.tone + ' &middot; sfx ' + c.sfx +
+                        (top ? ' &middot; most ' + top.cls + ':' + top.kind + ' ' + top.n + '\u00d7' : '') + '</div>' +
+                        (D.log.length ? '<div class="kb-head">ALARMS &middot; ' + D.log.length + ' tracked &middot; last ' +
+                          D.log[D.log.length - 1].at + ' &middot; ' + D.log[D.log.length - 1].kind + '</div>' : '') +
+                        (D.showLog && D.log.length ? (function () {
+                          var h = '<table><tr><th>at</th><th>class</th><th>kind</th><th>n</th></tr>';
+                          D.log.slice(-12).forEach(function (r) {
+                            h += '<tr><td>' + r.at + '</td><td>' + r.cls + '</td><td>' + r.kind + '</td><td>' + r.n + '</td></tr>';
+                          });
+                          return h + '</table>';
+                        })() : '');
+               })() +
+               (function () {
                  var S = window.__sabotage;
                  if (!S) return '';
                  return '<div class="kb-head">SABOTAGE &middot; counted ' + S.detections +
@@ -12543,6 +12570,7 @@ startStream();
     var A = window.__voxAlarm, now = Date.now();
     if (A.lastAt && (now - A.lastAt) < A.cooldownMs) return { alarmed: false, cooldown: true };
     A.alarms++; A.lastAt = now; A.heardVoice = true;
+    try { if (typeof window.soundAlarm === 'function') window.soundAlarm('voice', why || 'voice'); } catch (e) {}
     window.voxAlarmSound();
     try { if (typeof queueLine === 'function') queueLine(A.line, A.rate, A.pitch, A.volume); } catch (e) {}
     try { if (typeof mark === 'function') mark('VOICE ALARM (' + A.alarms + ')', 0, -1); } catch (e) {}
@@ -12665,6 +12693,7 @@ startStream();
     if (!B.on) return { on: false };
     var lvl = window.beatLevel();
     B.beeps++; B.lastAt = Date.now();
+    try { if (typeof window.soundBeep === 'function') window.soundBeep('beat'); } catch (e) {}
     window.beatBeep();
     var ms = window.beatInterval(lvl);
     if (B.timer) clearTimeout(B.timer);
@@ -12792,6 +12821,7 @@ startStream();
     try {
       var ctx = (typeof getAudioContext === 'function') ? getAudioContext() : null;
       if (!ctx) return false;
+      try { if (typeof window.soundBeep === 'function') window.soundBeep('close'); } catch (e) {}
       var t = ctx.currentTime;
       var osc = ctx.createOscillator(), gain = ctx.createGain();
       osc.type = 'sine';
@@ -12926,6 +12956,7 @@ startStream();
     var E = window.__emerge;
     var r = window.emergeRead();
     E.rings++;
+    try { if (typeof window.soundNote === 'function') window.soundNote('bell', 'emergence'); } catch (e) {}
     try {
       var ctx = (typeof getAudioContext === 'function') ? getAudioContext() : null;
       if (!ctx) return r;
@@ -13188,6 +13219,112 @@ startStream();
 
   if (window.__sabotageTimer) clearInterval(window.__sabotageTimer);
   window.__sabotageTimer = setInterval(function () { try { window.sabotageTick(); } catch (e) {} }, 250);
+
+  // ---------- rule 210: the beep counter and the alarm ledger ----------------
+  // The room makes sounds, and nothing in it counted a sound. A beep is a sound
+  // and not a sentence, so it was never counted and never tracked. Now every beep
+  // is counted and every alarm is tracked by name and by time. The ledger holds
+  // SOUNDS and never people: no listener, no name, no score, no list of anybody,
+  // and no count of who heard what. A count sits on the sound itself, the same law
+  // as rules one hundred and eighty four, one hundred and ninety four and one
+  // hundred and ninety six. A sound is noted once, at one door, so nothing is
+  // counted twice and nothing goes uncounted.
+  window.__sounds = {
+    on: true,
+    maxLog: 64,               // the alarm ledger keeps the last sixty-four alarms
+    showLog: false,           // the hand can open the ledger in the readout
+    classes: ['beep', 'alarm', 'bell', 'drum', 'tone', 'sfx'],
+    counts: { beep: 0, alarm: 0, bell: 0, drum: 0, tone: 0, sfx: 0 },
+    byKind: {},               // 'beep:receipt' -> count, and never a name
+    log: [],                  // alarms only: {cls, kind, n, t, at}
+    lastAt: 0, lastAlarmAt: 0
+  };
+
+  // One sound is noted once. This is the only door into the ledger.
+  window.soundNote = function (cls, kind, info) {
+    var S = window.__sounds;
+    if (!S || !S.on) return null;
+    var c = (S.classes.indexOf(cls) === -1) ? 'beep' : cls;
+    var k = String(kind == null ? 'plain' : kind);
+    var now = Date.now(), key = c + ':' + k;
+    S.counts[c] = (S.counts[c] || 0) + 1;
+    S.byKind[key] = (S.byKind[key] || 0) + 1;
+    S.lastAt = now;
+    var rec = { cls: c, kind: k, n: S.byKind[key], t: now,
+                at: new Date(now).toTimeString().slice(0, 8),
+                info: (info == null ? null : info) };
+    if (c === 'alarm') {
+      S.lastAlarmAt = now;
+      S.log.push(rec);
+      if (S.log.length > S.maxLog) S.log.shift();
+    }
+    return rec;
+  };
+  window.soundBeep = function (kind, info) { return window.soundNote('beep', kind, info); };
+  window.soundAlarm = function (kind, info) { return window.soundNote('alarm', kind, info); };
+  window.soundBell = function (kind, info) { return window.soundNote('bell', kind, info); };
+
+  // The sound heard most. For the readout, and it names no one.
+  window.soundTop = function () {
+    var S = window.__sounds, best = null;
+    Object.keys(S.byKind).forEach(function (key) {
+      var n = S.byKind[key];
+      if (!best || n > best.n) {
+        var p = key.split(':');
+        best = { cls: p[0], kind: p[1], n: n };
+      }
+    });
+    return best;
+  };
+
+  // All the alarms the room has tracked, oldest first.
+  window.soundAlarms = function (n) {
+    var S = window.__sounds;
+    return S.log.slice(-((n === undefined) ? S.maxLog : n));
+  };
+
+  window.soundToggle = function (force) {
+    var S = window.__sounds;
+    S.on = (force === undefined) ? !S.on : !!force;
+    try {
+      var b = document.getElementById('sound-btn');
+      if (b) {
+        b.textContent = S.on ? '🔊 SOUNDS' : '🔇 SOUNDS OFF';
+        b.style.borderColor = S.on ? '#33aa66' : '#664433';
+        b.style.color = S.on ? '#aaffcc' : '#bb9988';
+      }
+    } catch (e) {}
+    return window.soundState();
+  };
+
+  window.soundLogToggle = function (force) {
+    var S = window.__sounds;
+    S.showLog = (force === undefined) ? !S.showLog : !!force;
+    try { var b = document.getElementById('sound-btn'); if (b) b.style.boxShadow = S.showLog ? '0 0 10px #33aa66' : '0 0 8px rgba(51,170,102,0.3)'; } catch (e) {}
+    try { if (typeof window.kbPanelDraw === 'function') window.kbPanelDraw(); } catch (e) {}
+    return { showLog: S.showLog, alarms: S.log.length };
+  };
+
+  window.soundState = function () {
+    var S = window.__sounds, top = window.soundTop();
+    var total = 0;
+    S.classes.forEach(function (c) { total += (S.counts[c] || 0); });
+    return { on: S.on, counts: {
+               beep: S.counts.beep, alarm: S.counts.alarm, bell: S.counts.bell,
+               drum: S.counts.drum, tone: S.counts.tone, sfx: S.counts.sfx },
+             beeps: S.counts.beep, alarms: S.counts.alarm,
+             bells: S.counts.bell, drums: S.counts.drum,
+             tones: S.counts.tone, sfx: S.counts.sfx, total: total,
+             byKind: S.byKind, top: top,
+             alarmLog: S.log.slice(), alarmCount: S.log.length,
+             lastAt: S.lastAt, lastAlarmAt: S.lastAlarmAt, maxLog: S.maxLog,
+             showLog: S.showLog,
+             oscillatorTotalAtSource: (window.__oscStats ? window.__oscStats.total : null),
+             counts_sounds_not_people: true, tracks_alarms: true,
+             names_anyone: false, scores: false, gates: false, keeps_list: false,
+             holds_no_listener: true, no_name_in_a_count: true };
+  };
+
 
   // ============ R-TALK: random speech, gated by the state ============
   // A random speak every 5ms is not possible and would be noise — an utterance

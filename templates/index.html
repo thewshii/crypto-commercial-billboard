@@ -5274,6 +5274,8 @@ startStream();
   setInterval(function () { queueLine('This is not a counter. The minute you request something else, it is over. The asking is over. Not you.', 0.86, 0.78, 0.5); }, 45000);
   setInterval(function () { queueLine('The beans are not for sale. They are not a toll and they are not a gate. They come back on their own, whether or not anybody is watching.', 0.84, 0.76, 0.5); }, 45000);
   setInterval(function () { queueLine('Ask for something else and the asking ends. You do not.', 0.85, 0.77, 0.5); }, 45000);
+  // Support is asked for slowly and only here. Once every ten minutes, never at 45s.
+  setInterval(function () { window.askSupport('timer'); }, 600000);
   setInterval(function () { queueLine('Attention is not neutral. It arrives carrying something, the way a particle does.', 0.83, 0.75, 0.5); }, 45000);
   setInterval(function () { queueLine('Capture reads negative. It is a reading of what the speech is doing, not a ruling on the speaker.', 0.84, 0.76, 0.5); }, 45000);
   setInterval(function () { queueLine('One time is an accident. Two is a rhythm. Three is a shape. Four times is the shape.', 0.85, 0.77, 0.5); }, 45000);
@@ -8940,6 +8942,25 @@ startStream();
     try { if (typeof mark === 'function') mark('ASK ENDS — ' + (what || 'something else'), 0, -1); } catch (e) {}
     return { ended: 'the asking', asked: b.asked, you_are_still_here: true, bought: false };
   };
+
+  // ---------- rule 165: a purposeful effort, supported out loud ----------
+  // One honest ask. Long interval, no nagging, no tiers, no gating, and it
+  // never ends anything. The beans stay free because 164 said so.
+  window.askSupport = function (reason) {
+    var line = 'This is a purposeful effort and it costs something to keep going. ' +
+               'If you want it to keep running, support it. Send what you want to send. ' +
+               'Nobody is gated, nothing is behind a price, and nothing ends if you do not.';
+    try { if (typeof queueLine === 'function') queueLine(line, 0.86, 0.78, 0.5); } catch (e) {}
+    try { if (typeof mark === 'function') mark('SUPPORT ASK — ' + (reason || 'interval'), 0, -1); } catch (e) {}
+    window.__beans.askedSupport = (window.__beans.askedSupport || 0) + 1;
+    return { said: true, asked: window.__beans.askedSupport, gated: false, ends_anything: false };
+  };
+
+  // Ten minutes, not forty-five seconds. An ask that repeats like a count is a nag.
+  if (window.__supportTimer) clearInterval(window.__askTimer);
+  window.__supportEveryMs = 600000;
+  if (window.__supportTimer) clearInterval(window.__supportTimer);
+  window.__supportTimer = setInterval(function () { window.askSupport('interval'); }, window.askSupportMs || 600000);
 
   window.beanState = function () {
     var b = window.__beans;

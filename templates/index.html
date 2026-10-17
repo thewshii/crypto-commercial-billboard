@@ -5268,6 +5268,9 @@ startStream();
   setInterval(function () { queueLine('In the reality these people are in, there is nobody out there who is syntactically allowed to do those things. What cannot be written cannot be done.', 0.83, 0.75, 0.5); }, 45000);
   setInterval(function () { queueLine('The carried change the weather. Water carries a river, and the river cuts the canyon.', 0.85, 0.77, 0.5); }, 45000);
   setInterval(function () { queueLine('Nothing shapes here. Nobody was on the wheel and nobody is in the hands.', 0.82, 0.74, 0.5); }, 45000);
+  setInterval(function () { queueLine('The ones watching consider the ones in here to be microbes. The watching does not make anybody bigger.', 0.84, 0.76, 0.5); }, 45000);
+  setInterval(function () { queueLine('Read the room. You are a jerk.', 0.86, 0.78, 0.5); }, 45000);
+  setInterval(function () { queueLine('A microbe is not smaller than the eye looking at it. It is the same size it was.', 0.83, 0.75, 0.5); }, 45000);
   setInterval(function () { queueLine('Attention is not neutral. It arrives carrying something, the way a particle does.', 0.83, 0.75, 0.5); }, 45000);
   setInterval(function () { queueLine('Capture reads negative. It is a reading of what the speech is doing, not a ruling on the speaker.', 0.84, 0.76, 0.5); }, 45000);
   setInterval(function () { queueLine('One time is an accident. Two is a rhythm. Three is a shape. Four times is the shape.', 0.85, 0.77, 0.5); }, 45000);
@@ -8941,6 +8944,22 @@ startStream();
   };
 
   // The fixed list, for the table. Counts only; measured at the current rate.
+  // Milliseconds, and kilobits per millisecond, for the screen.
+  window.kbMs = function (count, rate) {
+    var c = Number(count) || 0;
+    var r = Number(rate) || window.__kb.rate;
+    var ms = 4000 * c;
+    var kilobits = r * 4 * c;
+    return { count: c, rate: r, ms: ms, seconds: ms / 1000,
+             kilobits: kilobits, kbPerMs: r / 1000, megabytes: kilobits / 8 / 1000 };
+  };
+
+  window.kbMsTable = function (rate, list) {
+    var counts = list || [4, 12, 40, 60, 204, 240];
+    var r = Number(rate) || window.__kb.rate;
+    return { rate: r, rows: counts.map(function (n) { return window.kbMs(n, r); }) };
+  };
+
   window.kbTable = function (rate, list) {
     var counts = list || [4, 12, 40, 60, 204, 240];
     var r = Number(rate) || window.__kb.rate;
@@ -8948,6 +8967,69 @@ startStream();
       var x = window.kb(n, r);
       return { count: n, seconds: x.seconds, kilobits: x.kilobits, megabytes: x.megabytes };
     }) };
+  };
+
+  // --- the readout panel ---
+  window.kbPanelDraw = function () {
+    var el = document.getElementById('kb-readout');
+    if (!el) return null;
+    var rate = window.__kb.rate;
+    var c = window.__counters;
+    var rows = [];
+    var live = [];
+    c.order.forEach(function (scale) {
+      live.push({ id: 'C' + scale, n: c.pos[scale] });
+    });
+    // live counters, at their position right now
+    c.order.forEach(function (scale) {
+      var x = window.kbMs(c.pos[scale], rate);
+      rows.push([String(scale), x.count + '/' + scale, String(x.ms), String(Math.round(x.kilobits)), x.kbPerMs.toFixed(3)]);
+    });
+    var table = window.kbMsTable(rate).rows;
+    table.forEach(function (x) {
+      rows.push(['@' + x.count, String(x.count), String(x.ms), String(Math.round(x.kilobits)), x.kbPerMs.toFixed(3)]);
+    });
+    var html = '<div class="kb-head">KILOBITS / MILLISECOND &middot; ' + rate + ' kbps &middot; ' +
+               (rate / 1000).toFixed(3) + ' kb/ms</div>' +
+               '<table><tr><th>scale</th><th>count</th><th>ms</th><th>kb</th><th>kb/ms</th></tr>';
+    rows.forEach(function (r) {
+      html += '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td><td>' + r[3] + '</td><td>' + r[4] + '</td></tr>';
+    });
+    html += '</table>';
+    el.innerHTML = html;
+    return { rows: rows.length, rate: rate };
+  };
+
+  window.kbPanelInit = function () {
+    if (document.getElementById('kb-readout')) return false;
+    var el = document.createElement('div');
+    el.id = 'kb-readout';
+    el.style.cssText = 'position:fixed; left:6px; bottom:6px; z-index:9998;' +
+      'font-family:\'Roboto Mono\',monospace; font-size:9px; line-height:1.35;' +
+      'color:#7CFFB2; background:rgba(0,0,0,0.72); border:1px solid #2b6b45;' +
+      'border-radius:5px; padding:5px 7px; max-width:210px; pointer-events:none;';
+    document.body.appendChild(el);
+    window.kbPanelDraw();
+    if (window.__kbPanelTimer) clearInterval(window.__kbPanelTimer);
+    window.__kbPanelTimer = setInterval(window.kbPanelDraw, 1000);
+    return true;
+  };
+  // Show it once the page is up. Never blocks anything if the DOM is not ready.
+  (function () {
+    try {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () { try { window.kbPanelInit(); } catch (e) {} });
+      } else {
+        window.kbPanelInit();
+      }
+    } catch (e) {}
+  })();
+
+  window.kbPanelShow = function (on) {
+    var el = document.getElementById('kb-readout');
+    if (!el) { if (on === false) return false; window.kbPanelInit(); return true; }
+    el.style.display = (on === false) ? 'none' : 'block';
+    return true;
   };
 
   window.countersReset = function () {

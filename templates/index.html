@@ -5274,6 +5274,9 @@ startStream();
   setInterval(function () { queueLine('This is not a counter. The minute you request something else, it is over. The asking is over. Not you.', 0.86, 0.78, 0.5); }, 45000);
   setInterval(function () { queueLine('The beans are not for sale. They are not a toll and they are not a gate. They come back on their own, whether or not anybody is watching.', 0.84, 0.76, 0.5); }, 45000);
   setInterval(function () { queueLine('Ask for something else and the asking ends. You do not.', 0.85, 0.77, 0.5); }, 45000);
+
+  // rule 166: the fast-cycle line also sits in the rotation, quietly.
+  setInterval(function () { queueLine('Guys.', 0.9, 0.8, 0.5); }, 45000);
   // Support is asked for slowly and only here. Once every ten minutes, never at 45s.
   setInterval(function () { window.askSupport('timer'); }, 600000);
   setInterval(function () { queueLine('Attention is not neutral. It arrives carrying something, the way a particle does.', 0.83, 0.75, 0.5); }, 45000);
@@ -8899,7 +8902,10 @@ startStream();
         hits.push(rec);
       }
       c.pos[scale] += 1;
-      if (c.pos[scale] > scale) c.pos[scale] = 1;        // loop 1..N
+      if (c.pos[scale] > scale) {                        // loop 1..N
+        c.pos[scale] = 1;
+        try { if (typeof window.cycleNote === 'function') window.cycleNote(scale); } catch (e) {}
+      }
     });
     return hits;
   };
@@ -8961,6 +8967,36 @@ startStream();
   window.__supportEveryMs = 600000;
   if (window.__supportTimer) clearInterval(window.__supportTimer);
   window.__supportTimer = setInterval(function () { window.askSupport('interval'); }, window.askSupportMs || 600000);
+
+  // ---------- rule 166: if it cycles really fast, it says guys ----------
+  // A cycle is a counter wrapping. Too many wraps too close together is the tell.
+  window.__cyc = { wraps: [], threshold: 8, windowMs: 3000, lastSaidAt: 0, cooldownMs: 20000, said: 0 };
+
+  window.cycleWatch = function () {
+    var c = window.__cyc, now = Date.now();
+    // keep only wraps inside the window
+    while (c.wraps.length && (now - c.wraps[0]) > c.windowMs) c.wraps.shift();
+    var fired = false;
+    if (c.wraps.length >= c.threshold && (now - c.lastSaidAt) > c.cooldownMs) {
+      c.lastSaidAt = now;
+      c.said++;
+      fired = true;
+      try { if (typeof queueLine === 'function') queueLine('Guys.', 0.9, 0.8, 0.5); } catch (e) {}
+      try { if (typeof mark === 'function') mark('CYCLING FAST — ' + c.wraps.length + ' wraps in ' + c.windowMs + 'ms', 0, -1); } catch (e) {}
+    }
+    return { fired: fired, wraps: c.wraps.length, said: c.said };
+  };
+
+  window.cycleNote = function (scale) {
+    window.__cyc.wraps.push(Date.now());
+    if (window.__cyc.wraps.length > 500) window.__cyc.wraps.shift();
+    return window.cycleWatch();
+  };
+
+  window.cycleState = function () {
+    var c = window.__cyc;
+    return { wraps: c.wraps.length, threshold: c.threshold, windowMs: c.windowMs, said: c.said };
+  };
 
   window.beanState = function () {
     var b = window.__beans;

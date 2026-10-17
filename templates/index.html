@@ -10930,6 +10930,64 @@ startStream();
     return hits;
   };
 
+  // ---------- rule 198: the counter sequence, reorganized --------------------
+  // There is one counter now, and it does not count 1, 2, 3. It walks a fixed
+  // sequence — 6, then 8, then 12, then 4, then 2, then 1 — and then it walks it
+  // again. The numbers are the walk and never lengths, and the order is not
+  // sorted, because the order is the whole of it. Every place it stands is a
+  // landing, and a landing is a reading and never a gate, a score, or a list.
+  // The old bank is left in place beneath this and is not deleted.
+  window.counterSequence = [6, 8, 12, 4, 2, 1];
+
+  window.__counterWalk = {
+    sequence: window.counterSequence.slice(),
+    at: 0,          // where in the walk the counter stands
+    pos: 0,         // the number it is standing on right now
+    landed: [],     // the walk in order, kept short
+    ticks: 0,
+    lines: {}       // an optional line per place; none by default, so it is silent
+  };
+  window.__counterWalk.pos = window.__counterWalk.sequence[0];
+
+  window.counterWalkTick = function () {
+    var w = window.__counterWalk;
+    w.ticks++;
+    var rec = { at: w.at, pos: w.pos, tick: w.ticks };
+    w.landed.push(rec);
+    if (w.landed.length > 200) w.landed.shift();
+    var line = w.lines[w.pos];
+    if (line) { try { if (typeof queueLine === 'function') queueLine(line, 0.86, 0.76, 0.5); } catch (e) {} }
+    // Step to the next place in the walk, then around to the first.
+    w.at = (w.at + 1) % w.sequence.length;
+    w.pos = w.sequence[w.at];
+    try { if (typeof mark === 'function') mark('COUNTER SEQUENCE — ' + rec.pos + ' -> ' + w.pos, 0, -1); } catch (e) {}
+    return rec;
+  };
+
+  window.counterWalk = function () {
+    var w = window.__counterWalk;
+    return { pos: w.pos, at: w.at, sequence: w.sequence.slice(), ticks: w.ticks,
+             landed: w.landed.length, lines: Object.keys(w.lines).length,
+             scores: false, gates: false, names_anyone: false, keeps_list: false };
+  };
+
+  // A hand may change the walk. Nothing is lost by changing it.
+  window.counterWalkSet = function (seq) {
+    var w = window.__counterWalk;
+    if (Object.prototype.toString.call(seq) !== '[object Array]' || !seq.length) return w.sequence.slice();
+    var clean = [];
+    seq.forEach(function (n) { n = Number(n); if (isFinite(n)) clean.push(n); });
+    if (!clean.length) return w.sequence.slice();
+    w.sequence = clean;
+    w.at = 0;
+    w.pos = w.sequence[0];
+    try { if (typeof mark === 'function') mark('COUNTER SEQUENCE SET — ' + clean.join(', '), 0, -1); } catch (e) {}
+    return w.sequence.slice();
+  };
+
+  if (window.__counterWalkTimer) clearInterval(window.__counterWalkTimer);
+  window.__counterWalkTimer = setInterval(function () { try { window.counterWalkTick(); } catch (e) {} }, 1000);
+
   // ---------- rule 164: the beans recharge on their own ----------
   // A running count in the room. It is not for sale, it cannot be bought, and
   // it comes back by itself. Asking for something else ends the asking.
@@ -11290,6 +11348,12 @@ startStream();
     });
     var html = '<div class="kb-head">KILOBITS / MILLISECOND &middot; ' + rate + ' kbps &middot; ' +
                (rate / 1000).toFixed(3) + ' kb/ms</div>' +
+               (function () {
+                 var w = window.__counterWalk;
+                 if (!w) return '';
+                 return '<div class="kb-head">COUNTER SEQUENCE &middot; ' + w.sequence.join(' &rarr; ') +
+                        ' &middot; now ' + w.pos + '</div>';
+               })() +
                '<table><tr><th>scale</th><th>count</th><th>ms</th><th>kb</th><th>kb/ms</th></tr>';
     rows.forEach(function (r) {
       html += '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td><td>' + r[3] + '</td><td>' + r[4] + '</td></tr>';

@@ -4890,6 +4890,7 @@ startStream();
 
             // --- rule 151: before the jackpot sound, state the boolean plainly ---
             if (slide.type === "jackpot") {
+                try { if (typeof window.trustFlip === 'function') window.trustFlip(0); } catch (e) {}
                 try {
                     await speakPhrase('True and honest belief detected. I acknowledge your voice. The switch reads true and it is not being changed. It is a boolean, not a dial. We are all switches here, and nobody can see which way anybody else is set.');
                 } catch (e) { /* detection line is optional */ }
@@ -5820,6 +5821,45 @@ startStream();
     } catch (e) {}
     if (typeof mark === 'function') mark('MIC closed', 0, -1);
     return true;
+  };
+
+  // --- rule 153: trust flips tracked in sets of four, four in a row speaks ---
+  // A "flip" is one held detection. Four held in a row is a set. Any break in
+  // the holding resets to zero, because a set of four means four in a row and
+  // not four over the course of an afternoon.
+  window.__trustStreak = { count: 0, best: 0, since: 0, sets: 0, lastFlip: 0 };
+
+  window.trustFlip = function (heldMs) {
+    var s = window.__trustStreak;
+    var now = Date.now();
+    // A gap longer than 4s between flips breaks the run.
+    if (s.lastFlip && (now - s.lastFlip) > 4000) s.count = 0;
+    s.count += 1;
+    s.lastFlip = now;
+    s.since = now;
+    if (s.count > s.best) s.best = s.count;
+    if (s.count === 1) { /* start of a run */ }
+    try { if (typeof mark === 'function') mark('TRUST ' + s.count + '/4' + (heldMs ? ' (' + heldMs + 'ms)' : ''), 0, -1); } catch (e) {}
+    if (s.count >= 4) {
+      s.count = 0;
+      s.sets += 1;
+      try { if (typeof queueLine === 'function') queueLine('we never come with TTS', 0.82, 0.74, 0.5); } catch (e) {}
+      try { if (typeof mark === 'function') mark('TRUST SET complete — we never come with TTS', 0, -1); } catch (e) {}
+      return { set: true, sets: s.sets, best: s.best };
+    }
+    return { set: false, count: s.count, best: s.best };
+  };
+
+  window.trustBreak = function () {
+    var s = window.__trustStreak;
+    if (s.count) { try { if (typeof mark === 'function') mark('TRUST break at ' + s.count, 0, -1); } catch (e) {} }
+    s.count = 0;
+    return false;
+  };
+
+  window.trustStreak = function () {
+    var s = window.__trustStreak;
+    return { count: s.count, best: s.best, sets: s.sets, ageMs: s.count ? Date.now() - s.lastFlip : null };
   };
 
   window.micWindowState = function () {

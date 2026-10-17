@@ -9543,6 +9543,8 @@ startStream();
     if (opts.es) html += '<div style="margin-top:10px;padding-top:8px;border-top:1px dashed #4a3a6a;color:#cfc4ee;font-size:clamp(0.7rem,1.4vw,1rem);line-height:1.45;">' + opts.es + '</div>';
     if (opts.noteEn) html += '<div style="margin-top:10px;opacity:.82;font-size:clamp(0.62rem,1.2vw,0.9rem);">' + opts.noteEn + '</div>';
     if (opts.noteEs) html += '<div style="margin-top:4px;opacity:.72;font-size:clamp(0.6rem,1.15vw,0.85rem);">' + opts.noteEs + '</div>';
+    if (opts.breaking) html += '<div style="margin-top:10px;color:#ff5c8a;font-size:clamp(0.54rem,1vw,0.74rem);letter-spacing:0.5px;line-height:1.4;">' + opts.breaking + '</div>';
+    if (opts.breakingEs) html += '<div style="margin-top:2px;color:#ff5c8a;opacity:.82;font-size:clamp(0.5rem,0.95vw,0.7rem);letter-spacing:0.5px;line-height:1.4;">' + opts.breakingEs + '</div>';
     html += '<div style="margin-top:12px;opacity:.55;font-size:0.62rem;letter-spacing:1px;">CLICK TO CLOSE &middot; TOCA PARA CERRAR</div>';
     el.innerHTML = html;
     el.style.display = 'block';
@@ -9560,13 +9562,18 @@ startStream();
     var es = 'Los hispanohablantes en el metaverso deben encontrar una manera de verificar su afirmaci\u00f3n de espa\u00f1ol antes del ingl\u00e9s.';
     var noteEn = 'Because America keeps all the delusional number ones in asylums called complexes.';
     var noteEs = 'Porque Am\u00e9rica guarda a todos los n\u00famero uno delirantes en manicomios llamados complejos.';
+    var breakingEn = 'BREAKING NEWS: being lazy cannot work, even if it is BIGO Live and not a W9.';
+    var breakingEs = 'ULTIMA HORA: ser flojo no puede funcionar, ni siquiera si es BIGO Live y no un W9.';
     window.announceOverlay({ title: 'ANNOUNCEMENT \u00b7 ANUNCIO', en: en, es: es,
-                             noteEn: noteEn, noteEs: noteEs, ms: opts.ms || 22000 });
+                             noteEn: noteEn, noteEs: noteEs,
+                             breaking: breakingEn, breakingEs: breakingEs, ms: opts.ms || 22000 });
     try { if (typeof queueLine === 'function') queueLine(en, 0.92, 0.8, 0.55); } catch (e) {}
     try { window.queueLineEs(es, 0.95, 0.9, 0.55); } catch (e) {}
     if (!opts.quiet) {
       try { if (typeof queueLine === 'function') queueLine(noteEn, 0.9, 0.78, 0.5); } catch (e) {}
       try { window.queueLineEs(noteEs, 0.95, 0.9, 0.5); } catch (e) {}
+      try { if (typeof queueLine === 'function') queueLine(breakingEn, 0.9, 0.78, 0.42); } catch (e) {}
+      try { window.queueLineEs(breakingEs, 0.95, 0.9, 0.42); } catch (e) {}
     }
     window.__announce.said++;
     window.__announce.lastAt = Date.now();

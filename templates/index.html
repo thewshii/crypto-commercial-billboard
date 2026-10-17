@@ -1911,6 +1911,45 @@
         }
         window.playSimGlitch = playSimGlitch;
 
+        // ==========================================
+        // FOCUS BOOST — a pad that opens up one step at a time.
+        // Level 0 is nearly closed. Each step opens the filter and lifts the
+        // gain. The last step is the crest, and the crest is brighter than the
+        // step before it without being louder than the room.
+        // ==========================================
+        function focusBoostTone(level, durSec) {
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return false;
+                const lv = Math.max(0, Math.min(1, level == null ? 0 : level));
+                const dur = Math.max(0.25, Math.min(12, durSec || 2.2));
+                const t0 = ctx.currentTime;
+
+                const osc = ctx.createOscillator();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(72 + lv * 264, t0);
+
+                const lp = ctx.createBiquadFilter();
+                lp.type = 'lowpass';
+                lp.frequency.setValueAtTime(360 + lv * 4600, t0);
+                lp.Q.setValueAtTime(0.7 + lv * 2.2, t0);
+
+                const g = ctx.createGain();
+                const peak = 0.02 + lv * 0.10;
+                g.gain.setValueAtTime(0.0001, t0);
+                g.gain.linearRampToValueAtTime(peak, t0 + Math.min(0.9, dur * 0.35));
+                g.gain.linearRampToValueAtTime(0.0001, t0 + dur);
+
+                osc.connect(lp);
+                lp.connect(g);
+                g.connect(ctx.destination);
+                osc.start(t0);
+                osc.stop(t0 + dur + 0.05);
+                return true;
+            } catch (e) { return false; }
+        }
+        window.focusBoostTone = focusBoostTone;
+
         let lastBeepTime = 0;
         function triggerBeep() {
             try {
@@ -6929,6 +6968,104 @@ startStream();
   };
 
   setInterval(function () { try { window.sinCheck(); } catch (e) {} }, 2000);
+
+  // ---------- rule 176: the focus boost slows down ----------
+  // The boost does not start on top of whatever just ended, and it does not
+  // take a quarter turn in a second. It steps: nothing, a quarter, a half,
+  // three quarters, then the crest. If the counter it was asked for turns too
+  // fast to give a step that is at least seven seconds, it picks a slower one
+  // by itself, and the smallest counter here that gives a slow enough quarter
+  // turn is the sixty.
+  window.FOCUS_STEP_FLOOR_MS = 3000;   // under this a step is not a step, it is a rush
+  window.FOCUS_SEVEN_MS = 7000;        // the length a step is asked to reach
+  window.FOCUS_TICK_MS = 1000;         // the counter bank ticks once a second
+  window.FOCUS_MIN_TOTAL_MS = 8500;    // the whole run comes out at least this long
+
+  window.__focus = { on: false, step: 0, level: 0, scale: null, msPerStep: 0,
+                     handle: null, breath: null, crests: 0, steps: [0, 0.25, 0.5, 0.75, 1] };
+
+  window.focusBoostPlan = function (wantScale) {
+    var wanted = wantScale || 4;
+    var order = [4, 12, 60, 240];
+    var pick = null, why = '', i, ms;
+    for (var i = 0; i < order.length; i++) {
+      if (order[i] < wanted) continue;
+      var ms = (order[i] / 4) * window.FOCUS_TICK_MS;
+      if (ms >= 7000) {
+        pick = order[i];
+        why = 'a quarter turn on the ' + order[i] + ' is ' + Math.round(ms / 1000) + 's, which is at least the 7s';
+        break;
+      }
+    }
+    if (!pick) {
+      for (var j = order.length - 1; j >= 0; j--) {
+        var ms2 = (order[j] / 4) * window.FOCUS_TICK_MS;
+        if (ms2 >= window.FOCUS_STEP_FLOOR_MS) {
+          pick = order[j];
+          why = 'nothing reached 7s a step, so this is the slowest one that clears the 3s floor';
+          break;
+        }
+      }
+    }
+    if (!pick) return { ok: false, scale: null, why: 'no counter here can give a step that is not rushed' };
+    var msPer = (pick / 4) * window.FOCUS_TICK_MS;
+    return { ok: true, scale: pick, msPerStep: msPer,
+             total: msPer * (window.__focus.steps.length - 1),
+             meetsFloor: msPer >= window.FOCUS_STEP_FLOOR_MS,
+             meetsSeven: msPer >= 7000, why: why };
+  };
+
+  window.focusBoostTick = function () {
+    var f = window.__focus;
+    var i = Math.min(f.step, f.steps.length - 1);
+    f.level = f.steps[i];
+    try { if (typeof window.focusBoostTone === 'function') window.focusBoostTone(f.level, Math.min(3, f.msPerStep / 1000)); } catch (e) {}
+    try { if (typeof mark === 'function') mark('FOCUS BOOST ' + Math.round(f.level * 100) + '% (step ' + (i + 1) + '/' + f.steps.length + ')', 0, -1); } catch (e) {}
+    if (i === f.steps.length - 1) f.crests++;
+    f.step++;
+    return { step: i + 1, level: f.level, crest: i === f.steps.length - 1 };
+  };
+
+  window.focusBoostStart = function (opts) {
+    var f = window.__focus;
+    if (f.on) return null;
+    opts = opts || {};
+    var plan = window.focusBoostPlan(opts.scale || 4);
+    if (!plan.ok) return { started: false, why: plan.why };
+    f.on = true; f.step = 0; f.level = 0; f.scale = plan.scale; f.msPerStep = plan.msPerStep;
+    var breathMs = (opts.breathMs == null) ? 1500 : opts.breathMs;
+
+    function go() {
+      if (!f.on) return;
+      window.focusBoostTick();
+      if (f.step >= f.steps.length) { f.on = false; f.handle = null; return; }
+      f.handle = setTimeout(go, f.msPerStep);
+    }
+    // Take a breath first. The run does not start on top of whatever just ended.
+    f.breath = setTimeout(function () { f.breath = null; go(); }, breathMs);
+    return { started: true, scale: plan.scale, msPerStep: plan.msPerStep,
+             steps: f.steps.length, total: plan.total, breathMs: breathMs, why: plan.why,
+             slowerThanTheOldOne: true, crestAtTheEnd: true, charged: false, endsAnything: false };
+  };
+
+  window.focusBoostStop = function () {
+    var f = window.__focus;
+    f.on = false;
+    if (f.handle) { clearTimeout(f.handle); f.handle = null; }
+    if (f.breath) { clearTimeout(f.breath); f.breath = null; }
+    return { on: false, level: f.level };
+  };
+
+  window.focusBoostState = function () {
+    var f = window.__focus;
+    var plan = window.focusBoostPlan(f.scale || 4);
+    return { on: f.on, level: f.level, step: f.step, scale: f.scale || plan.scale,
+             msPerStep: f.msPerStep || plan.msPerStep, crests: f.crests,
+             levels: f.steps.slice(),
+             floors: { minStepMs: window.FOCUS_STEP_FLOOR_MS, sevenMs: 7000,
+                       minTotalMs: window.FOCUS_MIN_TOTAL_MS, tickMs: window.FOCUS_TICK_MS },
+             charged: false, endsAnything: false };
+  };
 
   // ---------- rule 175: the sim break ----------
   // When this room declines the category outright, the floor goes out from

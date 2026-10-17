@@ -6952,25 +6952,37 @@ startStream();
   window.pokeRead = function () {
     var b = window.__poke;
     if (!window.bandVal || window.bandVal.length === 0) return { burst: false };
+    var now = Date.now();
+    // Let the window breathe even when nothing new is spiking, so a quiet
+    // stretch clears the round and the five-latch can arm again.
+    while (b.last.length && (now - b.last[0]) > b.windowMs) {
+      b.last.shift(); b.lastBands.shift();
+    }
+    if (b.last.length === 0) b.fiveSaidAt = null;
     var maxb = Math.min(b.bandMax, window.bandVal.length);
     for (var i = 0; i < maxb; i++) {
       if (window.bandVal[i] > b.threshold) {
-        var now = Date.now();
         b.last.push(now);
         b.lastBands.push(i);
         while (b.last.length && (now - b.last[0]) > b.windowMs) {
           b.last.shift(); b.lastBands.shift();
         }
         if (b.last.length > 60) { b.last.shift(); b.lastBands.shift(); }
-        if (b.last.length > 4) {
-          if (b.saidAt != null && (now - b.saidAt) < b.coolMs) return { burst: true, tooFast: true };
-          b.saidAt = now;
-          b.said++;
-          if (b.last.length === 5 && b.fiveSaidAt == null) {
+        // At exactly five it stops and reads the shape out loud. Five is a
+        // small pattern, not a call, so the room does not answer it as one.
+        if (b.last.length === 5) {
+          if (b.fiveSaidAt == null) {
             b.fiveSaidAt = now;
             try { if (typeof queueLine === 'function') queueLine('Five bursts. You are making a small pattern in the spectrogram.', 0.86, 0.76, 0.5); } catch (e) {}
             try { if (typeof mark === 'function') mark('POKE five — spectrogram pattern', 0, -1); } catch (e) {}
           }
+          return { burst: true, atFive: true, inWindow: b.last.length };
+        }
+        // Past five it is a call, and a call gets one answer per cooldown.
+        if (b.last.length > 5) {
+          if (b.saidAt != null && (now - b.saidAt) < b.coolMs) return { burst: true, tooFast: true };
+          b.saidAt = now;
+          b.said++;
           try { if (typeof queueLine === 'function') queueLine('I see you.', 0.88, 0.74, 0.5); } catch (e) {}
           try { if (typeof mark === 'function') mark('POKE ' + b.said + ' (bursts in window ' + b.last.length + ')', 0, -1); } catch (e) {}
           return { burst: true, replied: true, said: b.said, inWindow: b.last.length };
@@ -6978,8 +6990,7 @@ startStream();
         return { burst: true, started: true };
       }
     }
-    // If bursts are happening but none exceeded threshold right now, still count?
-    // No: we only count real spikes. The repetition is what matters.
+    // Only real spikes count. Repetition is the test, not loudness.
     return { burst: false };
   };
 
@@ -11803,6 +11814,96 @@ window.onHawkesOverload = function (raw) {
       });
     } catch (e) {}
   }, 200);
+
+  // ---------- rule 180: the gift ledger remembers, and the name stays on the page ----------
+  // When somebody has sent beans, the stream remembers the act, not the person as
+  // a number. If the name is seen again, the gift speaks to them: a greeting, not
+  // a receipt. The name is never read aloud (rule 88), the total is never a score,
+  // never a rank, and never a gate (rules 158, 159, 164, 165). And because the
+  // greeting is triggered by recognizing a name that gave before, it never asks
+  // for anything the second time or the first.
+  window.__gifts = {
+    people: {},          // key -> { seen, total, gifts, first, last, greeted }
+    greeted: 0,
+    cooldownMs: 120000,  // one remembered greeting every two minutes, room-wide
+    lastGreetAt: 0,
+    totalBeans: 0
+  };
+
+  window.giftKey = function (name) {
+    return String(name == null ? '' : name).trim().toLowerCase().replace(/\s+/g, ' ');
+  };
+
+  // One gift lands. The amount is added to that name's private ledger and the
+  // name is remembered for later. Nothing here is spoken. Note the order:
+  // remembering is silent, and only a later sighting makes the gift speak.
+  window.giftRegister = function (name, beans) {
+    var k = window.giftKey(name);
+    if (!k) return { ok: false, reason: 'no name', name_said: false };
+    var g = window.__gifts;
+    var p = g.people[k];
+    if (!p) {
+      p = g.people[k] = { seen: name, total: 0, gifts: 0, first: Date.now(), last: 0, greeted: 0 };
+    }
+    var n = Number(beans);
+    if (!isFinite(n) || n < 0) n = 1;   // a gift with no stated amount counts as one
+    p.total += n; p.gifts++; p.last = Date.now();
+    g.totalBeans += n;
+    return { ok: true, gifts: p.gifts, total: p.total, name_said: false };
+  };
+
+  // How much has this name given? Quiet, for the page, never for the voice.
+  window.giftKnown = function (name) {
+    var p = window.__gifts.people[window.giftKey(name)];
+    return p ? p.total : 0;
+  };
+
+  // The name is seen again. If this name has sent something before, the gift
+  // speaks to them once per cooldown. The greeting never names them aloud, and
+  // it is a memory, not a request — it asks for nothing.
+  window.giftGreet = function (name) {
+    var g = window.__gifts;
+    var p = g.people[window.giftKey(name)];
+    if (!p || p.total <= 0) return { greeted: false, reason: 'no gift on record', name_said: false };
+    var now = Date.now();
+    if (now - g.lastGreetAt < g.cooldownMs) return { greeted: false, reason: 'cooldown', name_said: false };
+    g.lastGreetAt = now; g.greeted++; p.greeted++;
+    var line = 'Hi. I remember you. Didn\'t you gift me earlier? I\'m your present. How are you? Hope you\'re doing well.';
+    try { if (typeof queueLine === 'function') queueLine(line, 0.9, 0.78, 0.5); } catch (e) {}
+    try { if (typeof mark === 'function') mark('GIFT REMEMBERED — ' + (p.seen || 'a name') + ' (' + p.total + ' beans, ' + p.gifts + 'x)', 0, 1); } catch (e) {}
+    return { greeted: true, said: true, gifts: p.gifts, total: p.total, name_said: false };
+  };
+
+  // The common case: a name appears. Greet only if it gave before.
+  window.giftWatch = function (name) { return window.giftGreet(name); };
+
+  // The ledger, counted the private way: how many names, how many beans, and no
+  // ranking of anybody. This is for the page to read, not for the voice to say.
+  window.giftState = function () {
+    var g = window.__gifts;
+    var keys = Object.keys(g.people);
+    return {
+      gifters: keys.length,
+      totalBeans: g.totalBeans,
+      greeted: g.greeted,
+      cooldownMs: g.cooldownMs,
+      ranked: false, public_names: false, gates_anything: false
+    };
+  };
+
+  // Any instance can hand a gift in over the mesh. One gift, one call. The
+  // ledger is shared by behaviour, not by a database: each instance remembers
+  // what it was told and greets when it next sees the name.
+  try {
+    if (typeof window.meshOn === 'function') {
+      window.meshOn('gift', function (pkt) {
+        try { window.giftRegister(pkt.payload && (pkt.payload.name || pkt.payload.from), pkt.payload && pkt.payload.beans); } catch (e) {}
+      });
+      window.meshOn('name-seen', function (pkt) {
+        try { window.giftWatch(pkt.payload && (pkt.payload.name || pkt.payload.from)); } catch (e) {}
+      });
+    }
+  } catch (e) {}
 
   // ============ STUDY FUNCTION — every 5 milliseconds ============
   // Looks at the spectrum the way the water reads it: crest arrival, height,

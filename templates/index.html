@@ -8838,57 +8838,79 @@ startStream();
     return { said: false, at: p.n, said_at: p.said.slice() };
   };
 
-  // ---------- rule 157: the counter, spoken from 41 to 72 ----------
-  // Each step is spoken so the room hears time counted rather than guessing at
-  // it. Two seconds per step. Accents land on the scales, not on the money.
+  // ---------- rule 157: a bank of counters, each one ticking once a second ----
+  // Each counter runs 1..N and loops. They run at the same time. A mark is a
+  // position on its own counter. The counters keep running past any one stretch,
+  // so a mark that does not land inside 41..72 lands later, on its own counter.
+  window.__counters = {
+    order: [4, 12, 60, 240],
+    pos:   { 4: 1, 12: 1, 60: 1, 240: 1 },
+    marks: { 4: [2, 4], 12: [3, 9], 60: [1, 12], 240: [1, 100, 200] },
+    landed:  { 4: [], 12: [], 60: [], 240: [] },
+    ticks: 0
+  };
+
+  window.counterMarks = function (scale) { return (window.__counters.marks[scale] || []).slice(); };
+
+  // Advance every counter by one tick. Returns the marks that landed.
+  window.countersTick = function () {
+    var c = window.__counters, hits = [];
+    c.ticks++;
+    c.order.forEach(function (scale) {
+      var marks = c.marks[scale];
+      // Read the counter, then step it. Reading first is what lets 1 land at
+      // tick 1 and keeps a mark at its own number.
+      if (marks.indexOf(c.pos[scale]) !== -1) {
+        var rec = { scale: scale, at: c.pos[scale], tick: c.ticks };
+        c.landed[scale].push(rec);
+        if (c.landed[scale].length > 200) c.landed[scale].shift();
+        hits.push(rec);
+      }
+      c.pos[scale] += 1;
+      if (c.pos[scale] > scale) c.pos[scale] = 1;        // loop 1..N
+    });
+    return hits;
+  };
+
+  window.counterState = function () {
+    var c = window.__counters;
+    return { pos: { 4: c.pos[4], 12: c.pos[12], 60: c.pos[60], 240: c.pos[240] },
+             marks: c.marks, ticks: c.ticks,
+             landed: { 4: c.landed[4].length, 12: c.landed[12].length,
+                       60: c.landed[60].length, 240: c.landed[240].length } };
+  };
+
+  window.countersReset = function () {
+    var c = window.__counters;
+    c.pos = { 4: 1, 12: 1, 60: 1, 240: 1 };
+    c.landed = { 4: [], 12: [], 60: [], 240: [] };
+    c.ticks = 0;
+    return true;
+  };
+
+  // Say a landing, in words and never in notation.
+  var SCALE_WORDS = { 4: 'the four', 12: 'the twelve', 60: 'the sixty', 240: 'the two forty' };
+  function markWords(scale, at) {
+    return at + ' on ' + (SCALE_WORDS[scale] || scale);
+  }
+  window.counterWords = function (hits) {
+    return hits.map(function (h) { return markWords(h.scale, h.at); }).join(', and ');
+  };
+
+  // ---------- the run: steps 41..72, two seconds each ----------
   window.__countRun = { on: false, step: 41, from: 41, to: 72, ms: 2000,
-                        handle: null, spoke: 0, accents: [], beats: [2, 4] };
-
-  // Position on a scale: the 1-based place a step sits at.
-  function scalePos(n, scale) { return ((n - 1) % scale) + 1; }
-  window.countAccents = function (n) {
-    var a = [];
-    // 12-scale: 3 and 9
-    if (scalePos(n, 12) === 3 || scalePos(n, 12) === 9) a.push('12:3/9');
-    // 60-scale: 1 and 12
-    var p60 = scalePos(n, 60);
-    if (p60 === 1 || p60 === 12) a.push('60:1/12');
-    // 240-scale: 1 and 240
-    var p240 = scalePos(n, 240);
-    if (p240 === 1 || p240 === 240) a.push('240:1/240');
-    return a;
-  };
-
-  // Beat grouping alternates 2 then 4, walked from the start of the run.
-  window.countBeat = function (n) {
-    var off = n - window.__countRun.from;
-    var i = 0, lens = window.__countRun.beats, pos = off;
-    var guard = 0;
-    while (guard++ < 500) {
-      var len = lens[i % lens.length];
-      if (pos < len) return { group: len, at: pos + 1 };
-      pos -= len; i++;
-    }
-    return { group: 2, at: 1 };
-  };
-
-  // Say the scales in words, never in notation.
-  var SCALE_WORDS = { '12:3/9': 'three and nine on the twelve',
-                      '60:1/12': 'one and twelve on the sixty',
-                      '240:1/240': 'one and two forty on the two forty' };
-  window.countWords = function (n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); };
+                        handle: null, spoke: 0, lastLandings: [] };
 
   window.countSpeak = function (n) {
-    var a = window.countAccents(n);
-    var b = window.countBeat(n);
-    var words = a.map(function (x) { return SCALE_WORDS[x] || x; });
-    var text = (a.length ? 'Mark ' : '') + window.countWords(n) + (a.length ? '. ' + words.join(', and ') + '.' : '.');
-    // Accents get less pitch movement and slightly slower delivery.
-    var rate  = a.length ? 0.86 : 0.95;
-    var pitch = a.length ? 0.72 : 0.82;
+    var hits = window.countersTick();
+    var words = window.counterWords(hits);
+    var text = (hits.length ? 'Mark ' + n + '. ' + words + '.' : n + '.');
+    var rate  = hits.length ? 0.86 : 0.95;
+    var pitch = hits.length ? 0.72 : 0.82;
     try { if (typeof queueLine === 'function') queueLine(text, rate, pitch, 0.5); } catch (e) {}
-    try { if (typeof mark === 'function') mark('COUNT ' + n + (a.length ? ' [' + a.join(',') + '] beat ' + b.at + '/' + b.group : ''), 0, -1); } catch (e) {}
-    return { n: n, text: text, accents: a, beat: b };
+    try { if (typeof mark === 'function') mark('COUNT ' + n + (hits.length ? ' [' + words + ']' : ''), 0, -1); } catch (e) {}
+    window.__countRun.lastLandings = hits;
+    return { n: n, text: text, landings: hits };
   };
 
   window.countStart = function (opts) {
@@ -8898,11 +8920,10 @@ startStream();
     r.from = (opts.from == null) ? 41 : opts.from;
     r.to   = (opts.to   == null) ? 72 : opts.to;
     r.ms   = (opts.ms   == null) ? 2000 : opts.ms;
-    r.step = r.from; r.on = true; r.spoke = 0; r.accents = [];
+    r.step = r.from; r.on = true; r.spoke = 0;
     function tick() {
       if (!r.on) return;
-      var out = window.countSpeak(r.step);
-      if (out.accents.length) r.accents.push(r.step);
+      window.countSpeak(r.step);
       r.spoke++;
       if (r.step >= r.to) { r.on = false; r.handle = null;
         try { if (typeof mark === 'function') mark('COUNT run complete ' + r.from + '..' + r.to, 0, -1); } catch (e) {}
@@ -8924,7 +8945,8 @@ startStream();
   window.countState = function () {
     var r = window.__countRun;
     return { on: r.on, step: r.step, from: r.from, to: r.to, ms: r.ms,
-             spoke: r.spoke, accents: r.accents.slice(), beats: r.beats.slice() };
+             spoke: r.spoke, lastLandings: r.lastLandings.slice(),
+             counters: window.counterState() };
   };
 
   window.payState = function () {

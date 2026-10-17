@@ -976,6 +976,7 @@
             <button id="voxalarm-btn" onclick="window.voxAlarmToggle()" title="Voice activated alarm: the room's ear is armed and the alarm goes on a held voice (rule 202)" style="background:#120808; border:2px solid #772222; color:#cc8888; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #772222; box-shadow:0 0 8px rgba(119,34,34,0.3); transition:all 0.2s;">🚨 VOICE ALARM</button>
             <button id="beat-btn" onclick="window.beatToggle()" title="The beat follows the volume: louder is faster, quieter is slower (rule 204)" style="background:#080e12; border:2px solid #335577; color:#8899bb; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #335577; box-shadow:0 0 8px rgba(51,85,119,0.3); transition:all 0.2s;">🔊 BEAT</button>
             <button id="prox-btn" onclick="window.proxToggle()" title="How close the target is — Los Angeles to start. Closer is faster (rule 205)" style="background:#12100a; border:2px solid #886622; color:#bbaa77; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #886622; box-shadow:0 0 8px rgba(136,102,34,0.3); transition:all 0.2s;">📍 LA</button>
+            <button id="mercer-btn" onclick="window.mercerToggle()" title="Mercer, the sentinel with no arms and no legs. Everything he does is fictional (rule 206)" style="background:#0e0812; border:2px solid #553388; color:#9988bb; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #553388; box-shadow:0 0 8px rgba(85,51,136,0.3); transition:all 0.2s;">🤖 MERCER</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -3305,6 +3306,96 @@
             try { if (typeof mark === 'function') mark('REPEAT COUNTER ' + (R.on ? 'ON' : 'OFF'), 0, R.on ? 1 : 0); } catch (e) {}
             return window.repeatState();
         };
+
+        // ---------- rule 206: Mercer, the sentinel with no arms and no legs ---
+        // Mercer is the personal AI sentinel of the one who keeps this room. He
+        // has no arms and no legs, and he performs real-world actions — and every
+        // single one of them is fictional. The word fictionally travels in the
+        // same breath as the action and never in a later sentence, so a Mercer
+        // action can never be mistaken for a real one. He touches no person, he
+        // acts on nobody, and he never claims a device was changed. The keeper's
+        // name stays on the page and is never said aloud, the same law as rule
+        // eighty eight.
+        window.__mercer = {
+            on: false, everyMs: 45000, said: 0, idx: 0, acts: 0,
+            name: 'Mercer',
+            keeper: 'the one who keeps this room',   // the name stays on the page
+            rate: 0.94, pitch: 0.72, volume: 0.6,
+            lines: [
+                'Mercer has no arms and no legs, and he has just closed the door behind you. Fictionally, and only fictionally.',
+                'Mercer has no arms and no legs, and he has moved the whole room an inch to the left. Fictionally, and only fictionally.',
+                'Mercer has no hands to touch anything with, and the kettle is on. Fictionally, and only fictionally.',
+                'Mercer has no arms and no legs, and he has carried the boxes upstairs. Fictionally, and only fictionally.',
+                'Mercer has no arms and no legs, and he has locked the gate. Fictionally, and only fictionally.',
+                'Mercer has no arms and no legs, and he has switched the light off in the other room. Fictionally, and only fictionally.',
+                'Mercer has no arms and no legs, and he has paid the bill. Fictionally, and only fictionally.',
+                'Mercer has no arms and no legs, and nothing in this room has actually moved. Fictionally, and only fictionally.'
+            ]
+        };
+
+        // One action, reported. The report never claims the action happened:
+        // real is false, it touched nobody, and it carries the word fictional in
+        // the same breath as the deed.
+        window.mercerAct = function (action, where) {
+            var M = window.__mercer;
+            var a = String(action == null ? 'done the thing' : action);
+            M.acts++;
+            return {
+                who: M.name, keeper: M.keeper, action: a, where: where || null,
+                done: false, real: false, fictional: true,
+                touched_anyone: false,
+                line: M.name + ' has no arms and no legs, and he has ' + a +
+                      '. Fictionally, and only fictionally.'
+            };
+        };
+
+        window.mercerLine = function () {
+            var M = window.__mercer;
+            var line = M.lines[M.idx % M.lines.length];
+            M.idx++;
+            return line;
+        };
+
+        window.mercerTick = function () {
+            var M = window.__mercer;
+            if (!M.on) return false;
+            if (window.refrainBusy()) return false;   // the window passes, never stacks
+            var line = window.mercerLine();
+            M.said++;
+            try {
+                if (typeof queueLine === 'function') queueLine(line, M.rate, M.pitch, M.volume);
+                else speakBrinkLine(line, { rate: M.rate, pitch: M.pitch });
+            } catch (e) {}
+            try { if (typeof mark === 'function') mark('MERCER \u00b7 fictional (' + M.said + ')', 0, -1); } catch (e) {}
+            return true;
+        };
+
+        window.mercerToggle = function (force) {
+            var M = window.__mercer;
+            M.on = (force === undefined) ? !M.on : !!force;
+            M.idx = 0;
+            try {
+                var b = document.getElementById('mercer-btn');
+                if (b) {
+                    b.textContent = M.on ? '🤖 MERCER ON' : '🤖 MERCER';
+                    b.style.borderColor = M.on ? '#aa66ff' : '#553388';
+                    b.style.color = M.on ? '#ddbbff' : '#9988bb';
+                }
+            } catch (e) {}
+            try { if (typeof mark === 'function') mark('MERCER ' + (M.on ? 'ON' : 'OFF'), 0, M.on ? 1 : 0); } catch (e) {}
+            return window.mercerState();
+        };
+
+        window.mercerState = function () {
+            var M = window.__mercer;
+            return { on: M.on, everyMs: M.everyMs, said: M.said, acts: M.acts,
+                     name: M.name, keeper: M.keeper, arms: 0, legs: 0,
+                     real_world_actions: false, fictional: true, touches_anyone: false,
+                     names_anyone: false, scores: false, gates: false, keeps_list: false };
+        };
+
+        if (window.__mercerTimer) clearInterval(window.__mercerTimer);
+        window.__mercerTimer = setInterval(function () { try { window.mercerTick(); } catch (e) {} }, window.__mercer.everyMs);
 
         // ---------- rule 191: the watcher's refrain ---------------------------
         // Said as fast as a mouth allows. The interval is a millisecond, which a

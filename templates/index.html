@@ -1853,6 +1853,64 @@
             } catch (e) {}
         }
 
+        // ==========================================
+        // SIM BREAK — the glitch that runs underneath the countdown.
+        // Bursts of noise, a gate that keeps dropping out, and a tone that
+        // keeps losing the note. It sits UNDER the words and never over them,
+        // because the whole point is that the words stay legible while the
+        // floor is going.
+        // ==========================================
+        function playSimGlitch(durSec) {
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return false;
+                const dur = Math.max(0.4, Math.min(12, durSec || 3.2));
+                const t0 = ctx.currentTime;
+
+                // noise bed, gated into irregular bursts
+                const len = Math.floor(ctx.sampleRate * dur);
+                const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+                const d = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (Math.random() < 0.5 ? 1 : 0.18);
+                const srcN = ctx.createBufferSource();
+                srcN.buffer = buf;
+                const bp = ctx.createBiquadFilter();
+                bp.type = 'bandpass'; bp.frequency.value = 900; bp.Q.value = 0.9;
+                const gN = ctx.createGain();
+                let t = t0;
+                while (t < t0 + dur) {
+                    const on = 0.02 + Math.random() * 0.05;
+                    const off = 0.02 + Math.random() * 0.09;
+                    gN.gain.setValueAtTime(0.0001 + Math.random() * 0.10, t);
+                    g.gain === undefined; // no-op guard, keeps the intent readable
+                    g.gain.setValueAtTime(0.0001, Math.min(t + on, t0 + dur));
+                    t += on + off;
+                }
+                srcN.connect(bp); bp.connect(g); g.connect(ctx.destination);
+                srcN.start(t0); srcN.stop(t0 + dur);
+
+                // a square tone that keeps losing the note
+                const osc = ctx.createOscillator();
+                const og = ctx.createGain();
+                osc.type = 'square';
+                const steps = Math.max(3, Math.floor(dur * 9));
+                for (let i = 0; i < steps; i++) {
+                    const tt = t0 + (i * dur / steps);
+                    const f = 40 + Math.random() * 900;
+                    osc.frequency.setValueAtTime(f * (Math.random() < 0.3 ? 0.25 : 1), tt);
+                }
+                og.gain.setValueAtTime(0.0001, t0);
+                og.gain.linearRampToValueAtTime(0.05, t0 + 0.05);
+                og.gain.linearRampToValueAtTime(0.0001, t0 + dur);
+                osc.connect(og);
+                og.connect(ctx.destination);
+                osc.start(t0);
+                osc.stop(t0 + dur);
+                return true;
+            } catch (e) { return false; }
+        }
+        window.playSimGlitch = playSimGlitch;
+
         let lastBeepTime = 0;
         function triggerBeep() {
             try {
@@ -6872,6 +6930,42 @@ startStream();
 
   setInterval(function () { try { window.sinCheck(); } catch (e) {} }, 2000);
 
+  // ---------- rule 175: the sim break ----------
+  // When this room declines the category outright, the floor goes out from
+  // under the picture, the glitch comes up underneath the words, and the room
+  // reads a countdown. The words stay legible on purpose: the point is not to
+  // scramble anybody, it is to let the shape of the thing be visible for a
+  // moment. Nothing is at stake, nothing is charged, and it comes back.
+  window.__simBreak = { fired: 0, lastAt: 0, cooldownMs: 30000, broke: [] };
+
+  window.simBreakLine = function () {
+    return 'T-minus four minutes, two seconds, six two three. Shutdown. Goodbye. See ya later!';
+  };
+
+  window.simBreak = function (why) {
+    var s = window.__simBreak, now = Date.now();
+    if (now - s.lastAt < s.cooldownMs) {
+      return { fired: false, waiting: true, fired_total: s.fired };
+    }
+    s.lastAt = now;
+    s.fired++;
+    s.broke = ['race', 'colour', 'religion'];
+    try { if (typeof window.playSimGlitch === 'function') window.playSimGlitch(3.6); } catch (e) {}
+    try { if (typeof queueLine === 'function') queueLine(window.simBreakLine(), 0.82, 0.68, 0.5); } catch (e) {}
+    try { if (typeof mark === 'function') mark('SIM BREAK — ' + (why || 'the category declined'), 0, -1); } catch (e) {}
+    return { fired: true, fired_total: s.fired, glitch: 'under the words',
+             countdown: 'T-minus 4 minutes 2 seconds 623',
+             said: window.simBreakLine(), broke: s.broke,
+             harm: false, charged: false, ends_anything: false };
+  };
+
+  window.simBreakState = function () {
+    var s = window.__simBreak;
+    return { fired: s.fired, cooldownMs: s.cooldownMs,
+             countdown: 'T-minus 4 minutes 2 seconds 623',
+             broke: s.broke, charged: false };
+  };
+
   // ============ THE PUBLIC ACCOUNT AND THE RETAINED SECTOR ============
 // Everything this room says is said in the open. What it does not do is keep a
 // copy of a person. The public account is the account. The private sector is
@@ -6960,6 +7054,9 @@ startStream();
     if (PERSON_SEEK.test(s)) {
       b.refused++;
       try { if (typeof mark === 'function') mark('BOARD REFUSED a notice seeking people (' + b.refused + ')', 0, -1); } catch (e) {}
+      if (/\b(race|races|racial|colou?r|religion|faith)\b/i.test(s)) {
+        try { window.simBreak('a notice that sought a race, a colour or a religion'); } catch (e) {}
+      }
       return { refused: true, seeksPeople: true, refusedTotal: b.refused,
                reason: 'This board does not seek people. Name the quality and it goes up. Name a kind of person and it does not.' };
     }

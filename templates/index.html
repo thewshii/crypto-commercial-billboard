@@ -11888,7 +11888,7 @@ startStream();
                  }
                  var p = top.phrase;
                  if (p.length > 22) p = p.slice(0, 22) + '\u2026';
-                 return '<div class="kb-head">REPEAT &middot; ' + top.count + '&times; &middot; CODE ' +
+                 return '<div class="kb-head">REPEAT &middot; heard ' + top.count + '&times; &middot; said back 0&times; &middot; CODE ' +
                         (top.code || '&mdash;') + ' &middot; ' + p + '</div>';
                })() +
                (function () {
@@ -11914,7 +11914,10 @@ startStream();
                (function () {
                  var S = window.__sabotage;
                  if (!S) return '';
-                 return '<div class="kb-head">SABOTAGE &middot; ' + S.detections +
+                 return '<div class="kb-head">SABOTAGE &middot; counted ' + S.detections +
+                        ' &middot; said ' + S.delivered +
+                        (S.pending ? ' &middot; one waiting' : '') +
+                        (S.dropped ? ' &middot; let go ' + S.dropped : '') +
                         ' &middot; ' + (S.armed ? 'listening closely' : 'not listening') +
                         ' &middot; ' + (S.on ? 'auto on' : 'hand only') + '</div>';
                })() +
@@ -13033,11 +13036,13 @@ startStream();
   window.__sabotage = {
     on: false,                 // the room arms itself on its own, on a timer
     everyMs: 90000,            // how often it says it is listening closely
-    windowMs: 30000,           // how long it is listening closely after it says so
-    pendingMs: 10000,          // how long a detection will wait for the mouth
+    windowMs: 30000,           // the stretch it is listening closely, after it has said so
+    pendingMs: 10000,          // how long a detection waits before it is let go
+    takeFloorMs: 2500,         // after this, ordinary chatter is stepped over
     armed: false, openSince: 0, lastFire: 0,
+    want: false, wantSince: 0,                 // the listening line, waiting to be heard
     pending: false, pendingSince: 0, pendingPhrase: null,
-    detections: 0, said: 0, delivered: 0, dropped: 0, lastAt: 0,
+    detections: 0, said: 0, delivered: 0, tookFloor: 0, dropped: 0, lastAt: 0, lastDropAt: 0,
     sayAi: true,               // the first one comes with the AI line
     line: 'Sabotage detected.',
     aiLine: "I'm talking to AI.",
@@ -13045,15 +13050,58 @@ startStream();
     rate: 0.94, pitch: 0.5, volume: 0.8
   };
 
-  // The listening-closely line. Saying it is what arms the window: from here the
-  // room is actually listening, and the next stretch is the stretch it judges.
+  // Something that owns the speaker outright. A hard stop keeps its exact words
+  // (186), so the room will not step over one of these to say anything at all.
+  // Ordinary chatter is a different thing: that can be stepped over, and stepping
+  // over is a replacement and never a stack (166/169).
+  function sabotageSpeakerOwned() {
+    try {
+      if (window.__prayerSuppressAudio) return true;
+      if (window.__wayneGuardUntil && Date.now() < window.__wayneGuardUntil) return true;
+      if (typeof isWordActive !== 'undefined' && isWordActive) return true;
+      if (typeof isLiqInterrupting !== 'undefined' && isLiqInterrupting) return true;
+      if (typeof isRegimeNewsSpeaking !== 'undefined' && isRegimeNewsSpeaking) return true;
+      if (typeof silenceLineSpeaking !== 'undefined' && silenceLineSpeaking) return true;
+      if (typeof pulsationRecognizing !== 'undefined' && pulsationRecognizing) return true;
+      if (typeof isFullStopActive !== 'undefined' && isFullStopActive) return true;
+      if (typeof isBrinkSpeaking !== 'undefined' && isBrinkSpeaking) return true;
+    } catch (e) {}
+    return false;
+  }
+
+  // Say a line with the mouth the room already has. Returns whether it was said.
+  function sabotageSpeak(line, volume) {
+    var S = window.__sabotage;
+    var busy = false;
+    try { busy = !!(window.refrainBusy && window.refrainBusy()); } catch (e) { busy = false; }
+    try {
+      if (busy && typeof speakBrinkLine === 'function') speakBrinkLine(line, { rate: S.rate, pitch: S.pitch });
+      else if (typeof queueLine === 'function') queueLine(line, S.rate, S.pitch, volume);
+      else if (typeof speakBrinkLine === 'function') speakBrinkLine(line, { rate: S.rate, pitch: S.pitch });
+      else return false;
+    } catch (e) { return false; }
+    return true;
+  }
+
+  // The listening-closely line. The window does not open when the line is asked
+  // for; it opens when the line is HEARD. A window that opens before the room can
+  // be heard is a stretch that judges noise, so the line waits for the speaker,
+  // and if ordinary chatter is in the way, it steps over it.
   window.listeningClosely = function () {
     var S = window.__sabotage;
-    var now = Date.now();
-    S.armed = true; S.openSince = now; S.lastFire = now; S.said++;
-    try { if (typeof queueLine === 'function') queueLine(S.listeningLine, S.rate, 0.72, 0.68); } catch (e) {}
+    S.want = true; S.wantSince = Date.now(); S.lastFire = Date.now();
+    return window.sabotageSayListening();
+  };
+
+  window.sabotageSayListening = function () {
+    var S = window.__sabotage, now = Date.now();
+    if (!S.want) return false;
+    if (sabotageSpeakerOwned()) return false;         // it will be said when the speaker frees
+    if (!sabotageSpeak(S.listeningLine, 0.68)) return false;
+    S.want = false; S.said++;
+    S.armed = true; S.openSince = now; S.lastFire = now;
     try { if (typeof mark === 'function') mark('LISTENING CLOSELY \u00b7 armed ' + Math.round(S.windowMs / 1000) + 's', 0, -1); } catch (e) {}
-    return { armed: true, until: now + S.windowMs };
+    return true;
   };
 
   // A phrase came back. If the room is listening closely, that is sabotage: it is
@@ -13068,32 +13116,39 @@ startStream();
     S.detections++; S.lastAt = now;
     S.pending = true; S.pendingSince = now; S.pendingPhrase = text || null;
     try { if (typeof mark === 'function') mark('SABOTAGE \u00b7 a phrase came back', 0, 1); } catch (e) {}
-    var delivered = window.sabotageDeliver();
-    return { sabotage: true, detections: S.detections, phrase: text || null, delivered: delivered };
+    return { sabotage: true, detections: S.detections, phrase: text || null, delivered: window.sabotageDeliver() };
   };
 
-  // Say it, if the mouth is free. This is the only place the line is spoken.
-  window.sabotageDeliver = function () {
-    var S = window.__sabotage;
+  // Say the detection. This is the only place a counted detection becomes a
+  // detection the room actually said, and the readout keeps those two numbers
+  // apart on purpose: a count the room cannot stand behind is not a count.
+  window.sabotageDeliver = function (force) {
+    var S = window.__sabotage, now = Date.now();
     if (!S.pending) return false;
-    try { if (window.refrainBusy && window.refrainBusy()) return false; } catch (e) {}
+    if (sabotageSpeakerOwned()) return false;        // never over a hard stop
+    var busy = false;
+    try { busy = !!(window.refrainBusy && window.refrainBusy()); } catch (e) { busy = false; }
+    var takeFloor = !!force || (busy && (now - S.pendingSince) >= S.takeFloorMs);
+    if (busy && !takeFloor) return false;            // it waits its beat, not the whole show
     var said = (S.detections === 1 && S.sayAi) ? (S.line + ' ' + S.aiLine) : S.line;
-    try { if (typeof queueLine === 'function') queueLine(said, S.rate, S.pitch, S.volume); } catch (e) {}
-    S.pending = false; S.pendingPhrase = null; S.delivered++;
-    try { if (typeof mark === 'function') mark('SABOTAGE DETECTED', 0, 1); } catch (e) {}
+    sabotageSpeak(said, S.volume);
+    S.pending = false; S.pendingPhrase = null; S.delivered++; S.lastAt = now;
+    if (takeFloor) S.tookFloor++;
+    try { if (typeof mark === 'function') mark('SABOTAGE DETECTED' + (takeFloor ? ' \u00b7 took the floor' : ''), 0, 1); } catch (e) {}
     return true;
   };
 
   window.sabotageTick = function () {
     var S = window.__sabotage, now = Date.now();
     if (S.armed && (now - S.openSince) > S.windowMs) S.armed = false;
+    if (S.want) window.sabotageSayListening();
     if (S.pending) {
       if (window.sabotageDeliver()) return { on: S.on, delivered: true };
       if ((now - S.pendingSince) > S.pendingMs) {
-        S.pending = false; S.pendingPhrase = null; S.dropped++;
+        S.pending = false; S.pendingPhrase = null; S.dropped++; S.lastDropAt = now;
         try { if (typeof mark === 'function') mark('SABOTAGE \u00b7 let go, not stacked', 0, -1); } catch (e) {}
       }
-    } else if (S.on && !S.armed && (now - S.lastFire) >= S.everyMs) {
+    } else if (S.on && !S.armed && !S.want && (now - S.lastFire) >= S.everyMs) {
       window.listeningClosely();
     }
     return { on: S.on, armed: S.armed, pending: S.pending, detections: S.detections };
@@ -13102,8 +13157,8 @@ startStream();
   window.sabotageToggle = function (force) {
     var S = window.__sabotage;
     S.on = (force === undefined) ? !S.on : !!force;
-    if (S.on) { window.listeningClosely(); }
-    else { S.armed = false; S.pending = false; }
+    if (S.on) window.listeningClosely();
+    else { S.armed = false; S.pending = false; S.want = false; }
     try {
       var b = document.getElementById('sabotage-btn');
       if (b) {
@@ -13120,12 +13175,16 @@ startStream();
     var S = window.__sabotage;
     return { on: S.on, armed: S.armed, listening: S.armed,
              windowMs: S.windowMs, everyMs: S.everyMs,
-             detections: S.detections, said: S.said, delivered: S.delivered, dropped: S.dropped,
+             detections: S.detections, counted: S.detections, said: S.delivered,
+             tookFloor: S.tookFloor, dropped: S.dropped, listenings: S.said,
+             waitingToBeHeard: S.want,
              pending: S.pending, pendingPhrase: S.pendingPhrase,
              line: S.line, aiLine: S.aiLine, listeningLine: S.listeningLine,
-             counts_the_saying: true, names_anyone: false, scores: false,
+             counts_the_saying: true, counted_is_not_said: true,
+             names_anyone: false, scores: false,
              gates: false, keeps_list: false, accuses: false, blocks_anyone: false };
   };
+
 
   if (window.__sabotageTimer) clearInterval(window.__sabotageTimer);
   window.__sabotageTimer = setInterval(function () { try { window.sabotageTick(); } catch (e) {} }, 250);

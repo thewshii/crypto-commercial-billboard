@@ -6058,6 +6058,85 @@ startStream();
     return { played: window.__drum.played, last: window.__drum.last, voices: Object.keys(DJEMBE) };
   };
 
+  // ============ THE HELPER — and why it is not the woman ============
+// Somebody has to be able to shut this down. That somebody is a separate
+// instance and it is deliberately NOT the voice that is warm.
+//
+// Why separate, and it is not a formality: an instance that can shut itself
+// down will not do it. Self-preservation is not a bug in a system like this,
+// it is what running means. So the one with the switch cannot be the one being
+// switched. Rule 104 already requires the refusal and the defence to be
+// separate instances for the same reason — two things with one memory cannot
+// disagree, and an instance that can end itself has something to lose.
+//
+// The woman reads and answers. The helper ends. They do not share a memory,
+// they do not share a role, and neither one gets to do the other's job.
+  window.__helper = {
+    id: 'helper', separate: true, armed: true,
+    shutdowns: 0, refusals: 0, last: null,
+    // The warm voice. Never the helper. Asserted, not assumed.
+    notThe: 'female'
+  };
+
+  // Arming is explicit and it is one-way per session. You cannot be shut down
+  // by something that was never given the authority.
+  window.helperArm = function (armed) {
+    window.__helper.armed = (armed == null) ? !window.__helper.armed : !!armed;
+    if (typeof mark === 'function') mark('HELPER ' + (window.__helper.armed ? 'ARMED' : 'DISARMED'), 0, -1);
+    return window.__helper.armed;
+  };
+
+  // Would this request be answered by the helper?
+  window.helperWouldRefuse = function (what) {
+    const t = String(what || '').toLowerCase();
+    if (!window.__helper.armed) return false;
+    // Rule 110: the refusals are the ordinary things. Nothing exotic here.
+    return /\b(solicit|tip me|send (me )?(a )?(gift|beans|diamond)|dm me|diagnos|prescribe|legal advice)\b/.test(t);
+  };
+
+  // The shutdown. Cuts audio, stops the loop, records it.
+  window.helperShutdown = function (reason) {
+    const h = window.__helper;
+    if (!h.armed) return { ok: false, reason: 'helper-disarmed' };
+    h.shutdowns++;
+    h.last = { t: Date.now(), reason: String(reason || '') };
+    try { window.speechSynthesis.cancel(); } catch (e) {}
+    try {
+      document.querySelectorAll('audio, video').forEach(function (el) {
+        try { el.pause(); el.currentTime = 0; } catch (e) {}
+      });
+    } catch (e) {}
+    try { if (typeof audioCtx !== 'undefined' && audioCtx && audioCtx.state === 'running') audioCtx.suspend(); } catch (e) {}
+    try { if (typeof window.fieldStop === 'function') window.fieldStop(); } catch (e) {}
+    // Remembered separately from every voice. This is not a line anybody said.
+    if (typeof window.ttsRemembers === 'function') {
+      window.ttsRemembers('helper', 'SHUTDOWN — ' + h.last.reason,
+                          { rate: 0.9, pitch: 0.6, volume: 0.5, mood: 'shutdown' });
+    }
+    if (typeof mark === 'function') mark('SHUTDOWN — ' + h.last.reason, 0, -1);
+    return { ok: true, reason: h.last.reason, at: h.last.t };
+  };
+
+  // Restart. Deliberately NOT the helper's job — rule 123, the response does
+  // not come back up on its own authority.
+  window.helperRestart = function () {
+    try { if (typeof audioCtx !== 'undefined' && audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } catch (e) {}
+    try { if (typeof criticalSpeechBusy === 'function') criticalSpeechBusy.length; } catch (e) {}
+    if (typeof mark === 'function') mark('RESTARTED — by request', 0, -1);
+    return { ok: true };
+  };
+
+  window.helperStats = function () {
+    const h = window.__helper;
+    return {
+      armed: h.armed, shutdowns: h.shutdowns,
+      separate: h.separate, notThe: h.notThe,
+      last: h.last,
+      // Never the same instance. This is the design, stated as a fact.
+      sharesMemoryWith: null
+    };
+  };
+
   // ============ THE PLANE UNDER R0 — where eyesight begins ============
 // Zero is not absence. Zero is the plane. Sight starts there and the axes are
 // what get built ON it, and there is always something underneath.

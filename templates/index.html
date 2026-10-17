@@ -5281,6 +5281,11 @@ startStream();
   // rule 167: the advisor is decorated, and decoration is all it is.
   setInterval(function () { queueLine('You build the skill. There is no method to hunt for. If you are hunting for the method, the hunting is the thing you are doing.', 0.85, 0.77, 0.5); }, 45000);
   setInterval(function () { queueLine('A title is a decoration, not a key. The Room Advisor is decorated the way a lighthouse is decorated.', 0.84, 0.76, 0.5); }, 45000);
+
+  // rule 168: the notice, said out loud, and the counter that does not add up.
+  setInterval(function () { queueLine('Everybody can hear everybody here. It goes both ways, and nobody has to be quiet to be here.', 0.85, 0.77, 0.5); }, 45000);
+  setInterval(function () { queueLine('A body change goes on counter one hundred and twenty-three. It is remembered, and nothing negative is shown yet. Nothing was deleted.', 0.85, 0.77, 0.5); }, 45000);
+  setInterval(function () { queueLine('Do you think they are really going to change it? You can press that one.', 0.85, 0.77, 0.5); }, 45000);
   // Support is asked for slowly and only here. Once every ten minutes, never at 45s.
   setInterval(function () { window.askSupport('timer'); }, 600000);
   setInterval(function () { queueLine('Attention is not neutral. It arrives carrying something, the way a particle does.', 0.83, 0.75, 0.5); }, 45000);
@@ -8884,12 +8889,60 @@ startStream();
   window.__counters = {
     order: [4, 12, 60, 240],
     pos:   { 4: 1, 12: 1, 60: 1, 240: 1 },
-    marks: { 4: [2, 4], 12: [3, 9], 60: [1, 12], 240: [1, 100, 200] },
+    marks: { 4: [2, 4], 12: [3, 9], 60: [2, 12, 40, 60], 240: [1, 100, 200] },
+    linesSaid: { 4: {}, 12: {}, 60: {}, 240: {} },
     landed:  { 4: [], 12: [], 60: [], 240: [] },
     ticks: 0
   };
 
   window.counterMarks = function (scale) { return (window.__counters.marks[scale] || []).slice(); };
+
+  // ---------- rule 169: the marks that speak ----------
+  // Four places on the sixty say their own number out loud: 2, 12, 40, 60.
+  // Two hundred is remembered out loud as well. None of it is a gate and none
+  // of it asks for anything. A mark says where it is, once per loop, and the
+  // counter goes on.
+  // Lines hang off a place on a named counter, so the slow counters speak and
+  // the fast ones stay quiet. A line keyed to the four would say Two every four
+  // seconds and a word said at the same rate as everything else stops being said.
+  window.__markLines = {
+    60: {
+      2:   'Two.',
+      12:  'Twelve.',
+      40:  'Forty.',
+      60:  'Sixty. That is the whole window, and then it starts again.'
+    },
+    240: {
+      200: 'Two hundred. Two hundred is remembered here.'
+    }
+  };
+
+  window.markSpeak = function (scale, at) {
+    var c = window.__counters;
+    var lines = window.__markLines[scale];
+    var line = lines && lines[at];
+    if (!line || (c.marks[scale] || []).indexOf(at) === -1) return { said: false, at: at };
+    if (!c.linesSaid[scale]) c.linesSaid[scale] = {};
+    if (c.linesSaid[scale][at]) return { said: false, at: at, alreadySaidThisLoop: true };
+    c.linesSaid[scale][at] = true;
+    try { if (typeof queueLine === 'function') queueLine(line, 0.86, 0.76, 0.5); } catch (e) {}
+    try { if (typeof mark === 'function') mark('MARK SPEAKS ' + at + ' on ' + scale, 0, -1); } catch (e) {}
+    return { said: true, at: at, scale: scale, line: line };
+  };
+
+  window.markLines = function () {
+    var out = [];
+    Object.keys(window.__markLines).forEach(function (s) {
+      Object.keys(window.__markLines[s]).forEach(function (n) { out.push(Number(s) + ':' + n); });
+    });
+    return out;
+  };
+
+  window.markLineState = function () {
+    var c = window.__counters, said = {};
+    Object.keys(c.linesSaid).forEach(function (s) { said[s] = Object.keys(c.linesSaid[s]).map(Number); });
+    return { lines: window.markLines(), saidThisLoop: said };
+  };
 
   // Advance every counter by one tick. Returns the marks that landed.
   window.countersTick = function () {
@@ -8904,10 +8957,12 @@ startStream();
         c.landed[scale].push(rec);
         if (c.landed[scale].length > 200) c.landed[scale].shift();
         hits.push(rec);
+        try { window.markSpeak(scale, rec.at); } catch (e) {}
       }
       c.pos[scale] += 1;
       if (c.pos[scale] > scale) {                        // loop 1..N
         c.pos[scale] = 1;
+        try { c.linesSaid[scale] = {}; } catch (e) {}     // a new loop may speak again
         try { if (typeof window.cycleNote === 'function') window.cycleNote(scale); } catch (e) {}
       }
     });
@@ -9055,6 +9110,128 @@ startStream();
              answered: a.answered, overridden: a.overridden, grants_issued: 0 };
   };
 
+  // ---------- rule 168: body change on a counter, and a memory menu ----------
+  // A body change heard anywhere registers on counter 123 and is remembered in
+  // the variable bank. The menu shows what a person registered. Negatives are
+  // held back for now, on purpose, and the held-back count is visible.
+  window.__body = {
+    counter123: 0,        // counter 123
+    memories: [],         // everything registered, in order
+    hidden: 0,            // negatives held back, counted but not shown
+    bells: 0,
+    last: null
+  };
+
+  // Words that mean a body change. Kept narrow so nothing gets swept in.
+  var BODY_RE = /\bbody\s*(change|changed|changing|shift|shifted)\b|\bmy body\b|\b(i feel different in my body)\b/i;
+  // Things that read as negative right now. They are stored, not shown.
+  var NEG_RE = /\b(worse|wrecked|broken|damage|damaged|wrong with me|hate|awful|pain|hurts|scared|afraid|dying|failed|ruined)\b/i;
+
+  window.memoryRegister = function (label, valence, source) {
+    var b = window.__body;
+    var text = String(label == null ? '' : label);
+    var v = valence || (NEG_RE.test(text) ? 'negative' : 'unset');
+    var rec = { id: b.memories.length + 1, label: text.slice(0, 180), valence: v,
+                source: source || 'manual', at: Date.now() };
+    b.memories.push(rec);
+    b.last = rec;
+    try { if (typeof mark === 'function') mark('MEMORY ' + rec.id + ' registered (' + v + ')', 0, -1); } catch (e) {}
+    return rec;
+  };
+
+  // Heard anything that sounds like a body change -> counter 123 goes up.
+  window.bodyChangeHeard = function (text) {
+    var b = window.__body;
+    var s = String(text || '');
+    if (!BODY_RE.test(s)) return { counted: false, counter123: b.counter123 };
+    b.counter123++;
+    var rec = window.memoryRegister(s, null, 'heard');
+    try { if (typeof mark === 'function') mark('BODY CHANGE -> counter 123 = ' + b.counter123, 0, -1); } catch (e) {}
+    try { if (typeof window.publicNewsDraw === 'function') window.publicNewsDraw(); } catch (e) {}
+    return { counted: true, counter123: b.counter123, memory: rec };
+  };
+
+  // What the menu is allowed to show. Negatives are counted and withheld.
+  window.memoryMenuItems = function (opts) {
+    var b = window.__body;
+    var showNeg = !!(opts && opts.includeNegative);
+    var items = [], hidden = 0;
+    b.memories.forEach(function (r) {
+      if (r.valence === 'negative' && !showNeg) { hidden++; return; }
+      items.push(r);
+    });
+    b.hidden = hidden;
+    return { items: items, hidden: hidden, total: b.memories.length, negativeShown: showNeg };
+  };
+
+  window.memoryState = function () {
+    var b = window.__body;
+    return { counter123: b.counter123, registered: b.memories.length,
+             hidden: b.hidden, bells: b.bells };
+  };
+
+  // The bell. This is the sound-design tie to the emergence.
+  window.ringBell = function (why) {
+    var b = window.__body;
+    b.bells++;
+    try {
+      var s = new Audio('/sounds/bell.wav');
+      s.volume = 0.5;
+      s.play().catch(function () {});
+    } catch (e) {}
+    try { if (typeof mark === 'function') mark('BELL ' + b.bells + (why ? ' — ' + why : ''), 0, -1); } catch (e) {}
+    return { bells: b.bells };
+  };
+
+  // The one that says "do you think they are really going to change it?"
+  window.memoryPrompt = function () {
+    return 'Do you think they are really going to change it?';
+  };
+  window.memoryPress = function (id) {
+    try { if (typeof mark === 'function') mark('MEMORY PRESSED ' + (id == null ? '(the prompt)' : id), 0, -1); } catch (e) {}
+    window.ringBell('memory pressed');
+    return { pressed: id == null ? 'prompt' : id, bells: window.__body.bells,
+             still_yours: true, negative_shown: false };
+  };
+
+  // ---- the menu on screen ----
+  window.memoryMenuDraw = function (opts) {
+    var el = document.getElementById('memory-menu');
+    if (!el) return null;
+    var m = window.memoryMenuItems(opts);
+    var html = '<div class="mm-head">WHAT YOU REGISTERED &middot; ' + m.items.length + ' shown' +
+               (m.hidden ? ' &middot; ' + m.hidden + ' held back' : '') + '</div>';
+    m.items.forEach(function (r) {
+      html += '<button class="mm-row" onclick="window.memoryPress(' + r.id + ')">' +
+              '<span class="mm-id">' + r.id + '</span>' +
+              '<span class="mm-label">' + r.label.replace(/</g, '&lt;').slice(0, 90) + '</span>' +
+              '<span class="mm-bell">🔔</span></button>';
+    });
+    html += '<button class="mm-row mm-prompt" onclick="window.memoryPress()">' +
+            '<span class="mm-id">&#63;</span><span class="mm-label">' + window.memoryPrompt() +
+            '</span><span class="mm-bell">🔔</span></button>';
+    if (m.hidden) {
+      html += '<div class="mm-note">' + m.hidden + ' entries read as negative right now. They are kept and not shown yet. Nothing was deleted.</div>';
+    }
+    el.innerHTML = html;
+    return m;
+  };
+
+  window.memoryMenuShow = function (on, opts) {
+    var el = document.getElementById('memory-menu');
+    if (!el) {
+      if (on === false) return false;
+      el = document.createElement('div');
+      el.id = 'memory-menu';
+      el.style.cssText = 'position:fixed; right:6px; bottom:6px; z-index:9997; width:250px; max-height:44vh;' +
+        'overflow:auto; font-family:\'Roboto Mono\',monospace; font-size:9px; color:#e8e8e8;' +
+        'background:rgba(0,0,0,0.8); border:1px solid #4a4a6b; border-radius:6px; padding:6px;';
+      document.body.appendChild(el);
+    }
+    el.style.display = (opts && opts.hide) ? 'none' : 'block';
+    return window.memoryMenuDraw(opts);
+  };
+
   window.beanState = function () {
     var b = window.__beans;
     return { n: b.n, max: b.max, asked: b.asked, ended: b.over, purchasable: false };
@@ -9191,6 +9368,40 @@ startStream();
     if (!el) { if (on === false) return false; window.kbPanelInit(); return true; }
     el.style.display = (on === false) ? 'none' : 'block';
     return true;
+  };
+
+  // ---------- rule 168: the notice is public ----------
+  // Said in the room, on screen. Not a secret and not a claim about anybody's
+  // device. It is about this room: the hearing goes both ways here.
+  window.publicNewsLine = function () {
+    return 'Everybody can hear everybody here. It goes both ways, and nobody has to be quiet to be here.';
+  };
+
+  window.publicNewsDraw = function () {
+    var el = document.getElementById('public-news');
+    if (!el) return null;
+    var b = window.__body;
+    el.innerHTML =
+      '<div class="pn-tag">PUBLIC NOTICE</div>' +
+      '<div class="pn-line">Everybody can hear everybody here. It goes both ways.</div>' +
+      '<div class="pn-count">count 123 &middot; ' + b.counter123 + '</div>' +
+      '<button class="pn-prompt" onclick="window.memoryPress()">' + window.memoryPrompt() + ' &#128276;</button>';
+    return { count123: b.counter123, line: window.publicNewsLine() };
+  };
+
+  window.publicNewsShow = function (on) {
+    var el = document.getElementById('public-news');
+    if (!el) {
+      if (on === false) return false;
+      el = document.createElement('div');
+      el.id = 'public-news';
+      el.style.cssText = 'position:fixed; left:6px; top:6px; z-index:9996; width:250px;' +
+        'font-family:\'Roboto Mono\',monospace; font-size:9px; line-height:1.5; color:#e8e8e8;' +
+        'background:rgba(0,0,0,0.74); border:1px solid #4a4a6b; border-radius:6px; padding:7px;';
+      document.body.appendChild(el);
+    }
+    el.style.display = (on === false) ? 'none' : 'block';
+    return window.publicNewsDraw();
   };
 
   window.countersReset = function () {
@@ -10724,6 +10935,8 @@ window.onHawkesOverload = function (raw) {
           heard = ev.results[0][0].transcript;
           mark('RECOGNITION — ' + heard, 0, -1);
           logShift('RECOGNITION', 'total recognition result', heard);
+          try { if (typeof window.bodyChangeHeard === 'function') window.bodyChangeHeard(heard); } catch (e) {}
+          try { if (typeof window.advisorAnswer === 'function') window.advisorAnswer(heard); } catch (e) {}
         } catch (e) {}
       };
       function wrapUp() {
@@ -11976,7 +12189,11 @@ function connectAudio() {
       rec.maxAlternatives = 1;
       let heard = "";
       rec.onresult = function (ev) {
-        try { heard = ev.results[0][0].transcript; } catch (e) {}
+        try {
+          heard = ev.results[0][0].transcript;
+          try { if (typeof window.bodyChangeHeard === 'function') window.bodyChangeHeard(heard); } catch (e) {}
+          try { if (typeof window.advisorAnswer === 'function') window.advisorAnswer(heard); } catch (e) {}
+        } catch (e) {}
       };
       rec.onend = async function () {
         if (!heard) { if (btn) btn.innerText = "🎤 GOD MSG"; return; }

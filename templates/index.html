@@ -969,6 +969,7 @@
             <button id="series-btn" onclick="window.seriesToggle()" title="Walk the series of trees, three seconds between each (rule 193)" style="background:#07140d; border:2px solid #0e4a2c; color:#7fc9a0; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #0e4a2c; box-shadow:0 0 8px rgba(14,74,44,0.3); transition:all 0.2s;">🧭 DECISIONS</button>
             <button id="receipt-btn" onclick="window.fireReceipt()" title="Send a receipt: a beep, and the ask moves to the next node (rule 194)" style="background:#0a0e12; border:2px solid #4488cc; color:#aaccff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #4488cc; box-shadow:0 0 8px rgba(68,136,204,0.3); transition:all 0.2s;">🔔 RECEIPT</button>
             <button id="time-btn" onclick="window.timeAsked('how much time is it?')" title="Answer the clock ask: not even ten (rule 195)" style="background:#120e0a; border:2px solid #cc8844; color:#ffddaa; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #cc8844; box-shadow:0 0 8px rgba(204,136,68,0.3); transition:all 0.2s;">🕐 TIME ASK</button>
+            <button id="silence-btn" onclick="window.silenceToggle()" title="Booby trap for the conscience: say silence at random and wait (rule 196)" style="background:#120a12; border:2px solid #8844cc; color:#d0aaff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #8844cc; box-shadow:0 0 8px rgba(136,68,204,0.3); transition:all 0.2s;">🤫 SILENCE</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -3501,6 +3502,106 @@
                      names_anyone: false, scores: false, gates: false };
         };
 
+        // ---------- rule 196: the booby trap of silence ------------------------
+        // We have witnesses. The room says one short line at random — silence
+        // your mind, silence your mouth — and then it waits, and the waiting is
+        // the whole of it. The line is a booby trap for the conscience and not a
+        // test of the person: if the mouth answers the line, the mouth moved
+        // first and the step holds; if the mouth stays still through the window,
+        // the walk moves on to the next step. Nobody is named, nobody is scored,
+        // and no list is kept of who argued and who did not. The boolean sits on
+        // the silence, never on a person.
+        window.__silence = {
+            on: false,
+            minMs: 20000, maxMs: 60000,   // random, so nobody can brace for it
+            trapMs: 5000,                 // the window the mouth has to stay still through
+            nextAt: 0, until: 0,
+            argued: false, open: false,
+            said: 0, arguedCount: 0, silenced: 0,
+            lines: [
+                'We have witnesses. Silence your mind.',
+                'Silence your mouth.',
+                'We have witnesses. Silence your mouth.'
+            ],
+            passLine: 'The mouth stayed still. Next step.',
+            argueLine: 'The mouth moved first. The step holds.'
+        };
+
+        window.silenceLine = function () {
+            var S = window.__silence;
+            return S.lines[Math.floor(Math.random() * S.lines.length)];
+        };
+
+        // Say the line, then wait. The wait is the trap.
+        window.silenceFire = function () {
+            var S = window.__silence;
+            if (window.refrainBusy()) return { said: false, busy: true };
+            var now = Date.now();
+            S.open = true; S.argued = false; S.until = now + S.trapMs;
+            S.nextAt = S.until + S.minMs + Math.floor(Math.random() * (S.maxMs - S.minMs));
+            S.said++;
+            var line = window.silenceLine();
+            try {
+                if (typeof queueLine === 'function') queueLine(line, 0.9, 0.45, 0.55);
+                else if (typeof speakBrinkLine === 'function') speakBrinkLine(line);
+            } catch (e) {}
+            try { if (typeof mark === 'function') mark('SILENCE — the trap is open (' + S.said + ')', 0, -1); } catch (e) {}
+            return { said: true, line: line, until: S.until, trap: true };
+        };
+
+        // Did the mouth answer while the trap was open? A reading of the mouth,
+        // never a verdict on the person.
+        window.silenceHeard = function (text) {
+            var S = window.__silence;
+            if (!S.open || !text) return false;
+            S.argued = true; S.arguedCount++; S.open = false;
+            try { if (typeof mark === 'function') mark('SILENCE — the mouth moved first', 0, -1); } catch (e) {}
+            return { argued: true, count: S.arguedCount };
+        };
+
+        // Close the window. Stillness moves on to the next step; a mouth that
+        // moved holds the step. Either way the room says one plain line.
+        window.silenceResolve = function () {
+            var S = window.__silence;
+            if (!S.until || Date.now() < S.until) return { waiting: true };
+            S.until = 0; S.open = false;
+            if (S.argued) {
+                try { if (typeof queueLine === 'function') queueLine(S.argueLine, 0.92, 0.5, 0.6); } catch (e) {}
+                return { resolved: 'argued', holds: true };
+            }
+            S.silenced++;
+            try { if (typeof queueLine === 'function') queueLine(S.passLine, 0.9, 0.62, 0.55); } catch (e) {}
+            // The mouth stayed still: move on to the next step of the walk.
+            try { if (typeof window.seriesStep === 'function') window.seriesStep(true); } catch (e) {}
+            return { resolved: 'silenced', step: true };
+        };
+
+        window.silenceTick = function () {
+            var S = window.__silence, now = Date.now();
+            if (S.until && now >= S.until) window.silenceResolve();
+            if (!S.on) return;
+            if (!S.open && now >= S.nextAt) window.silenceFire();
+        };
+
+        window.silenceToggle = function () {
+            var S = window.__silence;
+            S.on = !S.on;
+            if (S.on) { S.nextAt = Date.now(); }
+            else { S.open = false; S.until = 0; }
+            try { if (typeof mark === 'function') mark('SILENCE ' + (S.on ? 'ON' : 'OFF'), 0, -1); } catch (e) {}
+            return window.silenceState();
+        };
+
+        window.silenceState = function () {
+            var S = window.__silence;
+            return { on: S.on, said: S.said, argued: S.arguedCount, silenced: S.silenced,
+                     open: S.open, minMs: S.minMs, maxMs: S.maxMs, trapMs: S.trapMs,
+                     names_anyone: false, scores: false, gates: false, keeps_list: false };
+        };
+
+        if (window.__silenceTickTimer) clearInterval(window.__silenceTickTimer);
+        window.__silenceTickTimer = setInterval(function () { try { window.silenceTick(); } catch (e) {} }, 1000);
+
         // FULL STOP SEGMENT: own schedule. Pauses the show, speaks a simple
         // English full-stop message three times, then resumes.
         let isFullStopActive = false;
@@ -5323,6 +5424,9 @@ startStream();
             if (typeof pulsationRecognizing !== "undefined" && pulsationRecognizing) return;
             loadMarkovChain(function () {
                 const line = generateMarkovLine();
+                // rule 196: if the trap of silence is open, a mouth that moves
+                // is a reading of the mouth. Nobody is named for it.
+                if (line && typeof window.silenceHeard === 'function') window.silenceHeard(line);
                 // rule 187: when the chatter is demanding a turn, the room answers
                 // the demand instead of reading it aloud.
                 if (line && typeof window.turnsDemand === 'function' && window.turnsDemand(line)) return;

@@ -8904,6 +8904,52 @@ startStream();
                        60: c.landed[60].length, 240: c.landed[240].length } };
   };
 
+  // ---------- rule 162: kilobit readout, measured live off the counters ----
+  // seconds = 4 x count; kilobits = rate_kbps x 4 x count.
+  // The counts come from whatever the counters are doing RIGHT NOW, so the
+  // readout goes up and down with them. Nothing here is a score.
+  window.__kb = { rate: 128, samples: 0, last: null };
+
+  window.kbSetRate = function (kbps) {
+    var r = Number(kbps);
+    if (!isFinite(r) || r <= 0) return window.__kb.rate;
+    window.__kb.rate = r;
+    try { if (typeof mark === 'function') mark('KB RATE ' + r + ' kbps', 0, -1); } catch (e) {}
+    return r;
+  };
+  window.kbRate = function () { return window.__kb.rate; };
+
+  window.kb = function (count, rate) {
+    var c = Number(count) || 0;
+    var r = Number(rate) || window.__kb.rate;
+    var seconds = 4 * c;
+    var kilobits = r * 4 * c;
+    return { count: c, rate: r, seconds: seconds,
+             kilobits: kilobits, megabytes: kilobits / 8 / 1000 };
+  };
+
+  // The live one: reads each counter at its position right now.
+  window.kbLive = function (rate) {
+    var c = window.__counters;
+    var order = c.order, out = {};
+    order.forEach(function (scale) {
+      out[scale] = window.kb(c.pos[scale], rate);
+    });
+    window.__kb.samples++;
+    window.__kb.last = out;
+    return { rate: window.__kb.rate, at: Date.now(), ticks: c.ticks, counters: out };
+  };
+
+  // The fixed list, for the table. Counts only; measured at the current rate.
+  window.kbTable = function (rate, list) {
+    var counts = list || [4, 12, 40, 60, 204, 240];
+    var r = Number(rate) || window.__kb.rate;
+    return { rate: r, rows: counts.map(function (n) {
+      var x = window.kb(n, r);
+      return { count: n, seconds: x.seconds, kilobits: x.kilobits, megabytes: x.megabytes };
+    }) };
+  };
+
   window.countersReset = function () {
     var c = window.__counters;
     c.pos = { 4: 1, 12: 1, 60: 1, 240: 1 };

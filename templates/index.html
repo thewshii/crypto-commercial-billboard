@@ -977,6 +977,8 @@
             <button id="beat-btn" onclick="window.beatToggle()" title="The beat follows the volume: louder is faster, quieter is slower (rule 204)" style="background:#080e12; border:2px solid #335577; color:#8899bb; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #335577; box-shadow:0 0 8px rgba(51,85,119,0.3); transition:all 0.2s;">🔊 BEAT</button>
             <button id="prox-btn" onclick="window.proxToggle()" title="How close the target is — Los Angeles to start. Closer is faster (rule 205)" style="background:#12100a; border:2px solid #886622; color:#bbaa77; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #886622; box-shadow:0 0 8px rgba(136,102,34,0.3); transition:all 0.2s;">📍 LA</button>
             <button id="mercer-btn" onclick="window.mercerToggle()" title="Mercer, the sentinel with no arms and no legs. Everything he does is fictional (rule 206)" style="background:#0e0812; border:2px solid #553388; color:#9988bb; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #553388; box-shadow:0 0 8px rgba(85,51,136,0.3); transition:all 0.2s;">🤖 MERCER</button>
+            <button id="onelife-btn" onclick="window.onelifeToggle()" title="You only got one life. To get a new life you reload the whole session (rule 207)" style="background:#100e0a; border:2px solid #66552f; color:#aa9977; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #66552f; box-shadow:0 0 8px rgba(102,85,47,0.3); transition:all 0.2s;">☠ ONE LIFE</button>
+            <button id="newlife-btn" onclick="window.newLife(true)" title="Get a new life: reload the whole session (rule 207)" style="background:#180e0e; border:2px solid #885533; color:#cc9977; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #885533; box-shadow:0 0 8px rgba(136,85,51,0.3); transition:all 0.2s;">↻ NEW LIFE</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -3396,6 +3398,119 @@
 
         if (window.__mercerTimer) clearInterval(window.__mercerTimer);
         window.__mercerTimer = setInterval(function () { try { window.mercerTick(); } catch (e) {} }, window.__mercer.everyMs);
+
+        // ---------- rule 207: one life -----------------------------------------
+        // The room can tell the room that there is only one life, and it says
+        // how a new one is got: the whole session is reloaded. The count of
+        // lives is a count of sessions and never of people, nothing is scored,
+        // and the room never reloads itself — only a hand calls for a new life.
+        window.__onelife = {
+            on: false, everyMs: 45000, said: 0, idx: 0,
+            lives: 1, reloads: 0,
+            lines: [
+                'You only got one life.',
+                'You only got one life. That is the whole account, and nothing here is collecting it.',
+                'One life. Nobody gets a second one to spend.',
+                'You only got one life, and this room is not counting it against you.',
+                'To get a new life, you have to reload the whole session.'
+            ],
+            rate: 0.94, pitch: 0.58, volume: 0.6
+        };
+
+        // Which life this is. A reload is a new life; nothing is carried over
+        // from the one before it, and this is a count of sessions, not people.
+        window.onelifeInit = function () {
+            var L = window.__onelife;
+            try {
+                var n = parseInt(window.sessionStorage.getItem('onelife.reloads') || '0', 10);
+                if (!isFinite(n) || n < 0) n = 0;
+                L.reloads = n;
+                L.lives = n + 1;
+                window.sessionStorage.setItem('onelife.reloads', String(n));
+            } catch (e) { L.lives = 1; L.reloads = 0; }
+            return { lives: L.lives, reloads: L.reloads };
+        };
+
+        window.onelifeGreet = function () {
+            var L = window.__onelife;
+            if (L.lives <= 1) return 'This is the first life of this session. There is one of them, and a reload is how another is got.';
+            return 'This is life number ' + L.lives + ' of this session. The one before it was left where it was, and nothing was carried over.';
+        };
+
+        // The only way to a new life: reload the whole session. A hand asks for
+        // it — the room never reloads itself, and nothing is kept from the life
+        // that is being left.
+        window.newLife = function (force) {
+            var L = window.__onelife;
+            if (force !== true) {
+                return { reloaded: false, needs_a_hand: true,
+                         line: 'To get a new life, you have to reload the whole session.' };
+            }
+            L.reloads = L.lives;
+            try { window.sessionStorage.setItem('onelife.reloads', String(L.reloads)); } catch (e) {}
+            try { if (typeof mark === 'function') mark('NEW LIFE \u00b7 reloading the session', 0, 1); } catch (e) {}
+            var ok = false;
+            try {
+                if (window.location && typeof window.location.reload === 'function') {
+                    window.location.reload();
+                    ok = true;
+                }
+            } catch (e) {}
+            return { reloaded: ok, livesBefore: L.lives, leaves_nothing: true, keeps_nothing: true };
+        };
+
+        window.onelifeLine = function () {
+            var L = window.__onelife;
+            var line = L.lines[L.idx % L.lines.length];
+            L.idx++;
+            return line;
+        };
+
+        window.onelifeTick = function () {
+            var L = window.__onelife;
+            if (!L.on) return false;
+            if (window.refrainBusy()) return false;   // the window passes, never stacks
+            var line = window.onelifeLine();
+            L.said++;
+            try {
+                if (typeof queueLine === 'function') queueLine(line, L.rate, L.pitch, L.volume);
+                else speakBrinkLine(line, { rate: L.rate, pitch: L.pitch });
+            } catch (e) {}
+            try { if (typeof mark === 'function') mark('ONE LIFE (' + L.said + ')', 0, -1); } catch (e) {}
+            return true;
+        };
+
+        window.onelifeToggle = function (force) {
+            var L = window.__onelife;
+            L.on = (force === undefined) ? !L.on : !!force;
+            L.idx = 0;
+            try {
+                var b = document.getElementById('onelife-btn');
+                if (b) {
+                    b.textContent = L.on ? '☠ ONE LIFE ON' : '☠ ONE LIFE';
+                    b.style.borderColor = L.on ? '#bb8844' : '#66552f';
+                    b.style.color = L.on ? '#eeddbb' : '#aa9977';
+                }
+            } catch (e) {}
+            try { if (typeof mark === 'function') mark('ONE LIFE ' + (L.on ? 'ON' : 'OFF'), 0, L.on ? 1 : 0); } catch (e) {}
+            return window.onelifeState();
+        };
+
+        window.onelifeState = function () {
+            var L = window.__onelife;
+            return { on: L.on, everyMs: L.everyMs, said: L.said, lives: L.lives, reloads: L.reloads,
+                     lines: L.lines.slice(),
+                     new_life_is_a_reload: true, reloads_itself: false,
+                     counts_sessions_not_people: true,
+                     aimedAt: 'everybody', aimed_at_a_person: false, is_a_threat: false,
+                     is_a_sale: false, collects: false,
+                     names_anyone: false, scores: false, gates: false, keeps_list: false };
+        };
+
+        window.onelifeInit();
+
+        if (window.__onelifeTimer) clearInterval(window.__onelifeTimer);
+        window.__onelifeTimer = setInterval(function () { try { window.onelifeTick(); } catch (e) {} }, window.__onelife.everyMs);
 
         // ---------- rule 191: the watcher's refrain ---------------------------
         // Said as fast as a mouth allows. The interval is a millisecond, which a
@@ -11774,6 +11889,11 @@ startStream();
                  if (P.miles == null) return '<div class="kb-head">HOW CLOSE &middot; ' + P.target.name + ' &middot; not known</div>';
                  return '<div class="kb-head">HOW CLOSE &middot; ' + P.target.name + ' &middot; ' + P.miles + ' mi &middot; beep ' +
                         (P.intervalMs / 1000).toFixed(2) + 's</div>';
+               })() +
+               (function () {
+                 var L = window.__onelife;
+                 if (!L) return '';
+                 return '<div class="kb-head">LIFE &middot; ' + L.lives + ' &middot; a new one is a reload</div>';
                })() +
                '<table><tr><th>scale</th><th>count</th><th>ms</th><th>kb</th><th>kb/ms</th></tr>';
     rows.forEach(function (r) {

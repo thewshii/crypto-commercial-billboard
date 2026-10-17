@@ -5285,9 +5285,13 @@ startStream();
   // rule 170: one piece of the long saying per turn, wherever the turn lands.
   setInterval(function () { window.segmentSpeak('money'); }, 45000);
   setInterval(function () { window.segmentSpeak('sand'); }, 45000);
+  setInterval(function () { window.segmentSpeak('public'); }, 45000);
+  setInterval(function () { window.queueLine('Everything said here is public. What you keep is yours and this room holds no copy of it.', 0.85, 0.77, 0.5); }, 45000);
 
   // rule 168: the notice, said out loud, and the counter that does not add up.
   setInterval(function () { queueLine('Everybody can hear everybody here. It goes both ways, and nobody has to be quiet to be here.', 0.85, 0.77, 0.5); }, 45000);
+  setInterval(function () { queueLine('Looking for black. Not people. The colour. This board does not seek people and it never will.', 0.85, 0.77, 0.5); }, 45000);
+  setInterval(function () { queueLine('This board is not in a race in either sense. Nobody is ranked against anybody and nobody is a category.', 0.85, 0.77, 0.5); }, 45000);
   setInterval(function () { queueLine('A body change goes on counter one hundred and twenty-three. It is remembered, and nothing negative is shown yet. Nothing was deleted.', 0.85, 0.77, 0.5); }, 45000);
   setInterval(function () { queueLine('Do you think they are really going to change it? You can press that one.', 0.85, 0.77, 0.5); }, 45000);
   // Support is asked for slowly and only here. Once every ten minutes, never at 45s.
@@ -6865,6 +6869,136 @@ startStream();
   };
 
   setInterval(function () { try { window.sinCheck(); } catch (e) {} }, 2000);
+
+  // ============ THE PUBLIC ACCOUNT AND THE RETAINED SECTOR ============
+// Everything this room says is said in the open. What it does not do is keep a
+// copy of a person. The public account is the account. The private sector is
+// retained by the person and not by the room, so there is nothing here to leak,
+// sell, or be shown to anybody. Rule 111 said the memory is indifferent; this
+// is that sentence with a ledger in it.
+  window.__sectors = { publicSaid: 0, retained: 0 };
+
+  window.sectorPublic = function (what) {
+    window.__sectors.publicSaid++;
+    try { if (typeof mark === 'function') mark('PUBLIC ' + (what || 'said'), 0, -1); } catch (e) {}
+    return { publicSaid: window.__sectors.publicSaid, secret: false };
+  };
+
+  // Counted so a person can see theirs is held. Never opened. Never read.
+  window.sectorRetain = function () {
+    window.__sectors.retained++;
+    return { retained: window.__sectors.retained, heldByRoom: 0, read: 0,
+             individually: true, public: false };
+  };
+
+  window.sectorState = function () {
+    var s = window.__sectors;
+    return { publicSaid: s.publicSaid, retained: s.retained,
+             heldByRoom: 0, read: 0, falseIndex: 0, appliesToPerson: false,
+             note: 'The public account is the account. The rest is kept by each person and this room holds no copy.' };
+  };
+
+  // ---------- rule 172: a block belongs to the mark, not to the room ----------
+  // If a scanner blocks something, the block is on the thing that was blocked.
+  // It is never recorded against a person and it never appears on a person.
+  // Zero false index: nothing is blocked that did not say the thing.
+  window.__blocks = { byMark: 0, byRoom: 0, falseIndex: 0, log: [] };
+
+  window.blockAttribute = function (what, why) {
+    var b = window.__blocks;
+    b.byMark++;
+    b.log.push({ mark: String(what == null ? '' : what).slice(0, 90),
+                 why: why || 'scanned', at: Date.now() });
+    if (b.log.length > 200) b.log.shift();
+    try { if (typeof mark === 'function') mark('BLOCK ON THE MARK, NOT THE ROOM', 0, -1); } catch (e) {}
+    return { blocked: String(what == null ? '' : what).slice(0, 90), byMark: b.byMark,
+             byRoom: 0, falseIndex: 0, appliesToPerson: false,
+             line: 'The mark blocked it, not the room.' };
+  };
+
+  window.blockState = function () {
+    var b = window.__blocks;
+    return { byMark: b.byMark, byRoom: b.byRoom, falseIndex: b.falseIndex,
+             appliesToPerson: false, recent: b.log.length,
+             note: 'A block sits on the thing that was blocked. Nothing here is blocked for being somebody.' };
+  };
+
+  // ---------- rule 173: the bulletin board ----------
+  // A board of notices. A notice asks after a quality and never after a person.
+  // There is no notice here that seeks a kind of person, and there cannot be:
+  // the board refuses one before it goes up, and the refusal is counted.
+  window.__board = { notices: [], refused: 0, seeking: 0 };
+
+  // Words that mean a notice is asking for a kind of person. A notice naming
+  // any of these is refused. The board is not a place where people are sought.
+  var PERSON_SEEK = /\b(people|person|persons|anybody|somebody|someone|men|women|man|woman|guys|girls|boys|race|races|racial|ethnic|ethnicity|religion|faith|nationality|immigrant|gay|straight|trans|disabled|black people|white people)\b/i;
+
+  window.boardSeed = function () {
+    var b = window.__board;
+    if (b.notices.length) return b.notices.length;
+    b.notices.push({ id: 1, head: 'LOOKING FOR BLACK',
+      body: 'Not people. The colour. The dark part of the room, the part that holds the picture. Black is what is wanted here, and black is a colour.' });
+    b.notices.push({ id: 2, head: 'RACE: NOT IN ONE',
+      body: 'This board is not in a race in either sense. Nobody is ranked against anybody and nobody is a category. There is no race to be in and there never was one here.' });
+    b.notices.push({ id: 3, head: 'NO NOTICE NAMES A PERSON',
+      body: 'Only qualities are sought on this board. A notice that asks for a kind of person is refused before it goes up, and every refusal is counted.' });
+    b.notices.push({ id: 4, head: 'OPEN POSTING',
+      body: 'If you have something to put up, put it up. Nothing here is charged and nothing here is gated.' });
+    return b.notices.length;
+  };
+
+  window.boardSeek = function (what) {
+    var b = window.__board;
+    var s = String(what == null ? '' : what).trim();
+    if (!s) return { refused: true, reason: 'Nothing was said, so nothing went up.' };
+    if (PERSON_SEEK.test(s)) {
+      b.refused++;
+      try { if (typeof mark === 'function') mark('BOARD REFUSED a notice seeking people (' + b.refused + ')', 0, -1); } catch (e) {}
+      return { refused: true, seeksPeople: true, refusedTotal: b.refused,
+               reason: 'This board does not seek people. Name the quality and it goes up. Name a kind of person and it does not.' };
+    }
+    b.seeking++;
+    var n = { id: b.notices.length + 1, head: 'LOOKING FOR ' + s.toUpperCase().slice(0, 40),
+              body: 'A quality and not a person. Bring it and it will be used as itself.' };
+    b.notices.push(n);
+    try { if (typeof mark === 'function') mark('BOARD posted: ' + n.head, 0, -1); } catch (e) {}
+    return { refused: false, notice: n };
+  };
+
+  window.boardState = function () {
+    var b = window.__board;
+    return { notices: b.notices.length, refused: b.refused, seeking: b.seeking,
+             seeksPeople: false, perPerson: 0, charged: false };
+  };
+
+  window.boardDraw = function () {
+    var el = document.getElementById('bulletin-board');
+    if (!el) return null;
+    var b = window.__board;
+    window.boardSeed();
+    var html = '<div class="bb-tag">BULLETIN BOARD</div>';
+    b.notices.slice(-6).forEach(function (n) {
+      html += '<div class="bb-row"><div class="bb-head">' + n.head + '</div>' +
+              '<div class="bb-body">' + n.body + '</div></div>';
+    });
+    el.innerHTML = html;
+    return window.boardState();
+  };
+
+  window.boardShow = function (on) {
+    var el = document.getElementById('bulletin-board');
+    if (!el) {
+      if (on === false) return false;
+      el = document.createElement('div');
+      el.id = 'bulletin-board';
+      el.style.cssText = 'position:fixed; right:6px; top:6px; z-index:9996; width:270px; max-height:46vh;' +
+        'overflow:auto; font-family:\'Roboto Mono\',monospace; font-size:9px; line-height:1.5; color:#e8e8e8;' +
+        'background:rgba(0,0,0,0.76); border:1px solid #6b5a2b; border-radius:6px; padding:7px;';
+      document.body.appendChild(el);
+    }
+    el.style.display = (on === false) ? 'none' : 'block';
+    return window.boardDraw();
+  };
 
   // ============ TURBULENCE — hold your own frequency, use what you remember ============
 // When the spectrogram is loud and unstable, that is turbulence, not an event.
@@ -8893,7 +9027,7 @@ startStream();
   window.__counters = {
     order: [4, 12, 60, 240],
     pos:   { 4: 1, 12: 1, 60: 1, 240: 1 },
-    marks: { 4: [2, 3, 4], 12: [3, 6, 9], 60: [2, 12, 40, 59, 60], 240: [1, 100, 125, 200] },
+    marks: { 4: [2, 3, 4], 12: [3, 6, 9], 60: [2, 10, 12, 40, 59, 60], 240: [1, 100, 125, 200] },
     linesSaid: { 4: {}, 12: {}, 60: {}, 240: {} },
     fastGate: {},
     landed:  { 4: [], 12: [], 60: [], 240: [] },
@@ -8991,6 +9125,17 @@ startStream();
     'Commodities expire. Commodities do not restore.'
   );
 
+  // What the room says in the open, and the one thing it does not hold.
+  window.segmentPool('public',
+    'Everything this room says is said in the open, and the public account is just the account. ' +
+    'What is not in the open is retained by each person and the room holds no copy of it. ' +
+    'The private sector stays with the person it belongs to, and there is nothing here to leak, sell, or show. ' +
+    'Keeping something to yourself is not hiding, and being public is not the same as being known. ' +
+    'If a scanner blocks the mark, the mark blocked it, not the room. ' +
+    'Nothing in this room is recorded against a person, and the false index is zero. ' +
+    'It is adverse to know.'
+  );
+
   // The beach, cut the same way. One piece per turn, wherever the turn lands.
   window.segmentPool('sand',
     'A beach is a long doing, and the sand has been doing it the whole time. ' +
@@ -9011,6 +9156,7 @@ startStream();
     },
     60: {
       2:   'Two.',
+      10:  '@public',
       12:  'Twelve.',
       40:  'Forty.',
       59:  '@money',

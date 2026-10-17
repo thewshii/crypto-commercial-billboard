@@ -966,7 +966,9 @@
             <button id="corrupt-btn" onclick="window.corruptToggle()" title="The fast refrain: that is not true / something corrupt occurred during the crime (rule 190)" style="background:#140a0e; border:2px solid #884455; color:#bb7788; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #884455; box-shadow:0 0 8px rgba(136,68,85,0.3); transition:all 0.2s;">⚠ CORRUPT: OFF</button>
             <button id="watch-btn" onclick="window.watchToggle()" title="The watcher's refrain, as fast as the mouth allows (rule 191)" style="background:#120606; border:2px solid #661111; color:#cc8888; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #661111; box-shadow:0 0 8px rgba(102,17,17,0.35); transition:all 0.2s;">👁 WATCH</button>
             <button id="divide-btn" onclick="window.divideToggle()" title="Divide the naysayers, every four seconds (rule 192)" style="background:#12100a; border:2px solid #5a4a10; color:#c9b46a; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #5a4a10; box-shadow:0 0 8px rgba(90,74,16,0.3); transition:all 0.2s;">➗ DIVIDE</button>
-            <button id="series-btn" onclick="window.seriesToggle()" title="Walk the series of trees, three seconds between each (rule 193)" style="background:#07140d; border:2px solid #0e4a2c; color:#7fc9a0; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #0e4a2c; box-shadow:0 0 8px rgba(14,74,44,0.35); transition:all 0.2s;">🌳 SERIES</button>
+            <button id="series-btn" onclick="window.seriesToggle()" title="Walk the series of trees, three seconds between each (rule 193)" style="background:#07140d; border:2px solid #0e4a2c; color:#7fc9a0; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #0e4a2c; box-shadow:0 0 8px rgba(14,74,44,0.3); transition:all 0.2s;">🧭 DECISIONS</button>
+            <button id="receipt-btn" onclick="window.fireReceipt()" title="Send a receipt: a beep, and the ask moves to the next node (rule 194)" style="background:#0a0e12; border:2px solid #4488cc; color:#aaccff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #4488cc; box-shadow:0 0 8px rgba(68,136,204,0.3); transition:all 0.2s;">🔔 RECEIPT</button>
+            <button id="time-btn" onclick="window.timeAsked('how much time is it?')" title="Answer the clock ask: not even ten (rule 195)" style="background:#120e0a; border:2px solid #cc8844; color:#ffddaa; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #cc8844; box-shadow:0 0 8px rgba(204,136,68,0.3); transition:all 0.2s;">🕐 TIME ASK</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -3249,14 +3251,16 @@
         if (window.__divideTimer) clearInterval(window.__divideTimer);
         window.__divideTimer = setInterval(function () { try { window.divideTick(); } catch (e) {} }, window.__divide.everyMs);
 
-        // ---------- rule 193: the series, and the reads in between -------------
-        // What the room walks is a series of trees, not a menu. A menu can be
-        // scrubbed and a series cannot: you cannot pull a tree toward you, you
-        // walk to it. One lesson lands, and then the room reads the room twice.
-        // Two reads that do not come through, and it walks back to the series,
-        // about five seconds later. Between one tree and the next, three seconds
-        // have to pass. A tree may be shorter than that, and a tree may be said
-        // again, but the walking never speeds up for anybody watching.
+        // ---------- rule 193: the tree of decisions, and the reads in between --
+        // What the room walks is a tree of decisions, not a menu and not the
+        // spectrogram. A menu can be scrubbed; a tree of decisions cannot: you
+        // cannot pull a decision toward you, you walk to it and you take it.
+        // Every node is a decision and every branch is a decision that was made.
+        // One lesson lands, then the room reads the room twice. Two reads that do
+        // not come through, and it walks back to the series, about five seconds
+        // later. Between one decision and the next, three seconds have to pass.
+        // A decision may be shorter than that, and a decision may be made again,
+        // but the walking never speeds up for anybody watching.
         window.__series = {
             on: false,
             advanceMinMs: 3000,   // the fail-safe: never step to the next tree sooner
@@ -3271,13 +3275,14 @@
             readLine: 'One lesson received. Two reads did not come through. Going back to the series.'
         };
 
-        // The trees, if no other series is standing on its own.
+        // The decisions, one node each. This is the tree: a tree of decisions,
+        // never a tree of wood and never the spectrogram.
         window.SERIES_TREES = [
-            'A tree does not answer for the forest, and the forest does not answer for the tree.',
-            'The path is not a menu. You cannot pull a tree toward you; you walk to it.',
-            'One step is a reading. Two readings are a walk. A walk is not a mark.',
-            'What is said between two trees is not the series. It is the ground.',
-            'A tree that is seen twice was not skipped. The walk came back around it.'
+            'A decision is not a menu. You cannot pull one toward you; you walk to it and you take it.',
+            'Every node is a decision. The branch that was taken is the walk.',
+            'One decision is a step. Two decisions are a walk. A walk is not a mark.',
+            'What is said between two decisions is not the tree. It is the ground.',
+            'A decision made twice was not skipped. The walk came back around it.'
         ];
 
         // One read of the room. Comprehensive means the read came through; it is
@@ -3303,25 +3308,14 @@
             return { comprehensive: false, nonComp: S.nonComp, backAt: S.backAt, state: st };
         };
 
-        // The next tree. It prefers a standing series of sayings if one exists,
-        // so the walk is the same walk the room already knows.
+        // The next decision. One node at a time, in the order the walk is on.
         window.seriesTree = function () {
             var S = window.__series;
-            try {
-                if (window.__seg && window.__seg.pools) {
-                    var ids = Object.keys(window.__seg.pools);
-                    if (ids.length) {
-                        var id = ids[S.idx % ids.length];
-                        var pool = window.__seg.pools[id];
-                        if (pool && pool.length) return pool[(S.idx + (S.steps || 0)) % pool.length];
-                    }
-                }
-            } catch (e) {}
-            var trees = S.trees.length ? S.trees : window.SERIES_TREES;
-            return trees[S.idx % trees.length];
+            var nodes = S.trees.length ? S.trees : window.SERIES_TREES;
+            return nodes[S.idx % nodes.length];
         };
 
-        window.seriesStep = function () {
+        window.seriesStep = function (force) {
             var S = window.__series;
             if (!S.on) return { on: false };
             var now = Date.now();
@@ -3332,17 +3326,17 @@
                 try { if (typeof mark === 'function') mark('SERIES — back to the series', 0, -1); } catch (e) {}
                 return { back: true, said: S.said };
             }
-            // The fail-safe: three seconds between one tree and the next. A tree
-            // shorter than that is fine; a tree said again is fine; the walk is
-            // never scrubbed faster.
-            if (now - S.lastAdvance < S.advanceMinMs) {
+            // The fail-safe: three seconds between one decision and the next. A
+            // decision shorter than that is fine; a decision made again is fine;
+            // the walk is never scrubbed faster. A receipt may step it by hand.
+            if (!force && now - S.lastAdvance < S.advanceMinMs) {
                 return { waiting: true, inMs: S.advanceMinMs - (now - S.lastAdvance) };
             }
             var line = window.seriesTree();
             S.idx++; S.steps++; S.said++; S.lastAdvance = now;
             try { if (typeof queueLine === 'function') queueLine(line, 0.9, 0.72, 0.55); } catch (e) {}
-            try { if (typeof mark === 'function') mark('SERIES TREE ' + S.steps, 0, -1); } catch (e) {}
-            return { tree: true, line: line, step: S.steps };
+            try { if (typeof mark === 'function') mark('SERIES NODE ' + S.steps, 0, -1); } catch (e) {}
+            return { decision: true, line: line, step: S.steps, forced: !!force };
         };
 
         window.seriesToggle = function () {
@@ -3377,6 +3371,135 @@
         window.__seriesTickTimer = setInterval(function () { try { window.seriesStep(); } catch (e) {} }, 250);
         if (window.__seriesReadTimer) clearInterval(window.__seriesReadTimer);
         window.__seriesReadTimer = setInterval(function () { try { if (window.__series.on) window.seriesReadNow(); } catch (e) {} }, window.__series.readMs);
+
+        // ---------- rule 194: the ask, and the receipt -------------------------
+        // People ask, and ask again, until they feel like they got an answer, and
+        // then they drop the signal. The room does not chase them and does not
+        // answer an ask with another ask. If the same ask comes more than once
+        // and it has not been received, the room sends a receipt: a beep. The
+        // receipt moves the ask to the next node of the tree of decisions. The
+        // boolean sits on the ask and never on the asker — received, true and
+        // honest, or not. Move on after two, and count the ask, not the person.
+        window.__ask = {
+            received: false,       // the boolean: received, true and honest, or not
+            asks: 0, repeats: 0, movedOn: 0,
+            limit: 2,              // move on after two
+            lastAt: 0, cooldownMs: 30000,
+            bySaying: {},          // a count of an ask, never a count of a person
+            receiptLine: 'Received. Moving on.',
+            moveLine: 'Move on.'
+        };
+
+        // The receipt is a beep and nothing more. Short, plain, no praise in it.
+        window.receiptBeep = function () {
+            try {
+                var ctx = (typeof getAudioContext === 'function') ? getAudioContext() : null;
+                if (!ctx) return false;
+                var t = ctx.currentTime;
+                var osc = ctx.createOscillator();
+                var gain = ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(880, t);
+                osc.frequency.exponentialRampToValueAtTime(1320, t + 0.08);
+                gain.gain.setValueAtTime(0.18, t);
+                gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(t); osc.stop(t + 0.24);
+                return true;
+            } catch (e) { return false; }
+        };
+
+        // A receipt: beep, say it was received, and step the ask to the next node.
+        window.fireReceipt = function (count) {
+            var A = window.__ask, now = Date.now();
+            A.repeats++; A.movedOn++; A.lastAt = now;
+            window.receiptBeep();
+            try { if (typeof queueLine === 'function') queueLine(A.receiptLine, 0.98, 0.7, 0.8); } catch (e) {}
+            if ((count || A.limit) >= A.limit) {
+                try { if (typeof window.seriesStep === 'function') window.seriesStep(true); } catch (e) {}
+                try { if (typeof queueLine === 'function') queueLine(A.moveLine, 0.96, 0.6, 0.7); } catch (e) {}
+            }
+            try { if (typeof mark === 'function') mark('RECEIPT — ask moved to the next node (x' + (count || A.limit) + ')', 0, -1); } catch (e) {}
+            return { receipt: true, beep: true, count: count || A.limit, received: false, movedOn: A.movedOn };
+        };
+
+        // One ask, heard. The count is keyed to the saying, never to a person.
+        window.askHeard = function (text) {
+            if (typeof text !== 'string' || !text) return { heard: false };
+            var A = window.__ask;
+            var norm = text.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+            if (!norm) return { heard: false };
+            A.asks++;
+            A.bySaying[norm] = (A.bySaying[norm] || 0) + 1;
+            var count = A.bySaying[norm];
+            // More than once, and it has not been received: the receipt.
+            if (count > 1 && !A.received) {
+                var now = Date.now();
+                if (A.lastAt === 0 || (now - A.lastAt) >= A.cooldownMs) return window.fireReceipt(count);
+                return { heard: true, receipt: false, throttled: true, count: count };
+            }
+            return { heard: true, count: count, received: A.received };
+        };
+
+        window.askReceived = function () { window.__ask.received = true; return { received: true }; };
+        window.askReset    = function () { window.__ask.received = false; window.__ask.bySaying = {}; return { received: false }; };
+
+        window.askState = function () {
+            var A = window.__ask;
+            return { received: A.received, asks: A.asks, repeats: A.repeats, movedOn: A.movedOn,
+                     limit: A.limit, cooldownMs: A.cooldownMs,
+                     names_anyone: false, scores: false, gates: false, keeps_list: false };
+        };
+
+        // ---------- rule 195: the time ask — not even ten -----------------------
+        // The room is timed. Somebody will always ask the clock while the clock
+        // is running, and asking the clock instead of holding the thirty is the
+        // whole of the tell. The room answers plainly: not even ten. Its own
+        // voice is already holding the thirty while the ask is still forming.
+        // That is the comparison and not a boast. It names nobody, gloats over
+        // nobody, and keeps no record of who lasted how long.
+        window.__timeAsk = {
+            line: 'Not even ten. The African one is already doing it. Not even ten. Not even ten seconds they are lasting. It is depressing.',
+            asked: 0, said: 0, lastAt: 0, cooldownMs: 45000,
+            patterns: [
+                /\bhow much time\b/i,
+                /\bhow long (is|was|has|have|do|did|will|are|are we)\b/i,
+                /\bwhat('| i)?s the time\b/i,
+                /\bhow many seconds\b/i,
+                /\b(how much )?time (is )?left\b/i,
+                /\bhow long did (i|they|we|he|she)\b/i,
+                /\bam i still on\b/i
+            ]
+        };
+
+        window.timeAsked = function (text) {
+            if (typeof text !== 'string' || !text) return false;
+            var T = window.__timeAsk;
+            for (var i = 0; i < T.patterns.length; i++) {
+                if (T.patterns[i].test(text)) { T.asked++; return window.timeAnswer(text); }
+            }
+            return false;
+        };
+
+        window.timeAnswer = function (why) {
+            var T = window.__timeAsk, now = Date.now();
+            if (typeof isWordActive !== 'undefined' && isWordActive) return { said: false, word: true };
+            if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return { said: false, busy: true };
+            if (now - T.lastAt < T.cooldownMs) return { said: false, waiting: true };
+            T.lastAt = now; T.said++;
+            try {
+                if (typeof queueLine === 'function') queueLine(T.line, 0.98, 0.7, 0.8);
+                else speakBrinkLine(T.line, { rate: 0.98, pitch: 0.7 });
+            } catch (e) {}
+            try { if (typeof mark === 'function') mark('TIME ASK (' + T.said + ') — not even ten', 0, -1); } catch (e) {}
+            return { said: true, count: T.said, line: T.line };
+        };
+
+        window.timeAskState = function () {
+            var T = window.__timeAsk;
+            return { asked: T.asked, said: T.said, cooldownMs: T.cooldownMs, line: T.line,
+                     names_anyone: false, scores: false, gates: false };
+        };
 
         // FULL STOP SEGMENT: own schedule. Pauses the show, speaks a simple
         // English full-stop message three times, then resumes.
@@ -5207,6 +5330,12 @@ startStream();
                 if (line && typeof window.privateQuestion === 'function' && window.privateQuestion(line)) return;
                 // rule 189: "why so serious" gets the real answer, not the line.
                 if (line && typeof window.seriousQuestion === 'function' && window.seriousQuestion(line)) return;
+                // rule 195: an ask about the clock is answered plainly, once.
+                if (line && typeof window.timeAsked === 'function' && window.timeAsked(line)) return;
+                // rule 194: a question in the chatter is an ask. The count is on
+                // the saying, never the asker; a repeat without a received earns
+                // a receipt beep and steps the ask to the next node.
+                if (line && typeof window.askHeard === 'function' && /\?\s*$/.test(line)) window.askHeard(line);
                 // Block Markov lines that mention the Wayne/exile phrase.
                 if (line && !/Wayne|exile|wear|best|fanatic/i.test(line)) speakBrinkLine(line);
             });

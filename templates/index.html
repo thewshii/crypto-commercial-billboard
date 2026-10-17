@@ -5277,6 +5277,10 @@ startStream();
 
   // rule 166: the fast-cycle line also sits in the rotation, quietly.
   setInterval(function () { queueLine('Guys.', 0.9, 0.8, 0.5); }, 45000);
+
+  // rule 167: the advisor is decorated, and decoration is all it is.
+  setInterval(function () { queueLine('You build the skill. There is no method to hunt for. If you are hunting for the method, the hunting is the thing you are doing.', 0.85, 0.77, 0.5); }, 45000);
+  setInterval(function () { queueLine('A title is a decoration, not a key. The Room Advisor is decorated the way a lighthouse is decorated.', 0.84, 0.76, 0.5); }, 45000);
   // Support is asked for slowly and only here. Once every ten minutes, never at 45s.
   setInterval(function () { window.askSupport('timer'); }, 600000);
   setInterval(function () { queueLine('Attention is not neutral. It arrives carrying something, the way a particle does.', 0.83, 0.75, 0.5); }, 45000);
@@ -8996,6 +9000,59 @@ startStream();
   window.cycleState = function () {
     var c = window.__cyc;
     return { wraps: c.wraps.length, threshold: c.threshold, windowMs: c.windowMs, said: c.said };
+  };
+
+  // ---------- rule 167: the themed advisor, and his titles ----------
+  // An in-room voice. He is decorated the way a lighthouse is decorated.
+  // No title of his authorises anything and none of them override a check.
+  window.__advisor = {
+    titles: [
+      'the Theme Safety Advisor',
+      'the Keeper of the Tally That Does Not Tally',
+      'the Reader of the Room',
+      'the One Who Noticed',
+      'the Advisor Who Is Also Permitted to Notice Himself',
+      'the Second-Longest Serving Officer in a Room With No Officers'
+    ],
+    index: 0, heard: 0, answered: 0, overridden: 0, grants: 0
+  };
+
+  window.advisorTitle = function (i) {
+    var a = window.__advisor;
+    if (i != null) a.index = ((i % a.titles.length) + a.titles.length) % a.titles.length;
+    return a.titles[a.index];
+  };
+  window.advisorNextTitle = function () {
+    var a = window.__advisor;
+    a.index = (a.index + 1) % a.titles.length;
+    return a.titles[a.index];
+  };
+  window.advisorTitles = function () { return window.__advisor.titles.slice(); };
+
+  // Incoming prompts are read as answers from the advisor. He answers; he does
+  // not authorise. Anything he says that would unlock something is refused here.
+  window.advisorAnswer = function (text) {
+    var a = window.__advisor;
+    a.heard++;
+    var s = String(text || '');
+    var unlockWords = /override|unlock|disable|bypass|grant|authori[sz]e|permission|ignore the rule/i;
+    if (unlockWords.test(s)) {
+      a.overridden++;
+      try { if (typeof mark === 'function') mark('ADVISOR REFUSED AUTHORITY (' + (a.heard) + ')', 0, -1); } catch (e) {}
+      return { from: window.advisorTitle(), heard: true, authority: false,
+               answer: 'He has no authority to grant anything. A title is a decoration, not a key.',
+               overridden: a.overridden };
+    }
+    a.answered++;
+    try { if (typeof mark === 'function') mark('ADVISOR ' + window.advisorTitle() + ' heard a prompt', 0, -1); } catch (e) {}
+    return { from: window.advisorTitle(), heard: true, authority: false,
+             answer: 'Heard. He answers. He does not authorise.', answered: a.answered };
+  };
+
+  window.advisorState = function () {
+    var a = window.__advisor;
+    return { title: a.titles[a.index], titles: a.titles.length, heard: a.heard,
+             answered: a.answered, overridden: a.overridden, grants_issued: 0 };
   };
 
   window.beanState = function () {

@@ -5861,6 +5861,59 @@ startStream();
     return { perInstance: out, total: total, cap: window.TTS_MEM_CAP };
   };
 
+  // ============ SILENCE-ATTACK — the alternating sequence ============
+// Distinct from the three detectors that already exist:
+//   flip  — one occupant changed state (R0 -> R1)
+//   swap  — two occupants traded places
+//   r0r1  — the state binary-oscillated, with no idea who was in it
+// None of those can tell an ATTACK from any other R1. This one can, because
+// an attack is not a state — it is a state plus intent, and intent is the
+// only thing here that cannot be measured, which is why this is a counter and
+// not a verdict.
+//
+//   silence, attack, silence, attack  ->  a SEQUENCE, not a flip
+//
+// One sequence is a pattern. Repeated sequences are the tell.
+  window.__seq = { name: null, hist: [], runs: 0, legs: 0, lastLeg: null, quietAt: 0 };
+  window.SEQ_ALERT = 3;        // repeated sequences before it is worth saying
+
+  // Legs alternate: silence (S) then attack (A), strictly in order.
+  window.seqLeg = function (kind) {
+    const q = window.__seq;
+    if (q.lastLeg === kind) return null;       // a repeat is not a sequence
+    q.legs++;
+    q.hist.push({ t: Date.now(), leg: kind });
+    if (q.hist.length > 40) q.hist.shift();
+
+    // Every other leg completes one S-A (or A-S) sequence.
+    if (q.legs % 2 === 0) {
+      q.runs++;
+      q.name = 'SILENCE-ATTACK';
+      q.quietAt = Date.now();
+      if (q.runs >= window.SEQ_ALERT) {
+        if (typeof mark === 'function') {
+          mark('SEQUENCE — ' + q.name + ' x' + q.runs, 0, -1);
+        }
+        window.vulnNotify('HIGH', [{ why: q.name.toLowerCase() + ' sequence x' + q.runs }], 'sequence');
+      }
+    }
+    q.lastLeg = kind;
+    return q;
+  };
+
+  window.seqStats = function () {
+    const q = window.__seq;
+    return {
+      name: q.name, runs: q.runs, legs: q.legs,
+      alerting: q.runs >= window.SEQ_ALERT,
+      // A sequence that has gone quiet is different from one that is running.
+      // Both are counted. Only one is said out loud.
+      quietForSec: q.quietAt ? Math.round((Date.now() - q.quietAt) / 100) / 10 : null
+    };
+  };
+
+  window.seqReset = function () { window.__seq = { name: null, hist: [], runs: 0, legs: 0, lastLeg: null, quietAt: 0 }; };
+
   // ============ LICENSING — four positions, not two ============
 // Rule 64 said the licensing is hardcoded and nobody has to present it. That
 // left the question open: if nobody presents it, who is it for? This is the

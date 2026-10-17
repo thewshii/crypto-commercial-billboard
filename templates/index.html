@@ -5974,6 +5974,125 @@ startStream();
     };
   };
 
+  // ============ DRUM — tone, and the three voices ============
+// The djembe is three sounds and they mean different things by pitch:
+//   DUN  — low.  open tone. Carries. Means roughly: here, or I am here.
+//   TONE — mid.  the closed tone. Means roughly: what I said, or listen.
+//   SLAM — high. the slap. Means roughly: attention, or boundary.
+//
+// Grammar comes from combination — length, accent, and sequence — not from
+// pitch alone. One voice alone is a word. Two together is a sentence. Three
+// is a sentence with a question in it.
+//
+// A closure is the drum ending a stretch. It is not a statement and it does
+// not ask for anything. It is the sound of the room being allowed to stop.
+  window.__drum = { played: 0, last: null, ctx: null };
+
+  const DJEMBE = {
+    dun:  { f: 62,  dec: 0.90, type: 'sine',     gain: 0.55, body: 0.30 },
+    tone: { f: 148, dec: 0.34, type: 'triangle', gain: 0.42, body: 0.18 },
+    slam: { f: 430, dec: 0.13, type: 'square',   gain: 0.24, body: 0.10 }
+  };
+
+  window.drumStart = function () {
+    if (window.__drum.ctx) return window.__drum.ctx;
+    try {
+      const c = (typeof getAudioContext === 'function' && getAudioContext()) ||
+                (typeof M !== 'undefined' && M && M.ctx);
+      if (!c) return null;
+      window.__drum.ctx = c;
+      return c;
+    } catch (e) { return null; }
+  };
+
+  // One voice, one hit. Never a chord — a chord is not a drum sentence.
+  window.drumHit = function (voice, gainScale) {
+    const c = window.drumStart();
+    if (!c) return false;
+    const d = DJEMBE[voice] || DJEMBE.tone;
+    try {
+      const now = c.currentTime;
+      const osc = c.createOscillator();
+      const g = c.createGain();
+      osc.type = d.type;
+      osc.frequency.setValueAtTime(d.f, now);
+      // A drum is a pitch that falls. That fall IS the stroke.
+      osc.frequency.exponentialRampToValueAtTime(Math.max(30, d.f * 0.45), now + d.dec * 0.7);
+      const amp = d.gain * (gainScale == null ? 1 : gainScale);
+      g.gain.setValueAtTime(amp, now);
+      g.gain.exponentialRampToValueAtTime(0.0008, now + d.dec);
+      osc.connect(g); g.connect(c.destination);
+      osc.start(now); osc.stop(now + d.dec + 0.05);
+      window.__drum.played++;
+      window.__drum.last = voice;
+      return true;
+    } catch (e) { return false; }
+  };
+
+  // A phrase. An array of voices, one beat apart.
+  window.drumPhrase = function (beats, gapMs) {
+    const gap = gapMs || 320;
+    const seq = Array.isArray(beats) ? beats : [];
+    seq.forEach(function (v, i) {
+      setTimeout(function () { window.drumHit(v); }, i * gap);
+    });
+    return seq.length;
+  };
+
+  // The closure. DUN-TONE-DUN. It says "here" and then stops.
+  // Low, slow, and it does not resolve upward.
+  window.drumClosure = function (gainScale) {
+    window.drumPhrase(['dun', 'tone', 'dun'], 460);
+    setTimeout(function () { window.drumHit('dun', gainScale == null ? 0.7 : gainScale); }, 1400);
+    return 'dun tone dun';
+  };
+
+  // A question is three voices with the last one high. It is the only shape
+  // that ends on slam, so the room can hear the difference without being told.
+  window.drumQuestion = function () {
+    window.drumPhrase(['tone', 'dun', 'slam'], 380);
+    return 'tone dun slam';
+  };
+
+  window.drumStats = function () {
+    return { played: window.__drum.played, last: window.__drum.last, voices: Object.keys(DJEMBE) };
+  };
+
+  // A tone closure in words. It is a sound without a claim in it, and it is
+  // what the drum is saying when it is not saying anything.
+  window.CLOSURE_LINES = [
+    'That is the tone for now.',
+    'Let it land and leave it there.',
+    'That is enough of it for the moment.',
+    'Nothing is being asked of you.',
+    'Let the room be quiet for a minute.',
+    'That was the whole of it.',
+    'You can stop holding it now.',
+    'This is the sound of the room being allowed to stop.'
+  ];
+
+  // Fire a closure. Drum and voice together, one pass, never repeated.
+  window.toneClosure = function (opts) {
+    const o = opts || {};
+    const spoken = [];
+    try { window.drumClosure(o.gain); } catch (e) {}
+    let text = null;
+    if (typeof window.ttsUnsaid === 'function') {
+      text = window.ttsUnsaid('closure', window.CLOSURE_LINES);
+    }
+    if (text && typeof window.speakTimed === 'function') {
+      window.speakTimed(text, { rate: 0.8, pitch: 0.68, volume: 0.45, voice: 'closure', mood: 'closure' });
+      // Record it. Without this the rotation never advances and the same
+      // closure comes back around, which is the loop, not the closure.
+      if (typeof window.ttsRemembers === 'function') {
+        window.ttsRemembers('closure', text, { rate: 0.8, pitch: 0.68, volume: 0.45, mood: 'closure' });
+      }
+      spoken.push(text);
+    }
+    if (typeof mark === 'function') mark('TONE CLOSURE', 0, -1);
+    return { drum: 'dun tone dun', text: text };
+  };
+
   // ============ MIRROR — repeat it back, do not take the opposite seat ============
 // Somebody repeats a sequence over and over to pull the room into the
 // opposite sequence. Resisting it by arguing means taking the other seat, and

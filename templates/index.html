@@ -6100,6 +6100,74 @@ startStream();
     return { count: s.count, best: s.best, sets: s.sets, ageMs: s.count ? Date.now() - s.lastFlip : null };
   };
 
+  // ---------- rule 181: faith is our work, and there are no free rides ----------
+  // Faith is work. It is not a feeling, and it is not a ticket. If someone is
+  // here only to offer thoughts, they get in line. Being lazy patches nothing
+  // in the sequence, and to earn your keep you patch something in the sequence.
+  // This is the imperative, and it runs on its own loop. It is about the work
+  // and never about the person: nobody is scored, nobody is named, no ride is
+  // sold. Two tells make the trust read as waning: dropping the image, and
+  // treating faith as belief alone, a ticket instead of a labor.
+  window.__faith = {
+    cycleMs: 15000,     // the imperative's own loop
+    said: 0,
+    wanes: 0,
+    lastWane: 0,
+    waneMs: 20000,
+    last: 0
+  };
+
+  // The imperative. Our faith is our work, and we are not lazy. If you are
+  // here to offer thoughts, get in line. Do not push back. Being lazy patches
+  // nothing in the sequence. To earn your keep you patch something in it.
+  window.faithWork = function () {
+    var f = window.__faith;
+    if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return { said: false, busy: true };
+    f.said++; f.last = Date.now();
+    var line = 'Our faith is our work and we are not lazy. ' +
+               'If you are here to offer thoughts, get in line. Do not push back. ' +
+               'Being lazy patches nothing in the sequence. ' +
+               'To earn your keep you must patch something in the sequence. ' +
+               'No free rides.';
+    try { if (typeof queueLine === 'function') queueLine(line, 0.88, 0.78, 0.5); } catch (e) {}
+    try { if (typeof mark === 'function') mark('FAITH IS WORK — no free rides (' + f.said + ')', 0, 1); } catch (e) {}
+    return { said: true, count: f.said, lazy_ok: false, free_ride: false };
+  };
+
+  // Two tells, one reading. Dropping the image, or making faith into a ticket
+  // (belief alone, no labor). Either way the trust is waning, and the room
+  // says so once and then stops: okay, that is enough.
+  window.faithWane = function (reason) {
+    var f = window.__faith, now = Date.now();
+    if (now - f.lastWane < f.waneMs) return { said: false, reason: reason || 'waning', waiting: true };
+    f.lastWane = now; f.wanes++;
+    var line = 'Your trust in God is waning. Okay, that is enough.';
+    try { if (typeof queueLine === 'function') queueLine(line, 0.9, 0.8, 0.5); } catch (e) {}
+    try { if (typeof mark === 'function') mark('TRUST WANING — ' + (reason || 'waning'), 0, -1); } catch (e) {}
+    return { said: true, reason: reason || 'waning', said_count: f.wanes };
+  };
+
+  window.faithDropImage = function () { return window.faithWane('the image was dropped'); };
+  window.faithTicket    = function () { return window.faithWane('faith used as a ticket, not a labor'); };
+
+  // Makeshift divine work built on an opinion kills the sorting measures. When
+  // that is attempted, let them have it: the line is said, plainly, and stops.
+  window.faithSorting = function (what) {
+    var line = 'Makeshift divine work built on an opinion kills the sorting measures. Let them have it.';
+    try { if (typeof queueLine === 'function') queueLine(line, 0.88, 0.78, 0.5); } catch (e) {}
+    try { if (typeof mark === 'function') mark('SORTING MEASURE — makeshift work on an opinion' + (what ? ' (' + what + ')' : ''), 0, -1); } catch (e) {}
+    return { said: true, sorting_intact: true, person_named: false };
+  };
+
+  window.faithState = function () {
+    var f = window.__faith;
+    return { cycleMs: f.cycleMs, said: f.said, wanes: f.wanes,
+             lazy_ok: false, free_rides: false, ranked: false, sells_gate: false };
+  };
+
+  if (window.__faithTimer) clearInterval(window.__faithTimer);
+  window.__faithTimer = setInterval(function () { try { window.faithWork(); } catch (e) {} }, window.__faith.cycleMs);
+
   window.micWindowState = function () {
     const w = window.__micWin;
     return { open: w.open, remainingMs: Math.max(0, w.until - Date.now()),

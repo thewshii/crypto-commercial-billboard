@@ -9386,7 +9386,26 @@ window.onHawkesOverload = function (raw) {
         { k: 'No ceremony', v: 'Be a humble student, but do not be a humble idiot. Learn, and keep learning. Do not perform humility to avoid being wrong.' },
         { k: 'Fearless', v: 'A good student is not afraid of his teacher. The day you are afraid of your teacher is the day you will never learn anything new.' }
       ]
-    }
+    },
+    {
+      // Character 2. The stream already prefers en-NG pronunciation for the
+    // primary voice, so this character and that voice agree.
+    id: 'amara',
+    name: 'Amara',
+    voice: 'female',
+    lang: 'en-NG',
+    rate: 0.92,
+    pitch: 0.88,
+    volume: 0.55,
+    bio: 'From Nigeria, on the West coast of Africa. She is the one who holds the data stream when it is being read out, and the one who answers from it. She is a voice on this stream and she is a character in it, and both of those are true at once.',
+    traits: [
+      { k: 'She holds the reading', v: 'When the stream is loud and moving, somebody has to hold the reading steady, and that is the job. Not to quieten it. To keep reading while it moves.' },
+      { k: 'She answers from the record', v: 'If it can be checked, it gets checked and the check gets said out loud. If it cannot be checked, that gets said out loud instead, and both of those are the same size answer.' },
+      { k: 'The names are hers', v: 'Every place in this world is somewhere. Lagos, Kano, Enugu, Ibadan, Port Harcourt, Benin City, Kaduna, and a hundred more, and the ones that are not said are not absent. They are just not the ones being said tonight.' },
+      { k: 'She does not shrink it', v: 'When they only know the four wells and the four countries, she does not correct them by listing the ones they have not heard. She names a few and lets the rest sit there unexplained.' },
+      { k: 'Answers, does not perform', v: 'The question is asked and it gets answered. That is the whole of it and it is more than enough. She is not warming up and she is not building to anything.' }
+    ]
+  }
   ];
 
   window.ttsCharacter = function (id) {
@@ -9400,18 +9419,41 @@ window.onHawkesOverload = function (raw) {
     if (!c) return null;
     let text;
     if (traitIndex == null || !c.traits[traitIndex]) {
-      text = c.traits[Math.floor(Math.random() * c.traits.length)].v;
+      // Never repeat this character to itself. Rule 125.
+      if (typeof window.ttsUnsaid === 'function') {
+        text = window.ttsUnsaid('char:' + c.id, c.traits.map(function (t) { return t.v; }));
+      }
+      if (!text) return null;
     } else {
       text = c.traits[traitIndex].v;
     }
     try {
       if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return null;
-      if (c.voice === 'male') queueLineMale(text, c.rate, c.pitch, c.volume);
+      const o = { rate: c.rate, pitch: c.pitch, volume: c.volume };
+      if (typeof window.speakTimed === 'function') {
+        window.speakTimed(text, o);
+      } else if (c.voice === 'male') queueLineMale(text, c.rate, c.pitch, c.volume);
       else if (c.voice === 'female') queueLineFemale(text, c.rate, c.pitch, c.volume);
       else queueLine(text, c.rate, c.pitch, c.volume);
+      if (typeof window.ttsRemembers === 'function') {
+        window.ttsRemembers('char:' + c.id, text, o);
+      }
       window.__lastCharacter = { id: c.id, name: c.name, text: text };
       return window.__lastCharacter;
     } catch (e) { return null; }
+  };
+
+  // The data-stream holder. One person reads the stream while it moves.
+  window.__streamHolder = { id: null, since: 0, reads: 0, asked: 0, answered: 0 };
+  window.streamHold = function (personId) {
+    window.__streamHolder.id = personId || null;
+    window.__streamHolder.since = Date.now();
+    return window.__streamHolder;
+  };
+  window.streamRead = function () {
+    window.__streamHolder.reads++;
+    // Read the live window, not from memory. Every tick, never remembered.
+    return (typeof window.streamStats === 'function') ? window.streamStats() : null;
   };
 
   // ============ MESH — instances transmitting to each other ============

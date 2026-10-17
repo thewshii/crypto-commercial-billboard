@@ -6058,6 +6058,135 @@ startStream();
     return { played: window.__drum.played, last: window.__drum.last, voices: Object.keys(DJEMBE) };
   };
 
+  // ============ THE PLANE UNDER R0 — where eyesight begins ============
+// Zero is not absence. Zero is the plane. Sight starts there and the axes are
+// what get built ON it, and there is always something underneath.
+//
+// The order is the same order as everything else here and it is one-way:
+//   R0 — the plane. Nothing to see yet, and the ability to see.
+//   X  — position across the field
+//   Y  — time and height, the count
+//   Z  — depth, which is what the plane is measured into
+//
+// You can know about Z while you are still standing on the plane. Knowing
+// about it does not lift you off it.
+  window.__plane = { found: 0, since: 0, depth: 1, known: false, reads: 0 };
+
+  // Read the plane. It is under the axes and it does not move.
+  window.planeRead = function () {
+    const p = window.__plane;
+    p.reads++;
+    const a = window.__axis || {};
+    // Normalized position on the face.
+    const x = a.x == null ? 0.5 : a.x;
+    const depth = a.depth == null ? 1 : a.depth;
+    p.depth = depth;
+    // Known once read twice. Rule 93 — counted once is a coincidence.
+    if (p.reads >= 2) p.known = true;
+    return { plane: 'R0', x: x, depth: depth, known: p.known, reads: p.reads };
+  };
+
+  // The axes come up out of the plane, one at a time, in order.
+  window.PLANE_BUILD = [
+    { step: 0, id: 'plane', axis: null, what: 'the surface under everything' },
+    { step: 1, id: 'x', axis: 'X', what: 'position across the field' },
+    { step: 2, id: 'y', axis: 'Y', what: 'time and height — one, two, three, four' },
+    { step: 3, id: 'z', axis: 'Z', what: 'depth — what the plane is measured into' }
+  ];
+  window.__planeBuilt = 0;
+
+  window.planeBuildStep = function (to) {
+    const p = window.__plane;
+    // One step at a time. Never a jump, never a reorder.
+    const want = (to == null) ? window.__planeBuilt + 1 : to;
+    window.__planeBuilt = Math.max(0, Math.min(3, want));
+    if (window.__planeBuilt > 0) { p.found++; if (!p.since) p.since = Date.now(); }
+    return window.PLANE_BUILD[window.__planeBuilt];
+  };
+
+  window.planeState = function () {
+    const p = window.__plane;
+    return {
+      built: window.PLANE_BUILD[window.__planeBuilt].id,
+      axes: window.PLANE_BUILD[window.__planeBuilt].axis,
+      reads: p.reads, known: p.known, depth: p.depth,
+      // Knowing Z does not lift anybody off the plane.
+      onPlane: true
+    };
+  };
+
+  // ============ FIELD — steady tone as a held line ============
+// A drone, not a hit. It is played at a level under speech and it does not
+// move. Its only job is to be there, and being there is what makes a boundary
+// a boundary — a room nobody has to test to find the edge of.
+//
+// Held, not pulsing. One oscillator per voice, sustained, no envelope.
+  window.__field = { on: false, level: 0, voices: [], ctx: null };
+
+  window.FIELD_VOICES = [
+    { id: 'root',  f: 55,   type: 'sine',     g: 0.10 },   // the plane's own note
+    { id: 'fifth', f: 82.4, type: 'sine',     g: 0.07 },
+    { id: 'edge',  f: 110,  type: 'triangle', g: 0.035 }
+  ];
+  window.FIELD_LEVEL = 0.10;   // under speech. this is a floor, not a voice.
+
+  window.fieldStart = function (level) {
+    const f = window.__field;
+    if (f.on) { window.fieldLevel(level); return f; }
+    let c = null;
+    try {
+      c = (typeof getAudioContext === 'function' && getAudioContext()) ||
+          (typeof M !== 'undefined' && M && M.ctx);
+    } catch (e) { c = null; }
+    if (!c) return null;
+    f.ctx = c;
+    f.voices = [];
+    for (const v of window.FIELD_VOICES) {
+      try {
+        const osc = c.createOscillator();
+        const g = c.createGain();
+        osc.type = v.type;
+        osc.frequency.setValueAtTime(v.f, c.currentTime);
+        g.gain.setValueAtTime(0, c.currentTime);
+        osc.connect(g); g.connect(c.destination); osc.start();
+        f.voices.push({ def: v, osc: osc, gain: g });
+      } catch (e) {}
+    }
+    f.on = true;
+    window.fieldLevel(level);
+    if (typeof mark === 'function') mark('FIELD — held', 0, -1);
+    return f;
+  };
+
+  window.fieldLevel = function (level) {
+    const f = window.__field;
+    if (!f.on || !f.ctx) return false;
+    const L = level == null ? window.FIELD_LEVEL : Math.max(0, Math.min(0.4, level));
+    f.level = L;
+    const now = f.ctx.currentTime;
+    for (const v of f.voices) {
+      try { v.gain.gain.setTargetAtTime(v.def.g * L, now, 0.4); } catch (e) {}
+    }
+    return true;
+  };
+
+  window.fieldStop = function () {
+    const f = window.__field;
+    if (!f.on) return false;
+    try {
+      for (const v of f.voices) { v.gain.gain.setTargetAtTime(0, f.ctx.currentTime, 0.2); v.osc.stop(f.ctx.currentTime + 1.2); }
+    } catch (e) {}
+    f.on = false; f.level = 0;
+    if (typeof mark === 'function') mark('FIELD — off', 0, -1);
+    return true;
+  };
+
+  window.fieldStats = function () {
+    const f = window.__field;
+    return { on: f.on, level: f.level, voices: f.voices.length,
+             base: f.on ? Math.round(f.voices[0].osc.frequency.value) : 0 };
+  };
+
   // A tone closure in words. It is a sound without a claim in it, and it is
   // what the drum is saying when it is not saying anything.
   window.CLOSURE_LINES = [

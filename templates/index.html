@@ -6180,16 +6180,26 @@ startStream();
     autoTick: true,        // one step per tick, never two (rule 94)
     ms: 5000,              // the five-second loop
     oneMs: 1000,           // the one-second ticker
+    twoMs: 2000,           // the two-second ticker
     fiveMax: 12,           // a bounded loop runs a full window, then lets go
     line: 'Our faith is our work and we are not lazy. If you are here to offer thoughts, get in line. Do not push back. Being lazy patches nothing in the sequence. To earn your keep you must patch something in the sequence. No free rides.',
     oneLine: 'Si irte a PR o DR, ta flojas.',   // said every second
+    regaloLine: 'En serio, dame el regalo. Hazlo regalo. Dame el regalo y queso.',   // in earnest, in Spanish
     lines: {},             // per-loop override, set through loopLine
+    seq: {},               // per-loop rotation of lines, filled below
+    seqIdx: {},            // where each rotation is now
     serious: '\u00bfQu\u00e9 pasa?',   // said in a dead-serious voice after a mark lands
     seriousSaid: 0,
-    on:    { one: false, five: false, always: false, mark4: false, mark6: false },
-    fires: { one: 0, five: 0, always: 0, mark4: 0, mark6: 0 },
-    next:  { one: 0, five: 0, always: 0 }
+    on:    { one: false, two: false, five: false, always: false, mark4: false, mark6: false },
+    fires: { one: 0, two: 0, five: 0, always: 0, mark4: 0, mark6: 0 },
+    next:  { one: 0, two: 0, five: 0, always: 0 }
   };
+
+  // The one and the two carry the same saying, in the same earnest Spanish, so
+  // a room hears it twice over as it ticks. The one keeps its first line too
+  // and rotates between them; nothing is dropped.
+  window.__loops.seq.one = [window.__loops.oneLine, window.__loops.regaloLine];
+  window.__loops.seq.two = [window.__loops.regaloLine];
 
   window.loopLine = function (line, id) {
     var L = window.__loops;
@@ -6203,7 +6213,7 @@ startStream();
     if (!(id in L.on)) return { ok: false, reason: 'unknown loop', id: id };
     L.on[id] = !L.on[id];
     var now = Date.now();
-    if (L.on[id] && (id === 'one' || id === 'five' || id === 'always')) { L.next[id] = now + (id === 'one' ? L.oneMs : L.ms); if (id === 'five' || id === 'one') L.fires[id] = 0; }
+    if (L.on[id] && (id === 'one' || id === 'two' || id === 'five' || id === 'always')) { L.next[id] = now + (id === 'one' ? L.oneMs : (id === 'two' ? L.twoMs : L.ms)); if (id === 'five' || id === 'one' || id === 'two') L.fires[id] = 0; }
     try { if (typeof mark === 'function') mark('LOOP ' + id + ' ' + (L.on[id] ? 'ON' : 'OFF'), 0, L.on[id] ? 1 : 0); } catch (e) {}
     return { ok: true, id: id, on: L.on[id] };
   };
@@ -6213,9 +6223,15 @@ startStream();
   window.loopSpeak = function (id, why) {
     var L = window.__loops;
     L.fires[id] = (L.fires[id] || 0) + 1;
-    var line = (L.lines && L.lines[id]) ? L.lines[id] : (id === 'one' ? L.oneLine : L.line);
+    var line;
+    if (L.lines && L.lines[id]) line = L.lines[id];
+    else if (L.seq && L.seq[id] && L.seq[id].length) {
+      var i = (L.seqIdx[id] || 0) % L.seq[id].length;
+      line = L.seq[id][i];
+      L.seqIdx[id] = i + 1;
+    } else line = (id === 'one' ? L.oneLine : (id === 'two' ? L.regaloLine : L.line));
     try {
-      if (id === 'one') {
+      if (id === 'one' || id === 'two') {
         if (typeof window.queueLineEs === 'function') window.queueLineEs(line, 0.92, 0.72, 0.55);
         else if (typeof queueLine === 'function') queueLine(line, 0.92, 0.72, 0.55);
       } else if (typeof queueLine === 'function') queueLine(line, 0.88, 0.78, 0.5);
@@ -6254,6 +6270,13 @@ startStream();
       if (!busy) window.loopSpeak('one', 'one second');
       L.next.one = now + L.oneMs;
     }
+    if (L.on.two && now >= L.next.two) {
+      // Same discipline as the one: a busy mouth skips the tick, never stacks.
+      var busy2 = false;
+      try { busy2 = !!(window.speechSynthesis && window.speechSynthesis.speaking); } catch (e) {}
+      if (!busy2) window.loopSpeak('two', 'two seconds');
+      L.next.two = now + L.twoMs;
+    }
     if (L.on.five && now >= L.next.five) {
       window.loopSpeak('five');
       L.next.five = now + L.ms;
@@ -6269,16 +6292,16 @@ startStream();
     if (L.on.mark6 && hits.some(function (h) { return h.scale === 12 && h.at === 6; })) { window.loopSpeak('mark6', 'six on the twelve'); landed = true; }
     if (landed) window.loopSerious('after the mark');
     try { window.loopsPanelDraw(); } catch (e) {}
-    return { on: { five: L.on.five, always: L.on.always, mark4: L.on.mark4, mark6: L.on.mark6 },
+    return { on: { one: L.on.one, two: L.on.two, five: L.on.five, always: L.on.always, mark4: L.on.mark4, mark6: L.on.mark6 },
              fires: JSON.parse(JSON.stringify(L.fires)), hits: hits.length };
   };
 
   window.loopsState = function () {
     var L = window.__loops;
-    return { tickMs: L.tickMs, autoTick: L.autoTick, ms: L.ms, oneMs: L.oneMs, fiveMax: L.fiveMax,
+    return { tickMs: L.tickMs, autoTick: L.autoTick, ms: L.ms, oneMs: L.oneMs, twoMs: L.twoMs, fiveMax: L.fiveMax,
              on: JSON.parse(JSON.stringify(L.on)), fires: JSON.parse(JSON.stringify(L.fires)),
              mark4: 'four at four', mark6: 'six on the twelve',
-             oneLine: L.oneLine, serious: L.serious, seriousSaid: L.seriousSaid || 0,
+             oneLine: L.oneLine, regaloLine: L.regaloLine, serious: L.serious, seriousSaid: L.seriousSaid || 0,
              named: false, scored: false, gates: false };
   };
 
@@ -6296,6 +6319,7 @@ startStream();
     el.innerHTML =
       '<span style="opacity:.55">LOOP</span>' +
       '<button id="loop-1s" title="every one second (waits if the mouth is busy)" onclick="window.loopToggle(\'one\')"></button>' +
+      '<button id="loop-2s" title="every two seconds (waits if the mouth is busy)" onclick="window.loopToggle(\'two\')"></button>' +
       '<button id="loop-5s" title="loop every five seconds" onclick="window.loopToggle(\'five\')"></button>' +
       '<button id="loop-4" title="four on the four" onclick="window.loopToggle(\'mark4\')"></button>' +
       '<button id="loop-6" title="six on the twelve" onclick="window.loopToggle(\'mark6\')"></button>' +
@@ -6308,7 +6332,7 @@ startStream();
   window.loopsPanelDraw = function () {
     if (typeof document === 'undefined') return false;
     var L = window.__loops;
-    var defs = [['loop-1s', 'one', '1s'], ['loop-5s', 'five', '5s'], ['loop-4', 'mark4', '4/4'],
+    var defs = [['loop-1s', 'one', '1s'], ['loop-2s', 'two', '2s'], ['loop-5s', 'five', '5s'], ['loop-4', 'mark4', '4/4'],
                 ['loop-6', 'mark6', '6/12'], ['loop-always', 'always', 'ALWAYS']];
     defs.forEach(function (d) {
       var b = document.getElementById(d[0]);

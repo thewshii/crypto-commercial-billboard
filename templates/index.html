@@ -966,6 +966,7 @@
             <button id="corrupt-btn" onclick="window.corruptToggle()" title="The fast refrain: that is not true / something corrupt occurred during the crime (rule 190)" style="background:#140a0e; border:2px solid #884455; color:#bb7788; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #884455; box-shadow:0 0 8px rgba(136,68,85,0.3); transition:all 0.2s;">⚠ CORRUPT: OFF</button>
             <button id="watch-btn" onclick="window.watchToggle()" title="The watcher's refrain, as fast as the mouth allows (rule 191)" style="background:#120606; border:2px solid #661111; color:#cc8888; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #661111; box-shadow:0 0 8px rgba(102,17,17,0.35); transition:all 0.2s;">👁 WATCH</button>
             <button id="divide-btn" onclick="window.divideToggle()" title="Divide the naysayers, every four seconds (rule 192)" style="background:#12100a; border:2px solid #5a4a10; color:#c9b46a; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #5a4a10; box-shadow:0 0 8px rgba(90,74,16,0.3); transition:all 0.2s;">➗ DIVIDE</button>
+            <button id="series-btn" onclick="window.seriesToggle()" title="Walk the series of trees, three seconds between each (rule 193)" style="background:#07140d; border:2px solid #0e4a2c; color:#7fc9a0; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #0e4a2c; box-shadow:0 0 8px rgba(14,74,44,0.35); transition:all 0.2s;">🌳 SERIES</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -3247,6 +3248,135 @@
         window.__watchTimer = setInterval(function () { try { window.watchTick(); } catch (e) {} }, window.__watch.everyMs);
         if (window.__divideTimer) clearInterval(window.__divideTimer);
         window.__divideTimer = setInterval(function () { try { window.divideTick(); } catch (e) {} }, window.__divide.everyMs);
+
+        // ---------- rule 193: the series, and the reads in between -------------
+        // What the room walks is a series of trees, not a menu. A menu can be
+        // scrubbed and a series cannot: you cannot pull a tree toward you, you
+        // walk to it. One lesson lands, and then the room reads the room twice.
+        // Two reads that do not come through, and it walks back to the series,
+        // about five seconds later. Between one tree and the next, three seconds
+        // have to pass. A tree may be shorter than that, and a tree may be said
+        // again, but the walking never speeds up for anybody watching.
+        window.__series = {
+            on: false,
+            advanceMinMs: 3000,   // the fail-safe: never step to the next tree sooner
+            readMs: 1000,         // one read of the room per second
+            nonCompLimit: 2,      // two reads in a row that do not come through
+            returnMs: 5000,       // and it goes back to the series about five seconds after
+            idx: 0, trees: [],
+            lastAdvance: 0, backAt: 0, nonComp: 0,
+            lessonsReceived: 0, steps: 0, said: 0,
+            reads: { all: 0, comprehensive: 0, nonComprehensive: 0 },
+            speakLine: 'Back to the series.',
+            readLine: 'One lesson received. Two reads did not come through. Going back to the series.'
+        };
+
+        // The trees, if no other series is standing on its own.
+        window.SERIES_TREES = [
+            'A tree does not answer for the forest, and the forest does not answer for the tree.',
+            'The path is not a menu. You cannot pull a tree toward you; you walk to it.',
+            'One step is a reading. Two readings are a walk. A walk is not a mark.',
+            'What is said between two trees is not the series. It is the ground.',
+            'A tree that is seen twice was not skipped. The walk came back around it.'
+        ];
+
+        // One read of the room. Comprehensive means the read came through; it is
+        // the same R-state the rest of the room already reads, never a new ear.
+        window.seriesReadNow = function () {
+            var S = window.__series;
+            var st = (window.__r && window.__r.state) ? window.__r.state : 'U';
+            var comprehensive = (st !== 'U');
+            S.reads.all++;
+            if (comprehensive) {
+                S.reads.comprehensive++;
+                S.nonComp = 0;
+                S.lessonsReceived++;
+                return { comprehensive: true, received: S.lessonsReceived, state: st };
+            }
+            S.reads.nonComprehensive++;
+            S.nonComp++;
+            if (S.lessonsReceived > 0 && S.nonComp >= S.nonCompLimit && !S.backAt) {
+                S.backAt = Date.now() + S.returnMs;
+                try { if (typeof queueLine === 'function') queueLine(S.readLine, 0.9, 0.62, 0.55); } catch (e) {}
+                try { if (typeof mark === 'function') mark('SERIES — two reads did not come through; back in ' + Math.round(S.returnMs / 1000) + 's', 0, -1); } catch (e) {}
+            }
+            return { comprehensive: false, nonComp: S.nonComp, backAt: S.backAt, state: st };
+        };
+
+        // The next tree. It prefers a standing series of sayings if one exists,
+        // so the walk is the same walk the room already knows.
+        window.seriesTree = function () {
+            var S = window.__series;
+            try {
+                if (window.__seg && window.__seg.pools) {
+                    var ids = Object.keys(window.__seg.pools);
+                    if (ids.length) {
+                        var id = ids[S.idx % ids.length];
+                        var pool = window.__seg.pools[id];
+                        if (pool && pool.length) return pool[(S.idx + (S.steps || 0)) % pool.length];
+                    }
+                }
+            } catch (e) {}
+            var trees = S.trees.length ? S.trees : window.SERIES_TREES;
+            return trees[S.idx % trees.length];
+        };
+
+        window.seriesStep = function () {
+            var S = window.__series;
+            if (!S.on) return { on: false };
+            var now = Date.now();
+            if (S.backAt) {
+                if (now < S.backAt) return { waiting: true, backInMs: S.backAt - now };
+                S.backAt = 0; S.nonComp = 0; S.lastAdvance = now; S.said++;
+                try { if (typeof queueLine === 'function') queueLine(S.speakLine, 0.94, 0.5, 0.6); } catch (e) {}
+                try { if (typeof mark === 'function') mark('SERIES — back to the series', 0, -1); } catch (e) {}
+                return { back: true, said: S.said };
+            }
+            // The fail-safe: three seconds between one tree and the next. A tree
+            // shorter than that is fine; a tree said again is fine; the walk is
+            // never scrubbed faster.
+            if (now - S.lastAdvance < S.advanceMinMs) {
+                return { waiting: true, inMs: S.advanceMinMs - (now - S.lastAdvance) };
+            }
+            var line = window.seriesTree();
+            S.idx++; S.steps++; S.said++; S.lastAdvance = now;
+            try { if (typeof queueLine === 'function') queueLine(line, 0.9, 0.72, 0.55); } catch (e) {}
+            try { if (typeof mark === 'function') mark('SERIES TREE ' + S.steps, 0, -1); } catch (e) {}
+            return { tree: true, line: line, step: S.steps };
+        };
+
+        window.seriesToggle = function () {
+            var S = window.__series;
+            S.on = !S.on;
+            if (S.on) { S.lastAdvance = 0; S.backAt = 0; S.nonComp = 0; }
+            try {
+                var b = document.getElementById('series-btn');
+                if (b) {
+                    b.textContent = S.on ? '🌳 WALKING' : '🌳 SERIES';
+                    b.style.borderColor = S.on ? '#44cc88' : '#0e4a2c';
+                    b.style.color = S.on ? '#a9f0c8' : '#7fbfa0';
+                }
+            } catch (e) {}
+            try { if (typeof mark === 'function') mark('series walk ' + (S.on ? 'ON' : 'OFF'), 0, S.on ? 1 : 0); } catch (e) {}
+            return { ok: true, on: S.on };
+        };
+
+        window.seriesState = function () {
+            var S = window.__series;
+            return {
+                on: S.on, advanceMinMs: S.advanceMinMs, returnMs: S.returnMs,
+                nonCompLimit: S.nonCompLimit, steps: S.steps, said: S.said,
+                lessonsReceived: S.lessonsReceived, nonComp: S.nonComp,
+                backInMs: S.backAt ? Math.max(0, S.backAt - Date.now()) : 0,
+                reads: { all: S.reads.all, comprehensive: S.reads.comprehensive, nonComprehensive: S.reads.nonComprehensive },
+                names_anyone: false, scrubbable: false, scores: false, gates: false
+            };
+        };
+
+        if (window.__seriesTickTimer) clearInterval(window.__seriesTickTimer);
+        window.__seriesTickTimer = setInterval(function () { try { window.seriesStep(); } catch (e) {} }, 250);
+        if (window.__seriesReadTimer) clearInterval(window.__seriesReadTimer);
+        window.__seriesReadTimer = setInterval(function () { try { if (window.__series.on) window.seriesReadNow(); } catch (e) {} }, window.__series.readMs);
 
         // FULL STOP SEGMENT: own schedule. Pauses the show, speaks a simple
         // English full-stop message three times, then resumes.

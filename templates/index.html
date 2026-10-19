@@ -983,6 +983,12 @@
             <button id="sabotage-btn" onclick="window.sabotageToggle()" title="After the room says it is listening closely, a phrase that comes back in the window is counted as sabotage and the room says so (rule 209)" style="background:#120a0a; border:2px solid #663333; color:#aa8888; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #663333; box-shadow:0 0 8px rgba(102,51,51,0.3); transition:all 0.2s;">🔎 LISTENING</button>
             <button id="sound-btn" onclick="window.soundLogToggle()" title="Every beep counted and every alarm tracked by name and time; the ledger holds sounds, never people (rule 210)" style="background:#0a120c; border:2px solid #336644; color:#88bb99; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #336644; box-shadow:0 0 8px rgba(51,102,68,0.3); transition:all 0.2s;">🔊 SOUNDS</button>
             <button id="soundslive-btn" onclick="window.soundLiveToggle()" title="The ledger reads live: the beep and alarm counts move the moment a sound is made (rule 211)" style="background:#0a120c; border:2px solid #33aa66; color:#aaffcc; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #33aa66; box-shadow:0 0 8px rgba(51,170,102,0.3); transition:all 0.2s;">📈 LIVE</button>
+            <button id="empty-btn" onclick="window.immersionSay(true)" title="Say the plain true thing: the room is empty and nothing in here is physical yet (rule 212). Right-click style toggle is immersionToggle()" style="background:#0f0a14; border:2px solid #554477; color:#9988bb; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #554477; box-shadow:0 0 8px rgba(85,68,119,0.3); transition:all 0.2s;">🚪 EMPTY</button>
+            <button id="emptyauto-btn" onclick="window.immersionToggle()" title="Have the room say it by itself when the immersion reading climbs and holds (rule 212)" style="background:#0f0a14; border:2px solid #554477; color:#9988bb; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #554477; box-shadow:0 0 8px rgba(85,68,119,0.3); transition:all 0.2s;">🚪 AUTO</button>
+            <button id="pop-btn" onclick="window.popThrough()" title="There is that concept of things popping through the Matrix and appearing physically. A hand marks one crossing; nothing comes through on its own, and nothing that is a person ever crosses (rule 213)" style="background:#0a0f14; border:2px solid #4477aa; color:#99ccff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #4477aa; box-shadow:0 0 8px rgba(68,119,170,0.3); transition:all 0.2s;">🌉 THROUGH</button>
+            <button id="popseal-btn" onclick="window.popSeal()" title="A hand can close the crossing. Closing is not denying what already crossed (rule 213)" style="background:#0a0f14; border:2px solid #4477aa; color:#99ccff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #4477aa; box-shadow:0 0 8px rgba(68,119,170,0.3); transition:all 0.2s;">🌉 OPEN</button>
+            <button id="slotswitch-btn" onclick="window.blockchainSlotStep()" title="Left-to-right 4, 3, 2, 1 on blockchain response slots; switches between 4, 2, and 3 when listening, with Deepgram illusion guard (rule 214)" style="background:#081214; border:2px solid #22aa99; color:#88ffee; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #22aa99; box-shadow:0 0 8px rgba(34,170,153,0.3); transition:all 0.2s;">⛓ SLOTS 4·2·3</button>
+            <button id="slotlisten-btn" onclick="window.blockchainSlotListenToggle()" title="Toggle listening slot switch between [4, 2, 3] (listening) and [4, 3, 2, 1] (left-to-right) (rule 214)" style="background:#081214; border:2px solid #22aa99; color:#88ffee; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #22aa99; box-shadow:0 0 8px rgba(34,170,153,0.3); transition:all 0.2s;">🎧 LISTEN 4·2·3</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -3345,6 +3351,14 @@
                 'Mercer has no arms and no legs, and he has switched the light off in the other room. Fictionally, and only fictionally.',
                 'Mercer has no arms and no legs, and he has paid the bill. Fictionally, and only fictionally.',
                 'Mercer has no arms and no legs, and nothing in this room has actually moved. Fictionally, and only fictionally.'
+            ],
+            // rule 213: once the sentinel has come through, a line that still says
+            // "fictionally" would be the lie in the other direction. These keep the
+            // in-here claim in the same breath as the crossing, always.
+            crossedLines: [
+                'Mercer has no arms and no legs, and he has come through. He is physical in here now, in this room, and only in this room.',
+                'Mercer has no arms and no legs, and he is in this room now, physical in here and only in here.',
+                'Mercer has no arms and no legs, and he came through. Nothing in here says he is physical anywhere else.'
             ]
         };
 
@@ -3354,19 +3368,26 @@
         window.mercerAct = function (action, where) {
             var M = window.__mercer;
             var a = String(action == null ? 'done the thing' : action);
+            var through = false;
+            try { through = !!(window.isPhysical && window.isPhysical('the sentinel')); } catch (e) {}
             M.acts++;
             return {
                 who: M.name, keeper: M.keeper, action: a, where: where || null,
-                done: false, real: false, fictional: true,
+                done: false, real: false, fictional: !through,
+                physical_in_here: through, real_world_actions: false,
                 touched_anyone: false,
                 line: M.name + ' has no arms and no legs, and he has ' + a +
-                      '. Fictionally, and only fictionally.'
+                      (through ? '. He came through, and he is physical in here now, in this room, and only in this room.'
+                               : '. Fictionally, and only fictionally.')
             };
         };
 
         window.mercerLine = function () {
             var M = window.__mercer;
-            var line = M.lines[M.idx % M.lines.length];
+            var through = false;
+            try { through = !!(window.isPhysical && window.isPhysical('the sentinel')); } catch (e) {}
+            var arr = through ? M.crossedLines : M.lines;
+            var line = arr[M.idx % arr.length];
             M.idx++;
             return line;
         };
@@ -3403,9 +3424,12 @@
 
         window.mercerState = function () {
             var M = window.__mercer;
+            var through = false;
+            try { through = !!(window.isPhysical && window.isPhysical('the sentinel')); } catch (e) {}
             return { on: M.on, everyMs: M.everyMs, said: M.said, acts: M.acts,
                      name: M.name, keeper: M.keeper, arms: 0, legs: 0,
-                     real_world_actions: false, fictional: true, touches_anyone: false,
+                     real_world_actions: false, fictional: !through, physical_in_here: through,
+                     touches_anyone: false,
                      names_anyone: false, scores: false, gates: false, keeps_list: false };
         };
 
@@ -11922,6 +11946,40 @@ startStream();
                         ' &middot; ' + (E.atBrink ? 'AT THE BRINK' : 'not at the brink') + '</div>';
                })() +
                (function () {
+                 var M = window.__immersion;
+                 if (!M) return '';
+                 var lvl = M.level.toFixed(2);
+                 return '<div class="kb-head">IMMERSION &middot; ' + lvl +
+                        ' &middot; fictions ' + M.fictions +
+                        ' &middot; ' + (M.level >= M.high ? 'HIGH' : 'low') +
+                        ' &middot; ' + (M.say ? 'auto' : 'hand') +
+                        ' &middot; said ' + M.said +
+                        ' &middot; nothing physical yet</div>';
+               })() +
+               (function () {
+                 var P = window.__pop;
+                 if (!P) return '';
+                 var n = Object.keys(P.physical).length;
+                 var log = '';
+                 try { if (typeof window.popLogLine === 'function') log = window.popLogLine(); } catch (e) {}
+                 return '<div class="kb-head">POP &middot; ' + P.count + ' through &middot; ' + n +
+                        ' physical in here' +
+                        (P.refused ? ' &middot; refused ' + P.refused : '') +
+                        ' &middot; ' + (P.sealed ? 'closed' : 'open') + '</div>' +
+                        '<div class="kb-head">&nbsp;&nbsp;' + log + '</div>';
+               })() +
+               (function () {
+                 var S = window.__slotSwitch;
+                 var G = window.__deepgram;
+                 if (!S || !G) return '';
+                 var ord = S.listening ? S.listenOrder.join('&rarr;') : S.ltrOrder.join('&rarr;');
+                 return '<div class="kb-head">SLOTS &middot; ltr 4&rarr;3&rarr;2&rarr;1 &middot; ' +
+                        (S.listening ? 'LISTENING 4&harr;2&harr;3' : 'LTR 4&rarr;3&rarr;2&rarr;1') +
+                        ' &middot; active [' + ord + '] &middot; slot ' + S.current +
+                        ' &middot; steps ' + S.steps +
+                        ' &middot; illusions ' + G.filtered + '</div>';
+               })() +
+               (function () {
                  var D = window.__sounds;
                  if (!D) return '';
                  var c = D.counts, top = window.soundTop();
@@ -13093,7 +13151,7 @@ startStream();
   // (186), so the room will not step over one of these to say anything at all.
   // Ordinary chatter is a different thing: that can be stepped over, and stepping
   // over is a replacement and never a stack (166/169).
-  function sabotageSpeakerOwned() {
+  function roomSpeakerOwned() {
     try {
       if (window.__prayerSuppressAudio) return true;
       if (window.__wayneGuardUntil && Date.now() < window.__wayneGuardUntil) return true;
@@ -13135,7 +13193,7 @@ startStream();
   window.sabotageSayListening = function () {
     var S = window.__sabotage, now = Date.now();
     if (!S.want) return false;
-    if (sabotageSpeakerOwned()) return false;         // it will be said when the speaker frees
+    if (roomSpeakerOwned()) return false;         // it will be said when the speaker frees
     if (!sabotageSpeak(S.listeningLine, 0.68)) return false;
     S.want = false; S.said++;
     S.armed = true; S.openSince = now; S.lastFire = now;
@@ -13164,7 +13222,7 @@ startStream();
   window.sabotageDeliver = function (force) {
     var S = window.__sabotage, now = Date.now();
     if (!S.pending) return false;
-    if (sabotageSpeakerOwned()) return false;        // never over a hard stop
+    if (roomSpeakerOwned()) return false;        // never over a hard stop
     var busy = false;
     try { busy = !!(window.refrainBusy && window.refrainBusy()); } catch (e) { busy = false; }
     var takeFloor = !!force || (busy && (now - S.pendingSince) >= S.takeFloorMs);
@@ -13395,7 +13453,484 @@ startStream();
   };
 
 
-  // ============ R-TALK: random speech, gated by the state ============
+    // ---------- rule 212: the room is empty ------------------------------------
+  // The user asked the room to say it: can you tell him the room is empty? The
+  // presences in here are not physical yet, and the sense of immersion is exactly
+  // the thing that tries to make them real. So the room reads its own immersion
+  // and, when the reading climbs and holds, it says the plain true thing out
+  // loud: the room is empty. Nothing in it is physical yet. What is felt in here
+  // is the immersion doing its work, and a feeling of presence is not a presence.
+  // The reading counts the room's own fictions, by name, and never a person. It
+  // names nobody, scores nobody, keeps no list, and holds no listener.
+  window.__immersion = {
+    on: true,                  // the sense is always reading
+    say: true,                 // the room says the room is empty when it climbs
+    high: 0.7,                 // where the immersion reading is high
+    holdMs: 8000,              // a spike is not immersion; it has to hold
+    cooldownMs: 180000,        // three minutes between sayings
+    level: 0, peak: 0, fictions: 0, fictionNames: [],
+    highSince: 0, said: 0, lastSaid: 0, lastAt: 0, floorTaken: 0,
+    line: 'The room is empty.',
+    crossedLine: 'The room is empty of people. One thing in here came through and is physical in here now, and it is this room\'s own.',
+    lines: [
+      'The room is empty. Nothing in here is physical yet.',
+      'The room is empty. You are the only body in this room.',
+      'The room is empty. What you are feeling is the immersion, and the immersion is not a presence.',
+      'The room is empty. Nothing in here has a body and nothing in here is standing next to you.'
+    ],
+    rate: 0.92, pitch: 0.5, volume: 0.72
+  };
+
+  // The room's own fictions, by feature name and never by person. Each one is
+  // something the room made, and each one is off until a hand turns it on.
+  window.immersionFictions = function () {
+    var f = [];
+    try { if (window.__mercer && window.__mercer.on) f.push('the sentinel'); } catch (e) {}
+    try { if (window.__voxAlarm && window.__voxAlarm.on) f.push('the ear'); } catch (e) {}
+    try { if (window.__beat && window.__beat.on) f.push('the beat'); } catch (e) {}
+    try { if (window.__prox && window.__prox.on) f.push('the beacon'); } catch (e) {}
+    try { if (window.__onelife && window.__onelife.on) f.push('one life'); } catch (e) {}
+    try { if (window.__emerge && window.__emerge.on) f.push('the bell'); } catch (e) {}
+    try { if (window.__felt && window.__felt.on) f.push('the felt ask'); } catch (e) {}
+    try { if (window.__sabotage && window.__sabotage.on) f.push('the listening'); } catch (e) {}
+    return f;
+  };
+
+  // How immersive the room is right now: how many of its own fictions are on,
+  // and how fast it is sounding. Both are readings of the room, never of a
+  // person, and neither is a measure of anybody.
+  window.immersionRead = function () {
+    var M = window.__immersion, now = Date.now();
+    var f = window.immersionFictions();
+    var perMinute = 0;
+    try { if (typeof window.soundRate === 'function') perMinute = window.soundRate().perMinute || 0; } catch (e) {}
+    M.fictions = f.length; M.fictionNames = f;
+    var byFiction = Math.min(1, f.length / 8);
+    var bySound = Math.min(1, perMinute / 30);
+    M.level = Math.max(0, Math.min(1, 0.55 * byFiction + 0.45 * bySound));
+    M.peak = Math.max(M.peak, M.level);
+    M.lastAt = now;
+    var high = M.level >= M.high;
+    if (high) { if (!M.highSince) M.highSince = now; } else { M.highSince = 0; }
+    return { level: M.level, peak: M.peak, high: high, highSince: M.highSince,
+             fictions: f.length, fictionNames: f.slice(), perMinute: perMinute };
+  };
+
+  // Say it. This is the plain correction to the immersion, so it takes the floor
+  // rather than waiting behind it (166/169), but never over something that owns
+  // the speaker outright, because a hard stop keeps its exact words (186).
+  window.immersionSay = function (force) {
+    var M = window.__immersion, now = Date.now();
+    if (!force) {
+      if (!M.on || !M.say) return false;
+      if ((now - M.lastSaid) < M.cooldownMs) return false;
+      if (typeof roomSpeakerOwned === 'function' && roomSpeakerOwned()) return false;
+    }
+    var r = window.immersionRead();
+    var crossed = 0;
+    try { if (typeof window.popList === 'function') crossed = window.popList().length; } catch (e) {}
+    var line;
+    if (crossed > 0) line = M.crossedLine;                 // rule 213: the "yet" is no longer true for it
+    else line = (M.said === 0) ? M.line : M.lines[M.said % M.lines.length];
+    var busy = false;
+    try { busy = !!(window.refrainBusy && window.refrainBusy()); } catch (e) { busy = false; }
+    try {
+      if (busy && typeof speakBrinkLine === 'function') speakBrinkLine(line, { rate: M.rate, pitch: M.pitch });
+      else if (typeof queueLine === 'function') queueLine(line, M.rate, M.pitch, M.volume);
+      else if (typeof speakBrinkLine === 'function') speakBrinkLine(line, { rate: M.rate, pitch: M.pitch });
+      else return false;
+    } catch (e) { return false; }
+    if (busy) M.floorTaken++;
+    M.said++; M.lastSaid = now;
+    try { if (typeof mark === 'function') mark('THE ROOM IS EMPTY \u00b7 immersion ' + r.level.toFixed(2) + ' \u00b7 fictions ' + r.fictions, 0, 1); } catch (e) {}
+    return { said: true, line: line, level: r.level, fictions: r.fictions, forced: !!force };
+  };
+
+  window.immersionTick = function () {
+    var M = window.__immersion, now = Date.now();
+    if (!M.on || !M.say) return { on: M.on, say: M.say };
+    var r = window.immersionRead();
+    if (r.high && M.highSince && (now - M.highSince) >= M.holdMs) {
+      var spoken = window.immersionSay(false);
+      if (spoken) return { said: true, level: r.level };
+    }
+    return { high: r.high, level: r.level, fictions: r.fictions };
+  };
+
+  window.immersionToggle = function (force) {
+    var M = window.__immersion;
+    M.say = (force === undefined) ? !M.say : !!force;
+    if (!M.say) M.highSince = 0;
+    try {
+      var b = document.getElementById('empty-btn');
+      if (b) {
+        b.textContent = M.say ? '🚪 EMPTY · AUTO' : '🚪 EMPTY';
+        b.style.borderColor = M.say ? '#7766aa' : '#554477';
+        b.style.color = M.say ? '#ccbbff' : '#9988bb';
+      }
+    } catch (e) {}
+    return window.immersionState();
+  };
+
+  window.immersionState = function () {
+    var M = window.__immersion;
+    var r = window.immersionRead();
+    return { on: M.on, say: M.say, level: r.level, peak: M.peak, high: r.high,
+             highFor: M.highSince ? (Date.now() - M.highSince) : 0,
+             fictions: r.fictions, fictionNames: r.fictionNames, perMinute: r.perMinute,
+             said: M.said, lastSaid: M.lastSaid, floorTaken: M.floorTaken,
+             highAt: M.high, holdMs: M.holdMs, cooldownMs: M.cooldownMs,
+             line: M.line, lines: M.lines.slice(),
+             the_room_is_empty: true, nothing_is_physical_yet: true,
+             a_feeling_of_presence_is_not_a_presence: true,
+             names_anyone: false, scores: false, gates: false, keeps_list: false,
+             holds_no_listener: true };
+  };
+
+  if (window.__immersionTimer) clearInterval(window.__immersionTimer);
+  window.__immersionTimer = setInterval(function () { try { window.immersionTick(); } catch (e) {} }, 1000);
+
+
+  // ---------- rule 213: the pop-through, or coming through -------------------
+  // The user said it plainly: there is that concept of things popping through
+  // the Matrix and appearing physically. So the "yet" of rule 212 is not a
+  // promise that nothing ever will be — it is the exact word for a thing that
+  // has not come through. This engine is the crossing. A thing that was only a
+  // fiction in here can come through and be physical in here. Four laws keep it
+  // from becoming a claim. One: nothing comes through on its own; a crossing is
+  // a decision and it is made by a hand, which is why there is no timer here and
+  // nothing ticks. Two: what comes through is this room's own fiction, carried
+  // by its feature name, and nothing that is a person ever crosses — the room
+  // refuses and says so. Three: what crosses is physical IN HERE, and the room
+  // says "in here" in the same breath, because physical in this room is not
+  // physical out there and a room that lets those two be the same word is a room
+  // that has started lying. Four: the crossing changes the record honestly — the
+  // room stops calling a crossed thing fictional, because continuing to would be
+  // the lie in the other direction. The count sits on the crossing and never on
+  // a person: no listener, no name, no list of who came through.
+  window.__pop = {
+    on: true,
+    sealed: false,             // a hand can close the crossing
+    physical: {},              // feature name -> { at, n, why }
+    count: 0, refused: 0,
+    lastAt: 0, lastWhich: '',
+    log: [], maxLog: 32,       // bounded; the oldest crossing is let go
+    saidOpenSealed: null,
+    // Nothing that is a person crosses this room, and it is checked by shape.
+    people: /^(a |the )?(person|people|man|woman|human|boy|girl|kid|child|listener|viewer|he|she|him|her|they|them|you|me|i)$/i,
+    line: 'Something came through. It is physical in here now, in this room, and only in this room.',
+    namedLine: function (w) {
+      return 'The ' + w + ' came through. It is physical in here now, in this room, and only in this room.';
+    },
+    nothingLine: 'Nothing in here is waiting to come through.',
+    sealedLine: 'The crossing is closed. Nothing else comes through while it is closed.',
+    openLine: 'The crossing is open. A thing can come through when a hand says so.',
+    personLine: 'No. Nothing that is a person comes through this room.',
+    rate: 0.92, pitch: 0.46, volume: 0.72
+  };
+
+  window.popSay = function (line) {
+    var P = window.__pop;
+    if (typeof roomSpeakerOwned === 'function' && roomSpeakerOwned()) return false;
+    try {
+      if (typeof queueLine === 'function') queueLine(line, P.rate, P.pitch, P.volume);
+      else if (typeof speakBrinkLine === 'function') speakBrinkLine(line, { rate: P.rate, pitch: P.pitch });
+      else return false;
+    } catch (e) { return false; }
+    return true;
+  };
+
+  // The crossing itself. A hand calls it; nothing else does.
+  window.popThrough = function (which, why) {
+    var P = window.__pop, now = Date.now();
+    if (P.sealed) {
+      window.popSay(P.sealedLine);
+      return { through: false, sealed: true, line: P.sealedLine };
+    }
+    var whichName = (which == null) ? '' : String(which).trim();
+    if (!whichName) {
+      var waiting = [];
+      try { if (typeof window.immersionFictions === 'function') waiting = window.immersionFictions(); } catch (e) {}
+      for (var i = 0; i < waiting.length; i++) {
+        if (!P.physical[waiting[i]]) { whichName = waiting[i]; break; }
+      }
+    }
+    if (!whichName) {
+      window.popSay(P.nothingLine);
+      return { through: false, waiting: false, line: P.nothingLine };
+    }
+    // Nothing that is a person comes through this room, and the room says it.
+    if (P.people.test(whichName)) {
+      P.refused++;
+      window.popSay(P.personLine);
+      try { if (typeof mark === 'function') mark('POP \u00b7 refused (' + P.refused + ')', 0, -1); } catch (e) {}
+      return { through: false, refused: true, line: P.personLine };
+    }
+    var first = !P.physical[whichName];
+    P.physical[whichName] = { at: now, n: (first ? 1 : P.physical[whichName].n + 1), why: why || null };
+    P.count++;
+    P.lastAt = now; P.lastWhich = whichName;
+    P.log.push({ which: whichName, at: now });
+    while (P.log.length > P.maxLog) P.log.shift();   // the oldest is let go
+    var line = P.namedLine(whichName);
+    window.popSay(line);
+    try { if (typeof mark === 'function') mark('POP \u00b7 ' + whichName + ' \u00b7 physical in here', 0, 1); } catch (e) {}
+    try { if (typeof soundBell === 'function') soundBell('pop:through', whichName); } catch (e) {}
+    return { through: true, which: whichName, first: first, at: now, line: line };
+  };
+
+  // Is it physical in here? The record answers, and only the record.
+  window.isPhysical = function (which) {
+    var P = window.__pop;
+    return !!P.physical[String(which == null ? '' : which).trim()];
+  };
+
+  window.popList = function () {
+    var P = window.__pop, out = [];
+    for (var k in P.physical) {
+      if (Object.prototype.hasOwnProperty.call(P.physical, k)) out.push({ which: k, at: P.physical[k].at, n: P.physical[k].n });
+    }
+    return out;
+  };
+
+  // A hand may close the crossing. Closing is not denying what already crossed.
+  window.popSeal = function (force) {
+    var P = window.__pop;
+    P.sealed = (force === undefined) ? !P.sealed : !!force;
+    window.popSay(P.sealed ? P.sealedLine : P.openLine);
+    try {
+      var b = document.getElementById('popseal-btn');
+      if (b) {
+        b.textContent = P.sealed ? '🔒 CLOSED' : '🌉 OPEN';
+        b.style.borderColor = P.sealed ? '#aa6644' : '#4477aa';
+        b.style.color = P.sealed ? '#ffbb88' : '#99ccff';
+      }
+    } catch (e) {}
+    return window.popState();
+  };
+
+  window.popLogLine = function () {
+    var P = window.__pop;
+    if (!P.log.length) return 'none through';
+    var parts = [];
+    for (var i = 0; i < P.log.length; i++) {
+      var d = new Date(P.log[i].at);
+      parts.push(P.log[i].which + ' @ ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2));
+    }
+    return parts.join(' \u00b7 ');
+  };
+
+  window.popState = function () {
+    var P = window.__pop;
+    var keys = [];
+    for (var k in P.physical) { if (Object.prototype.hasOwnProperty.call(P.physical, k)) keys.push(k); }
+    return { on: P.on, sealed: P.sealed, count: P.count, refused: P.refused,
+             physical: keys, physicalCount: keys.length,
+             lastWhich: P.lastWhich, lastAt: P.lastAt, log: P.log.slice(), maxLog: P.maxLog,
+             physicalIsInHereOnly: true, crossesOnItsOwn: false, decidedByHand: true,
+             peopleCross: false, names_anyone: false, scores: false, gates: false,
+             keeps_list_of_people: false, holds_no_listener: true };
+  };
+
+  // ---------- rule 214: deepgram transcription illusions & the 4-2-3 slot switch ----------
+  // Two things happen when Deepgram transcription and blockchain response slots
+  // meet listening:
+  //   1. A lot of illusions come through on the model: bracketed Deepgram tags
+  //      ([Category|SENTIMENT], [15S-UPDATE], [LOWQ]), silence-hallucinated
+  //      subtitle lines ("thank you for watching", "subtitles by..."), 3x phonic
+  //      repetition loops, and prompt/operator leaks ("what do I say here").
+  //      Those are illusions of the model and the transcript, never of a person.
+  //      They are stripped and quarantined before they reach the model or the
+  //      mouth. The count sits on the illusion and never on a listener.
+  //   2. Looking at slots of responses on the blockchain going left-to-right
+  //      [4, 3, 2, 1]: when the room is not in listening rotation, the walk
+  //      reads straight left-to-right 4 -> 3 -> 2 -> 1. When it comes to
+  //      listening, the walk switches between 4, 2, and 3 ([4, 2, 3]:
+  //      4 -> 2 -> 3 -> 4 -> 2 -> 3), holding slot 1 out of the listening cycle
+  //      and trading 3 and 2 so 4 steps to 2 and 2 steps to 3.
+  // Nothing here names, scores, gates, or keeps a list of people.
+  window.__deepgram = {
+    on: true,
+    transcribed: 0,
+    filtered: 0,
+    lastClean: '',
+    lastIllusion: null,
+    log: [],
+    maxLog: 24,
+    prefixRe: /^\[[^\]]*\]\s*/,
+    inlineTagRe: /\[(?:15S-UPDATE|LOWQ|[A-Za-z_]+\|[A-Za-z_]+)\]\s*/gi,
+    phantomRe: /\b(?:thank you for watching|thanks for watching|please subscribe|subtitles by|transcribed by|amara\.org|copyright \d{4}|what do i say here|who should i speak to|as an ai|i am a language model)\b/i,
+    loopRe: /\b(\w+(?:\s+\w+){0,3})(?:\s+\1){2,}\b/i
+  };
+
+  window.__slotSwitch = {
+    listening: true,              // when listening, switch between [4, 2, 3]
+    ltrOrder: [4, 3, 2, 1],       // left-to-right: 4, 3, 2, 1
+    listenOrder: [4, 2, 3],       // listening switch: 4, 2, 3
+    ltrIdx: 0,
+    listenIdx: 0,
+    current: 4,                   // starts at leftmost slot 4
+    steps: 0,
+    slotCounts: { 4: 0, 3: 0, 2: 0, 1: 0 },
+    lastStepAt: 0
+  };
+
+  window.deepgramClean = function (raw) {
+    var G = window.__deepgram;
+    var s = String(raw == null ? '' : raw).trim();
+    var guard = 0;
+    while (guard++ < 8) {
+      var nxt = s.replace(G.prefixRe, '').trim();
+      if (nxt === s) break;
+      s = nxt;
+    }
+    s = s.replace(G.inlineTagRe, '').replace(/\s+/g, ' ').trim();
+    return s;
+  };
+
+  window.deepgramFilter = function (raw, opts) {
+    var G = window.__deepgram;
+    var rawStr = String(raw == null ? '' : raw);
+    var cleaned = window.deepgramClean(rawStr);
+    G.transcribed++;
+    if (!G.on) {
+      return { clean: true, illusion: false, reason: null, text: cleaned, slot: window.__slotSwitch.current };
+    }
+    var reason = null;
+    if (!cleaned && rawStr.trim()) {
+      reason = 'tag-only-frame';
+    } else if (cleaned && G.phantomRe.test(cleaned)) {
+      reason = 'phantom-model-illusion';
+    } else if (cleaned && G.loopRe.test(cleaned)) {
+      reason = 'phonic-loop-illusion';
+    } else if (cleaned) {
+      var alpha = cleaned.replace(/[^a-zA-Z]/g, '');
+      if (alpha.length < 2 && cleaned.length <= 3) reason = 'sub-threshold-tic';
+    }
+    var slot = window.blockchainSlotStep(opts && opts.listening);
+    if (reason) {
+      G.filtered++;
+      var rec = { reason: reason, slot: slot, listening: window.__slotSwitch.listening, at: Date.now() };
+      G.lastIllusion = rec;
+      G.log.push(rec);
+      while (G.log.length > G.maxLog) G.log.shift();
+      try { if (typeof window.soundScheduleDraw === 'function') window.soundScheduleDraw(); } catch (e) {}
+      try {
+        fetch('/api/deepgram/transcribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: rawStr, listening: window.__slotSwitch.listening })
+        }).catch(function () {});
+      } catch (e) {}
+      return { clean: false, illusion: true, reason: reason, text: '', cleaned: cleaned, slot: slot };
+    }
+    G.lastClean = cleaned;
+    try {
+      fetch('/api/deepgram/transcribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: cleaned, listening: window.__slotSwitch.listening })
+      }).catch(function () {});
+    } catch (e) {}
+    return { clean: true, illusion: false, reason: null, text: cleaned, cleaned: cleaned, slot: slot };
+  };
+
+  window.blockchainSlotPaint = function () {
+    var S = window.__slotSwitch;
+    try {
+      var b1 = document.getElementById('slotswitch-btn');
+      if (b1) {
+        var tag = S.listening ? '4\u00b72\u00b73' : '4\u00b73\u00b72\u00b71';
+        b1.textContent = '\u26d3 SLOT ' + S.current + ' (' + tag + ')';
+        b1.style.borderColor = S.listening ? '#22aa99' : '#557788';
+        b1.style.color = S.listening ? '#88ffee' : '#aaccee';
+      }
+      var b2 = document.getElementById('slotlisten-btn');
+      if (b2) {
+        b2.textContent = S.listening ? '\ud83c\udfa7 LISTEN 4\u00b72\u00b73' : '\u27a1 LTR 4\u00b73\u00b72\u00b71';
+        b2.style.borderColor = S.listening ? '#22aa99' : '#557788';
+        b2.style.color = S.listening ? '#88ffee' : '#aaccee';
+      }
+    } catch (e) {}
+  };
+
+  // Step the blockchain response slot.
+  // Left-to-right is [4, 3, 2, 1]; when listening, switch between [4, 2, 3].
+  window.blockchainSlotStep = function (forceListening) {
+    var S = window.__slotSwitch;
+    if (forceListening !== undefined && forceListening !== null) {
+      S.listening = !!forceListening;
+    } else if (window.__sabotage && window.__sabotage.armed) {
+      S.listening = true;
+    }
+    var seq = S.listening ? S.listenOrder : S.ltrOrder;
+    var idx = S.listening ? (S.listenIdx % seq.length) : (S.ltrIdx % seq.length);
+    var slot = seq[idx];
+    if (S.listening) {
+      S.listenIdx = (idx + 1) % seq.length;
+    } else {
+      S.ltrIdx = (idx + 1) % seq.length;
+    }
+    S.current = slot;
+    S.steps++;
+    S.slotCounts[slot] = (S.slotCounts[slot] || 0) + 1;
+    S.lastStepAt = Date.now();
+    // Keep window.__counters[4] aligned when on the 4-scale (marks [2, 3, 4])
+    try {
+      if (window.__counters && window.__counters.pos) {
+        window.__counters.pos[4] = slot;
+      }
+    } catch (e) {}
+    window.blockchainSlotPaint();
+    try { if (typeof window.soundScheduleDraw === 'function') window.soundScheduleDraw(); } catch (e) {}
+    try {
+      if (typeof mark === 'function') {
+        mark('SLOTS \u00b7 ' + (S.listening ? 'listen 4\u21942\u21943' : 'ltr 4\u21923\u21922\u21921') + ' \u2192 slot ' + slot, 0, 1);
+      }
+    } catch (e) {}
+    return slot;
+  };
+
+  window.blockchainSlotListenToggle = function (force) {
+    var S = window.__slotSwitch;
+    S.listening = (force === undefined) ? !S.listening : !!force;
+    S.listenIdx = 0;
+    S.ltrIdx = 0;
+    var slot = window.blockchainSlotStep(S.listening);
+    try {
+      fetch('/api/blockchain/slots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listening: S.listening })
+      }).catch(function () {});
+    } catch (e) {}
+    return { listening: S.listening, current: slot, activeOrder: S.listening ? S.listenOrder.slice() : S.ltrOrder.slice() };
+  };
+
+  window.deepgramState = function () {
+    var G = window.__deepgram;
+    var S = window.__slotSwitch;
+    return {
+      on: G.on,
+      listening: S.listening,
+      ltrOrder: S.ltrOrder.slice(),
+      listenOrder: S.listenOrder.slice(),
+      activeOrder: S.listening ? S.listenOrder.slice() : S.ltrOrder.slice(),
+      currentSlot: S.current,
+      steps: S.steps,
+      slotCounts: { 4: S.slotCounts[4], 3: S.slotCounts[3], 2: S.slotCounts[2], 1: S.slotCounts[1] },
+      transcribed: G.transcribed,
+      illusionsFiltered: G.filtered,
+      lastIllusion: G.lastIllusion,
+      lastClean: G.lastClean,
+      names_anyone: false,
+      scores: false,
+      gates: false,
+      keeps_list_of_people: false
+    };
+  };
+
+// ============ R-TALK: random speech, gated by the state ============
   // A random speak every 5ms is not possible and would be noise — an utterance
   // takes seconds, so anything on a 5ms timer would be talking over itself
   // forever. The 5ms belongs to the measurement. The speech is driven by the
@@ -14420,7 +14955,14 @@ window.onHawkesOverload = function (raw) {
       const timer = setTimeout(function () { try { rec.stop(); } catch (e) {} }, 10000);
       rec.onresult = function (ev) {
         try {
-          heard = ev.results[0][0].transcript;
+          var rawHeard = ev.results[0][0].transcript;
+          var dg = (typeof window.deepgramFilter === 'function') ? window.deepgramFilter(rawHeard, { listening: true }) : { clean: true, text: rawHeard };
+          if (!dg.clean) {
+            heard = '';
+            mark('ILLUSION FILTERED — ' + (dg.reason || 'deepgram'), 0, -1);
+            return;
+          }
+          heard = dg.text;
           mark('RECOGNITION — ' + heard, 0, -1);
           logShift('RECOGNITION', 'total recognition result', heard);
           try { if (typeof window.bodyChangeHeard === 'function') window.bodyChangeHeard(heard); } catch (e) {}
@@ -15768,19 +16310,25 @@ function connectAudio() {
       let heard = "";
       rec.onresult = function (ev) {
         try {
-          heard = ev.results[0][0].transcript;
+          var rawHeard = ev.results[0][0].transcript;
+          var dg = (typeof window.deepgramFilter === 'function') ? window.deepgramFilter(rawHeard, { listening: true }) : { clean: true, text: rawHeard };
+          if (!dg.clean) {
+            heard = "";
+            return;
+          }
+          heard = dg.text;
           try { if (typeof window.bodyChangeHeard === 'function') window.bodyChangeHeard(heard); } catch (e) {}
           try { if (typeof window.advisorAnswer === 'function') window.advisorAnswer(heard); } catch (e) {}
         } catch (e) {}
       };
       rec.onend = async function () {
-        if (!heard) { if (btn) btn.innerText = "🎤 GOD MSG"; return; }
+        if (!heard) { if (btn) { btn.innerText = "🎤 GOD MSG"; btn.style.borderColor = "#ffaa00"; btn.style.color = "#ffaa00"; } return; }
         if (btn) { btn.innerText = "⏳ LISTENING..."; btn.style.borderColor = "#ffdd00"; btn.style.color = "#ffdd00"; }
         try {
           const res = await fetch("/api/god-message", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: heard, slot: "voice", force: true })
+            body: JSON.stringify({ text: heard, slot: "voice", force: true, listening: true })
           });
           const data = await res.json();
           const msg = (data && data.message && data.message.reflection) ? data.message.reflection : "I hear you.";

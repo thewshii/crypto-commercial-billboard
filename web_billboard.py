@@ -544,7 +544,135 @@ FAQ_TRIGGERS = [
      "label": "asks who to address", "note": "Same shape: deferring instead of answering."},
     {"id": "as-an-ai", "re": r"\bas an ai\b|\bi am (?:a|an) (?:language )?model\b",
      "label": "breaks frame as an AI", "note": "Model identity leak — discard."},
+    {"id": "deepgram-tag-leak", "re": r"^\[(?:15s-update|lowq|[a-z]+\|[a-z]+)\]",
+     "label": "Deepgram metadata tag leaked into transcript",
+     "note": "Strip [Category|SENTIMENT], [15S-UPDATE], and [LOWQ] tags before model or TTS."},
+    {"id": "phonic-loop-illusion", "re": r"\b(\w+(?:\s+\w+){1,3})\s+\1\s+\1\b",
+     "label": "phonic repetition illusion loop",
+     "note": "Deepgram/model looping the same 2-4 words three times in a row — quarantine."},
+    {"id": "phantom-listener-illusion", "re": r"\b(?:thank you for watching|please subscribe|subtitles by|amara\.org)\b",
+     "label": "ASR phantom subtitle illusion",
+     "note": "Classic silence-hallucination from speech models when the room is quiet — drop."},
 ]
+
+# ===================== RULE 214: DEEPGRAM ILLUSION GUARD + 4-2-3 SLOT SWITCH ==
+# Two things happen on the web server when transcription and listening meet:
+# 1. Deepgram / ASR illusions come through on the model (metadata tags like
+#    [15S-UPDATE] or [LOWQ], silence-hallucinated subtitle credits, phonic
+#    3x loops, or prompt-mirroring). We strip tags and quarantine illusions
+#    before they ever touch the model or the speaker. Counts sit on the
+#    transcript and never on a person.
+# 2. Looking at slots of responses on the blockchain going left-to-right
+#    [4, 3, 2, 1]: when the room is NOT listening, the walk reads left-to-right
+#    4 -> 3 -> 2 -> 1. When it comes to LISTENING, we switch between 4, 2, and 3
+#    ([4, 2, 3] -> 4 -> 2 -> 3 -> 4), holding slot 1 out of the listening cycle.
+
+DEEPGRAM_PREFIX_RE = re.compile(r"^\[[^\]]*\]\s*")
+DEEPGRAM_INLINE_TAG_RE = re.compile(r"\[(?:15S-UPDATE|LOWQ|[A-Za-z_]+\|[A-Za-z_]+)\]\s*", re.IGNORECASE)
+DEEPGRAM_PHANTOM_RE = re.compile(
+    r"\b(?:thank you for watching|thanks for watching|please subscribe|"
+    r"subtitles by|transcribed by|amara\.org|copyright \d{4})\b",
+    re.IGNORECASE,
+)
+DEEPGRAM_REPEAT_RE = re.compile(r"\b(\w+(?:\s+\w+){0,3})(?:\s+\1){2,}\b", re.IGNORECASE)
+
+BLOCKCHAIN_SLOTS_LTR = [4, 3, 2, 1]      # left-to-right response slots on the chain
+BLOCKCHAIN_SLOTS_LISTEN = [4, 2, 3]      # when listening: switch between 4, 2, and 3
+
+DEEPGRAM_STATE = {
+    "listening": True,                   # when listening, switch between [4, 2, 3]
+    "ltr_slots": list(BLOCKCHAIN_SLOTS_LTR),
+    "listen_slots": list(BLOCKCHAIN_SLOTS_LISTEN),
+    "ltr_idx": 0,
+    "listen_idx": 0,
+    "current_slot": 4,                   # starts at 4 (leftmost of 4, 3, 2, 1)
+    "slot_counts": {4: 0, 3: 0, 2: 0, 1: 0},
+    "transcribed": 0,
+    "illusions_filtered": 0,
+    "last_illusion": None,
+    "last_clean": "",
+    "recent_illusions": [],              # bounded log of filtered illusions (no people)
+    "max_recent": 32,
+}
+
+
+def _clean_deepgram_text(raw_text):
+    """Strip Deepgram bracket tags ([Category|SENTIMENT], [15S-UPDATE], [LOWQ]) and control chars."""
+    s = str(raw_text or "").strip()
+    while True:
+        nxt = DEEPGRAM_PREFIX_RE.sub("", s).strip()
+        if nxt == s:
+            break
+        s = nxt
+    s = DEEPGRAM_INLINE_TAG_RE.sub("", s).strip()
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+
+def _detect_deepgram_illusion(raw_text, cleaned_text=None):
+    """Inspect a Deepgram/ASR transcript or model draft for illusions.
+    Returns (is_illusion: bool, reason: str or None, cleaned: str).
+    Never names, scores, or gates a person.
+    """
+    raw = str(raw_text or "")
+    cleaned = _clean_deepgram_text(raw) if cleaned_text is None else cleaned_text
+
+    if not cleaned:
+        if raw.strip():
+            return True, "tag-only-frame", ""
+        return False, None, ""
+
+    # 1. Check FAQ_TRIGGERS (operator leaks, AI frame breaks, phantom subtitle credits)
+    low = cleaned.lower()
+    for t in FAQ_TRIGGERS:
+        if re.search(t["re"], low, re.IGNORECASE):
+            return True, t["id"], cleaned
+
+    # 2. Check silence-hallucinated ASR subtitle illusions
+    if DEEPGRAM_PHANTOM_RE.search(cleaned):
+        return True, "phantom-subtitle-illusion", cleaned
+
+    # 3. Check 3x phonic repetition loop (e.g. "be like water be like water be like water")
+    if DEEPGRAM_REPEAT_RE.search(cleaned):
+        return True, "phonic-loop-illusion", cleaned
+
+    # 4. Single-character or non-ASCII noise burst from low-confidence frame
+    alpha = re.sub(r"[^a-zA-Z]", "", cleaned)
+    if len(alpha) < 2 and len(cleaned) <= 3:
+        return True, "sub-threshold-tic", cleaned
+
+    return False, None, cleaned
+
+
+def _blockchain_slot_step(listening=None):
+    """Advance the blockchain response slot.
+    Going left-to-right is [4, 3, 2, 1].
+    When listening is active, switch between [4, 2, 3] (4 -> 2 -> 3 -> 4).
+    """
+    with FAQ_LOCK:
+        if listening is not None:
+            DEEPGRAM_STATE["listening"] = bool(listening)
+        is_listening = bool(DEEPGRAM_STATE["listening"])
+        if is_listening:
+            seq = BLOCKCHAIN_SLOTS_LISTEN     # [4, 2, 3]
+            idx = DEEPGRAM_STATE["listen_idx"] % len(seq)
+            slot = seq[idx]
+            DEEPGRAM_STATE["listen_idx"] = (idx + 1) % len(seq)
+        else:
+            seq = BLOCKCHAIN_SLOTS_LTR        # [4, 3, 2, 1]
+            idx = DEEPGRAM_STATE["ltr_idx"] % len(seq)
+            slot = seq[idx]
+            DEEPGRAM_STATE["ltr_idx"] = (idx + 1) % len(seq)
+        DEEPGRAM_STATE["current_slot"] = slot
+        DEEPGRAM_STATE["slot_counts"][slot] = DEEPGRAM_STATE["slot_counts"].get(slot, 0) + 1
+        return {
+            "slot": slot,
+            "listening": is_listening,
+            "order": list(seq),
+            "ltr_order": list(BLOCKCHAIN_SLOTS_LTR),
+            "listen_order": list(BLOCKCHAIN_SLOTS_LISTEN),
+            "slot_counts": dict(DEEPGRAM_STATE["slot_counts"]),
+        }
 
 @app.route("/api/faq", methods=["POST"])
 def faq_log():
@@ -602,19 +730,117 @@ def faq_list():
 
 @app.route("/api/faq/check", methods=["POST"])
 def faq_check():
-    """Check a draft answer BEFORE it is spoken. Same triggers, read-only."""
+    """Check a draft answer BEFORE it is spoken. Same triggers + Deepgram illusion guard, read-only."""
     data = request.json or {}
-    answer = str(data.get("answer") or "").lower()
+    raw_answer = str(data.get("answer") or "")
+    answer = raw_answer.lower()
     hits = [{"id": t["id"], "label": t["label"], "note": t["note"]}
             for t in FAQ_TRIGGERS if re.search(t["re"], answer, re.IGNORECASE)]
-    return jsonify({"clean": not hits, "hits": hits})
+    is_illusion, reason, cleaned = _detect_deepgram_illusion(raw_answer)
+    if is_illusion and not any(h["id"] == reason for h in hits):
+        hits.append({"id": reason, "label": "Deepgram/model illusion filtered", "note": "Rule 214 illusion guard."})
+    return jsonify({"clean": not hits, "hits": hits, "cleaned": cleaned})
+
+
+@app.route("/api/deepgram/transcribe", methods=["POST"])
+def api_deepgram_transcribe():
+    """Rule 214: Filter Deepgram transcription on the web server for model illusions
+    and step the blockchain response slot (left-to-right 4,3,2,1 -> switch between 4,2,3 when listening).
+    """
+    data = request.json or {}
+    raw_text = str(data.get("text") or data.get("transcript") or "")
+    listening = data.get("listening")
+    is_illusion, reason, cleaned = _detect_deepgram_illusion(raw_text)
+    slot_info = _blockchain_slot_step(listening=listening)
+    now_ms = int(time.time() * 1000)
+
+    with FAQ_LOCK:
+        DEEPGRAM_STATE["transcribed"] += 1
+        if is_illusion:
+            DEEPGRAM_STATE["illusions_filtered"] += 1
+            rec = {
+                "reason": reason,
+                "slot": slot_info["slot"],
+                "listening": slot_info["listening"],
+                "t": now_ms,
+            }
+            DEEPGRAM_STATE["last_illusion"] = rec
+            DEEPGRAM_STATE["recent_illusions"].insert(0, rec)
+            del DEEPGRAM_STATE["recent_illusions"][DEEPGRAM_STATE["max_recent"]:]
+        else:
+            DEEPGRAM_STATE["last_clean"] = cleaned[:500]
+
+    return jsonify({
+        "status": "ok",
+        "clean": not is_illusion,
+        "illusion": bool(is_illusion),
+        "reason": reason,
+        "text": "" if is_illusion else cleaned,
+        "cleaned": cleaned,
+        "slot": slot_info["slot"],
+        "listening": slot_info["listening"],
+        "order": slot_info["order"],
+        "ltr_order": slot_info["ltr_order"],
+        "listen_order": slot_info["listen_order"],
+        "illusions_filtered": DEEPGRAM_STATE["illusions_filtered"],
+        "transcribed": DEEPGRAM_STATE["transcribed"],
+        "names_anyone": False,
+        "scores_anyone": False,
+    })
+
+
+@app.route("/api/deepgram/state", methods=["GET", "POST"])
+@app.route("/api/blockchain/slots", methods=["GET", "POST"])
+def api_deepgram_state():
+    """Inspect or toggle the Rule 214 Deepgram illusion filter & 4-2-3 blockchain response slot switcher."""
+    if request.method == "POST":
+        data = request.json or {}
+        if "listening" in data:
+            with FAQ_LOCK:
+                DEEPGRAM_STATE["listening"] = bool(data.get("listening"))
+        if data.get("step"):
+            _blockchain_slot_step()
+    with FAQ_LOCK:
+        is_listening = bool(DEEPGRAM_STATE["listening"])
+        active_order = list(BLOCKCHAIN_SLOTS_LISTEN if is_listening else BLOCKCHAIN_SLOTS_LTR)
+        return jsonify({
+            "status": "ok",
+            "listening": is_listening,
+            "current_slot": DEEPGRAM_STATE["current_slot"],
+            "active_order": active_order,
+            "ltr_order": list(BLOCKCHAIN_SLOTS_LTR),
+            "listen_order": list(BLOCKCHAIN_SLOTS_LISTEN),
+            "slot_counts": dict(DEEPGRAM_STATE["slot_counts"]),
+            "transcribed": DEEPGRAM_STATE["transcribed"],
+            "illusions_filtered": DEEPGRAM_STATE["illusions_filtered"],
+            "last_illusion": DEEPGRAM_STATE["last_illusion"],
+            "recent_illusions": list(DEEPGRAM_STATE["recent_illusions"]),
+            "names_anyone": False,
+            "scores_anyone": False,
+        })
+
 
 @app.route("/api/god-message", methods=["POST"])
 def get_god_message():
     incoming = request.json if request.is_json else {}
-    text = incoming.get("text", "") or incoming.get("prompt", "")
+    raw_text = incoming.get("text", "") or incoming.get("prompt", "")
     slot = incoming.get("slot") or "voice"
     force = bool(incoming.get("force", False))
+    listening = incoming.get("listening", True)
+
+    # Rule 214: run Deepgram transcription illusion guard and advance blockchain slot (4, 2, 3 when listening)
+    is_illusion, illusion_reason, cleaned_text = _detect_deepgram_illusion(raw_text)
+    slot_info = _blockchain_slot_step(listening=listening)
+    if is_illusion:
+        with FAQ_LOCK:
+            DEEPGRAM_STATE["illusions_filtered"] += 1
+            DEEPGRAM_STATE["last_illusion"] = {
+                "reason": illusion_reason,
+                "slot": slot_info["slot"],
+                "listening": slot_info["listening"],
+                "t": int(time.time() * 1000),
+            }
+        cleaned_text = ""
 
     try:
         reflection, cached = word_segment.generate_word_reflection(
@@ -623,17 +849,32 @@ def get_god_message():
             get_bedrock_client_fn=get_bedrock_client,
             model_id=BEDROCK_HAIKU_MODEL
         )
-        # Overlay the user's spoken text into the reflection so it answers their prompt.
-        user_text = text.strip() if text else ""
+        # Overlay the user's spoken text into the reflection only when clean (never echo an illusion).
+        user_text = cleaned_text.strip() if cleaned_text else ""
         base = reflection.get("reflection", "")
+        # Also guard the model's own generated reflection against illusions
+        model_illusion, model_reason, base_clean = _detect_deepgram_illusion(base)
+        if model_illusion:
+            with FAQ_LOCK:
+                DEEPGRAM_STATE["illusions_filtered"] += 1
+            base = "The room is listening on slot " + str(slot_info["slot"]) + ". Wave before fire."
+            reflection["reflection"] = base
         if user_text and user_text not in base:
             reflection["reflection"] = base + " You said: " + user_text + ". I hear you."
         reflection["source"] = reflection.get("source", "god_message")
         reflection["user_text"] = user_text
+        reflection["blockchain_slot"] = slot_info["slot"]
+        reflection["slot_order"] = slot_info["order"]
+        reflection["illusion_filtered"] = bool(is_illusion or model_illusion)
+        reflection["illusion_reason"] = illusion_reason or model_reason
         return jsonify({
             "status": "ok",
             "message": reflection,
             "user_text": user_text,
+            "blockchain_slot": slot_info["slot"],
+            "slot_order": slot_info["order"],
+            "illusion_filtered": bool(is_illusion or model_illusion),
+            "illusion_reason": illusion_reason or model_reason,
             "cached": cached
         })
     except Exception as e:
@@ -641,7 +882,7 @@ def get_god_message():
         return jsonify({
             "status": "error",
             "message": str(e),
-            "user_text": text
+            "user_text": cleaned_text
         }), 500
 
 @app.route("/api/word/history", methods=["GET"])
@@ -881,10 +1122,6 @@ def moon_redirect():
     print(f"[REDIRECT] Routing visitor to Moon Dev affiliate tracker: {target_url}", flush=True)
     return redirect(target_url, code=302)
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port, debug=False)
-
 
 # ===================== DATA STREAM + HOST LINKS =====================
 # Rule 116 promised a data stream. This is it: counted readings pushed in by
@@ -1029,6 +1266,11 @@ def api_summary():
         bars_total = len(SPECTROGRAM_HISTORY)
         nodes = len(MESH_NODES)
         faq_n = len(FAQ_ENTRIES)
+    with FAQ_LOCK:
+        dg_listening = bool(DEEPGRAM_STATE["listening"])
+        dg_slot = DEEPGRAM_STATE["current_slot"]
+        dg_filtered = DEEPGRAM_STATE["illusions_filtered"]
+        dg_transcribed = DEEPGRAM_STATE["transcribed"]
     bar_len = max(1, WINDOW_SEC // 4)
     return jsonify({
         "status": "ok",
@@ -1040,8 +1282,23 @@ def api_summary():
                    "bar": ((now % WINDOW_SEC) // bar_len) % 4 + 1},
         "mesh": {"nodes": nodes},
         "faq": {"entries": faq_n, "triggers": [t["id"] for t in FAQ_TRIGGERS]},
-        "word": {"rules": 127, "slots": ["morning", "midday", "evening"]},
+        "deepgram": {
+            "listening": dg_listening,
+            "current_slot": dg_slot,
+            "ltr_order": list(BLOCKCHAIN_SLOTS_LTR),
+            "listen_order": list(BLOCKCHAIN_SLOTS_LISTEN),
+            "active_order": list(BLOCKCHAIN_SLOTS_LISTEN if dg_listening else BLOCKCHAIN_SLOTS_LTR),
+            "transcribed": dg_transcribed,
+            "illusions_filtered": dg_filtered,
+        },
+        "word": {"rules": 214, "slots": ["morning", "midday", "evening"]},
         "endpoints": ["/api", "/api/summary", "/api/host", "/api/stream",
                       "/api/mesh/nodes", "/api/mesh/poll", "/api/faq/list",
-                      "/api/word"],
+                      "/api/deepgram/transcribe", "/api/deepgram/state",
+                      "/api/blockchain/slots", "/api/word"],
     })
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port, debug=False)

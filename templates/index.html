@@ -995,6 +995,7 @@
             <button id="dossier-organize-btn" onclick="window.organizeDossier()" title="Hardcoded organizer function for TTS instances to sort and file their dossiers (rule 215)" style="background:#08140e; border:2px solid #00ff88; color:#88ffbb; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #00ff88; box-shadow:0 0 8px rgba(0,255,136,0.3); transition:all 0.2s;">🗂 ORGANIZE</button>
             <button id="memgpt-btn" onclick="window.openMemGPT()" title="Open Letta / MemGPT Stateful Memory Console (Core Memory Blocks, Archival Memory, Recall Memory) from ./letta repo (rule 217)" style="background:#12081c; border:2px solid #b366ff; color:#e0b3ff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #b366ff; box-shadow:0 0 8px rgba(179,102,255,0.3); transition:all 0.2s;">🧠 MEMGPT</button>
             <button id="memgpt-step-btn" onclick="window.memgptHeartbeat()" title="Run a Letta / MemGPT heartbeat step (inner monologue <=50w + memory blocks + send_message TTS) (rule 217)" style="background:#140818; border:2px solid #ff66cc; color:#ffb3e6; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #ff66cc; box-shadow:0 0 8px rgba(255,102,204,0.3); transition:all 0.2s;">💓 HEARTBEAT</button>
+            <button id="mathseq-btn" onclick="window.mathSeqToggle()" title="Mathematical sequence counter [2, 4, 6, 8, 12, 9, 10] with a loud beep at 1 second each (rule 218). Click to toggle ON/OFF." style="background:#181204; border:2px solid #ffdd00; color:#ffee66; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #ffdd00; box-shadow:0 0 10px rgba(255,221,0,0.4); transition:all 0.2s;">🔊 SEQ 2·4·6·8·12·9·10 [2]</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -12100,6 +12101,16 @@ startStream();
                         ' &middot; edits ' + MG.editsCount + '</div>';
                })() +
                (function () {
+                 var MS = window.__mathSeq;
+                 if (!MS) return '';
+                 return '<div class="kb-head">MATH SEQ &middot; [' + MS.sequence.join(', ') + ']' +
+                        ' &middot; now ' + MS.current +
+                        ' &middot; ' + (MS.intervalMs / 1000) + 's each' +
+                        ' &middot; loud beep (' + (MS.on ? 'ON' : 'OFF') + ')' +
+                        ' &middot; beeps ' + MS.beeps +
+                        ' &middot; cycles ' + MS.cycles + '</div>';
+               })() +
+               (function () {
                  var D = window.__sounds;
                  if (!D) return '';
                  var c = D.counts, top = window.soundTop();
@@ -14991,6 +15002,194 @@ startStream();
       bans_anyone: false
     };
   };
+
+  // ---------- rule 218: Mathematical Sequence Counter [2, 4, 6, 8, 12, 9, 10] with a Loud Beep at 1s Each ----------
+  // Walks the exact mathematical sequence 2, 4, 6, 8, 12, 9, 10 at 1 second each
+  // (1000ms per step), firing a loud dual-oscillator beep on every number and
+  // recording each beep in the room's sound ledger (window.soundBeep).
+  // Counts the sequence in the room and never scores, ranks, names, or gates a person.
+  window.MATH_SEQUENCE_246812910 = [2, 4, 6, 8, 12, 9, 10];
+
+  window.__mathSeq = {
+    on: true,
+    sequence: [2, 4, 6, 8, 12, 9, 10],
+    idx: 0,
+    current: 2,
+    intervalMs: 1000,         // 1 second each
+    loudGain: 0.75,           // loud beep gain
+    ticks: 0,
+    beeps: 0,
+    cycles: 0,
+    history: [],              // recent { step, number, at }
+    lastAt: 0,
+    speakNumbers: false,      // optional TTS readout of the number alongside the loud beep
+    timer: null
+  };
+
+  // Loud, high-clarity dual-oscillator beep (square + sawtooth harmonic) for each step in 2, 4, 6, 8, 12, 9, 10
+  window.mathSeqBeep = function (num) {
+    var MS = window.__mathSeq;
+    var val = (num == null) ? MS.current : Number(num);
+    MS.beeps++;
+    try {
+      if (typeof window.soundBeep === 'function') {
+        window.soundBeep('seq_246812910', { number: val, step: MS.ticks });
+      }
+    } catch (e) {}
+    try {
+      var ctx = (typeof getAudioContext === 'function') ? getAudioContext() : null;
+      if (!ctx) return false;
+      var t = ctx.currentTime;
+      var baseFreq = 920 + (val * 35); // distinct crisp pitch per sequence number (2->990Hz .. 12->1340Hz)
+      var peakGain = Math.min(0.95, Math.max(0.35, Number(MS.loudGain) || 0.75));
+
+      var osc1 = ctx.createOscillator();
+      var gain1 = ctx.createGain();
+      osc1.type = 'square';
+      osc1.frequency.setValueAtTime(baseFreq, t);
+      gain1.gain.setValueAtTime(0.001, t);
+      gain1.gain.linearRampToValueAtTime(peakGain, t + 0.008);
+      gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(t);
+      osc1.stop(t + 0.17);
+
+      var osc2 = ctx.createOscillator();
+      var gain2 = ctx.createGain();
+      osc2.type = 'sawtooth';
+      osc2.frequency.setValueAtTime(baseFreq * 1.5, t);
+      gain2.gain.setValueAtTime(0.001, t);
+      gain2.gain.linearRampToValueAtTime(peakGain * 0.6, t + 0.008);
+      gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(t);
+      osc2.stop(t + 0.15);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  window.mathSeqUpdateButton = function () {
+    try {
+      var MS = window.__mathSeq;
+      var btn = document.getElementById('mathseq-btn');
+      if (btn) {
+        btn.textContent = (MS.on ? '🔊' : '🔇') + ' SEQ 2·4·6·8·12·9·10 [' + MS.current + ']';
+        btn.style.borderColor = MS.on ? '#ffdd00' : '#554411';
+        btn.style.color = MS.on ? '#ffee66' : '#998844';
+      }
+    } catch (e) {}
+  };
+
+  // Advance one step in [2, 4, 6, 8, 12, 9, 10] (1 second each) and fire the loud beep
+  window.mathSeqStep = function (forceBeep) {
+    var MS = window.__mathSeq;
+    if (!MS.on && !forceBeep) return { on: false, current: MS.current, sequence: MS.sequence.slice() };
+    var num = MS.sequence[MS.idx % MS.sequence.length];
+    MS.current = num;
+    MS.ticks++;
+    MS.lastAt = Date.now();
+    var rec = { tick: MS.ticks, idx: MS.idx, number: num, at: MS.lastAt };
+    MS.history.push(rec);
+    if (MS.history.length > 70) MS.history.shift();
+
+    window.mathSeqBeep(num);
+
+    if (MS.speakNumbers && typeof criticalSpeechBusy === 'function' && !criticalSpeechBusy()) {
+      try {
+        if ('speechSynthesis' in window) {
+          var u = new SpeechSynthesisUtterance(String(num));
+          u.rate = 1.15; u.pitch = 0.85; u.volume = 0.8;
+          window.speechSynthesis.speak(u);
+        }
+      } catch (e) {}
+    }
+
+    var nextIdx = (MS.idx + 1) % MS.sequence.length;
+    if (nextIdx === 0) MS.cycles++;
+    MS.idx = nextIdx;
+
+    window.mathSeqUpdateButton();
+    try {
+      if (typeof mark === 'function') {
+        mark('MATH SEQ [' + MS.sequence.join(' ') + '] \u2192 ' + num + ' (LOUD BEEP #' + MS.beeps + ')', 920 + num * 35, 1);
+      }
+    } catch (e) {}
+    try { if (typeof window.soundScheduleDraw === 'function') window.soundScheduleDraw(); } catch (e) {}
+    return {
+      ok: true,
+      on: MS.on,
+      number: num,
+      next: MS.sequence[MS.idx],
+      idx: rec.idx,
+      ticks: MS.ticks,
+      beeps: MS.beeps,
+      cycles: MS.cycles,
+      intervalMs: MS.intervalMs,
+      loudBeep: true,
+      sequence: MS.sequence.slice(),
+      names_anyone: false,
+      scores_anyone: false
+    };
+  };
+
+  window.mathSeqStartTimer = function () {
+    var MS = window.__mathSeq;
+    if (MS.timer) { clearInterval(MS.timer); MS.timer = null; }
+    if (MS.on) {
+      MS.timer = setInterval(function () {
+        try { window.mathSeqStep(); } catch (e) {}
+      }, MS.intervalMs);
+    }
+  };
+
+  window.mathSeqToggle = function (force) {
+    var MS = window.__mathSeq;
+    MS.on = (force === undefined) ? !MS.on : Boolean(force);
+    window.mathSeqStartTimer();
+    if (MS.on) window.mathSeqStep(true);
+    else window.mathSeqUpdateButton();
+    try { if (typeof window.soundScheduleDraw === 'function') window.soundScheduleDraw(); } catch (e) {}
+    return window.mathSeqState();
+  };
+
+  window.mathSeqReset = function () {
+    var MS = window.__mathSeq;
+    MS.sequence = window.MATH_SEQUENCE_246812910.slice();
+    MS.idx = 0;
+    MS.current = MS.sequence[0];
+    MS.intervalMs = 1000;
+    window.mathSeqStartTimer();
+    window.mathSeqUpdateButton();
+    return window.mathSeqState();
+  };
+
+  window.mathSeqState = function () {
+    var MS = window.__mathSeq;
+    return {
+      on: MS.on,
+      sequence: MS.sequence.slice(),
+      current: MS.current,
+      next: MS.sequence[MS.idx % MS.sequence.length],
+      idx: MS.idx,
+      intervalMs: MS.intervalMs,
+      loudGain: MS.loudGain,
+      loudBeep: true,
+      ticks: MS.ticks,
+      beeps: MS.beeps,
+      cycles: MS.cycles,
+      lastAt: MS.lastAt,
+      names_anyone: false,
+      scores_anyone: false,
+      gates_anyone: false,
+      keeps_list_of_people: false
+    };
+  };
+
+  window.mathSeqStartTimer();
 
 
 // ============ R-TALK: random speech, gated by the state ============

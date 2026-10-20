@@ -1501,6 +1501,61 @@ def api_memgpt_step():
     return jsonify(step_res)
 
 
+MATH_SEQ_246812910 = [2, 4, 6, 8, 12, 9, 10]
+MATH_SEQ_STATE = {
+    "on": True,
+    "sequence": list(MATH_SEQ_246812910),
+    "idx": 0,
+    "current": 2,
+    "interval_ms": 1000,
+    "loud_beep": True,
+    "loud_gain": 0.75,
+    "ticks": 0,
+    "beeps": 0,
+    "cycles": 0,
+}
+
+
+@app.route("/api/math-sequence", methods=["GET", "POST"])
+def api_math_sequence():
+    """Rule 218: Mathematical sequence counter [2, 4, 6, 8, 12, 9, 10] with a loud beep at 1 second each."""
+    with FAQ_LOCK:
+        seq = MATH_SEQ_STATE["sequence"]
+        if request.method == "POST":
+            data = request.json or {}
+            if "on" in data:
+                MATH_SEQ_STATE["on"] = bool(data["on"])
+            if data.get("reset"):
+                MATH_SEQ_STATE["idx"] = 0
+                MATH_SEQ_STATE["current"] = seq[0]
+            elif data.get("step", True):
+                num = seq[MATH_SEQ_STATE["idx"] % len(seq)]
+                MATH_SEQ_STATE["current"] = num
+                MATH_SEQ_STATE["ticks"] += 1
+                MATH_SEQ_STATE["beeps"] += 1
+                nxt = (MATH_SEQ_STATE["idx"] + 1) % len(seq)
+                if nxt == 0:
+                    MATH_SEQ_STATE["cycles"] += 1
+                MATH_SEQ_STATE["idx"] = nxt
+        now_sec = int(_time.time())
+        live_num = seq[now_sec % len(seq)]
+        return jsonify({
+            "status": "ok",
+            "on": MATH_SEQ_STATE["on"],
+            "sequence": list(seq),
+            "current": MATH_SEQ_STATE["current"],
+            "live_second_reading": live_num,
+            "interval_ms": 1000,
+            "loud_beep": True,
+            "loud_gain": MATH_SEQ_STATE["loud_gain"],
+            "ticks": MATH_SEQ_STATE["ticks"],
+            "beeps": MATH_SEQ_STATE["beeps"],
+            "cycles": MATH_SEQ_STATE["cycles"],
+            "names_anyone": False,
+            "scores_anyone": False,
+        })
+
+
 @app.route("/api/summary", methods=["GET"])
 def api_summary():
     """Everything this app knows, in one call."""
@@ -1552,7 +1607,13 @@ def api_summary():
             "recall_count": m_state["recall_count"],
             "tools": m_state["tools"],
         },
-        "word": {"rules": 217, "slots": ["morning", "midday", "evening"]},
+        "math_sequence": {
+            "sequence": list(MATH_SEQ_246812910),
+            "interval_ms": 1000,
+            "loud_beep": True,
+            "current": MATH_SEQ_246812910[now % len(MATH_SEQ_246812910)],
+        },
+        "word": {"rules": 218, "slots": ["morning", "midday", "evening"]},
         "endpoints": ["/api", "/api/summary", "/api/host", "/api/stream",
                       "/api/mesh/nodes", "/api/mesh/poll", "/api/faq/list",
                       "/api/deepgram/transcribe", "/api/deepgram/state",
@@ -1562,6 +1623,7 @@ def api_summary():
                       "/memgpt", "/letta", "/api/memgpt/state",
                       "/api/memgpt/core", "/api/memgpt/archival",
                       "/api/memgpt/recall", "/api/memgpt/step",
+                      "/api/math-sequence",
                       "/api/voice/because-im-black",
                       "/api/voice/colors-simulation", "/api/word"],
     })

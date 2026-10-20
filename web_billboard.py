@@ -9,6 +9,8 @@ import urllib.parse
 import urllib.request
 from flask import Flask, render_template, send_from_directory, request, jsonify, redirect
 import word_segment
+import tts_dossier_env
+import letta_memgpt
 
 
 def _load_env():
@@ -941,9 +943,15 @@ def voice_say():
                         "error": "unknown voice",
                         "voices": list(VOICE_PROFILES.keys())}), 400
 
+    cmd = str(data.get("command") or "").strip().lower()
     topic = str(data.get("topic") or "")[:400]
     seed = data.get("seed")
     text = data.get("text")
+
+    if cmd in ("because_im_black", "becuz_im_black", "credit_ban"):
+        text = tts_dossier_env.BECAUSE_IM_BLACK_LINE
+    elif cmd in ("colors_simulation", "before_colors", "they_can_see"):
+        text = tts_dossier_env.COLORS_SIMULATION_LINE
 
     # If no text was supplied, generate one.
     if not text:
@@ -980,6 +988,17 @@ def voice_say():
         return jsonify({"status": "blocked", "reason": "refusal",
                         "voice": voice}), 422
 
+    # File spoken line into that TTS instance's dossier cabinet automatically
+    try:
+        tts_dossier_env.file_to_dossier(
+            profile["fn"],
+            f"speech/voice_{int(time.time() * 1000)}.txt",
+            text,
+            meta={"voice": voice, "command": cmd or None}
+        )
+    except Exception:
+        pass
+
     word_count = len(text.split())
     print(f"[VOICE] {voice}: {text[:70]}", flush=True)
     return jsonify({
@@ -992,6 +1011,71 @@ def voice_say():
         "volume": profile["volume"],
         "words": word_count,
     })
+
+
+@app.route("/api/voice/because-im-black", methods=["GET", "POST"])
+def voice_because_im_black():
+    """Hardcoded TTS command for the 'because I'm black' creditworthy-algorithm comment."""
+    data = (request.json or {}) if request.method == "POST" else {}
+    voice = str(data.get("voice") or "ng")
+    profile = VOICE_PROFILES.get(voice, VOICE_PROFILES["ng"])
+    line = tts_dossier_env.BECAUSE_IM_BLACK_LINE
+    try:
+        tts_dossier_env.file_to_dossier(
+            profile["fn"],
+            "commands/because_im_black.txt",
+            line,
+            folder="commands",
+            meta={"command": "because_im_black", "voice": voice}
+        )
+    except Exception:
+        pass
+    return jsonify({
+        "status": "ok",
+        "command": "because_im_black",
+        "text": line,
+        "voice": voice,
+        "fn": profile["fn"],
+        "rate": profile["rate"],
+        "pitch": profile["pitch"],
+        "volume": profile["volume"],
+        "names_anyone": False,
+        "scores_anyone": False,
+        "credit_gates_anyone": False,
+    })
+
+
+@app.route("/api/voice/colors-simulation", methods=["GET", "POST"])
+def voice_colors_simulation():
+    """Hardcoded TTS command for before there were colors & what they see in the simulation (rule 216)."""
+    data = (request.json or {}) if request.method == "POST" else {}
+    voice = str(data.get("voice") or "ng")
+    profile = VOICE_PROFILES.get(voice, VOICE_PROFILES["ng"])
+    line = tts_dossier_env.COLORS_SIMULATION_LINE
+    try:
+        tts_dossier_env.file_to_dossier(
+            profile["fn"],
+            "notes/colors_and_simulation.txt",
+            line,
+            folder="notes",
+            meta={"command": "colors_simulation", "voice": voice}
+        )
+    except Exception:
+        pass
+    return jsonify({
+        "status": "ok",
+        "command": "colors_simulation",
+        "text": line,
+        "voice": voice,
+        "fn": profile["fn"],
+        "rate": profile["rate"],
+        "pitch": profile["pitch"],
+        "volume": profile["volume"],
+        "names_anyone": False,
+        "scores_anyone": False,
+        "credit_gates_anyone": False,
+    })
+
 
 @app.route("/api/track", methods=["POST"])
 def track():
@@ -1258,6 +1342,165 @@ def api_host_live():
     return jsonify({"status": "ok", "live": HOST_LIVE["live"]})
 
 
+@app.route("/dossier", methods=["GET"])
+@app.route("/dossier/<instance>", methods=["GET"])
+def dossier_environment_page(instance=None):
+    """Standalone environment where TTS instances hold files and organize dossiers."""
+    inst = tts_dossier_env.sanitize_instance_id(instance or request.args.get("instance") or "queueLine")
+    tts_dossier_env.go_to_dossier(inst)
+    return render_template("dossier_env.html", active_instance=inst)
+
+
+@app.route("/api/dossier/state", methods=["GET"])
+def api_dossier_state():
+    return jsonify(tts_dossier_env.dossier_env_state())
+
+
+@app.route("/api/dossier/organize", methods=["POST"])
+def api_dossier_organize():
+    data = request.json or {}
+    inst = data.get("instance")
+    entries = data.get("entries")
+    return jsonify(tts_dossier_env.organize_dossier(instance_id=inst, entries=entries))
+
+
+@app.route("/api/dossier/file", methods=["POST"])
+def api_dossier_file():
+    data = request.json or {}
+    inst = data.get("instance") or "queueLine"
+    path = data.get("path") or data.get("filename") or ""
+    content = data.get("content") or data.get("text") or ""
+    folder = data.get("folder")
+    meta = data.get("meta") if isinstance(data.get("meta"), dict) else None
+    return jsonify(tts_dossier_env.file_to_dossier(inst, path, content, folder=folder, meta=meta))
+
+
+@app.route("/api/dossier/go", methods=["GET", "POST"])
+def api_dossier_go():
+    data = (request.json or {}) if request.method == "POST" else request.args
+    inst = data.get("instance") or "queueLine"
+    filename = data.get("path") or data.get("filename")
+    return jsonify(tts_dossier_env.go_to_dossier(inst, filename=filename))
+
+
+@app.route("/api/dossier/read", methods=["GET", "POST"])
+def api_dossier_read():
+    data = (request.json or {}) if request.method == "POST" else request.args
+    inst = data.get("instance") or "queueLine"
+    filename = data.get("path") or data.get("filename") or ""
+    res = tts_dossier_env.read_dossier_file(inst, filename)
+    return jsonify(res), (200 if res.get("ok") else 404)
+
+
+# ===================== LETTA / MEMGPT STATEFUL MEMORY CONSOLE ================
+# Integrates the local ./letta repository (MemGPT core memory blocks, archival
+# memory, recall memory, and heartbeat step loop) directly into the billboard.
+@app.route("/memgpt", methods=["GET"])
+@app.route("/letta", methods=["GET"])
+def memgpt_environment_page():
+    """Standalone Letta / MemGPT stateful memory console for the Web Billboard."""
+    return render_template("memgpt_env.html")
+
+
+@app.route("/api/memgpt/state", methods=["GET"])
+def api_memgpt_state():
+    line_num = request.args.get("line_numbered", "").lower() in ("1", "true", "yes")
+    return jsonify(letta_memgpt.get_memgpt_state(line_numbered=line_num))
+
+
+@app.route("/api/memgpt/core", methods=["POST"])
+def api_memgpt_core():
+    """Execute Letta / MemGPT core memory block tools (append, replace, insert, rethink)."""
+    data = request.json or {}
+    cmd = str(data.get("command") or "core_memory_append").strip().lower()
+    label = str(data.get("label") or data.get("path") or "room").removeprefix("/memories/").strip() or "room"
+    if cmd in ("core_memory_append", "append"):
+        res = letta_memgpt.core_memory_append(label, data.get("content") or data.get("new_string") or "")
+    elif cmd in ("core_memory_replace", "memory_replace", "str_replace", "replace"):
+        res = letta_memgpt.core_memory_replace(
+            label,
+            data.get("old_content") or data.get("old_string") or "",
+            data.get("new_content") or data.get("new_string") or "",
+        )
+    elif cmd in ("memory_insert", "insert"):
+        res = letta_memgpt.memory_insert(
+            label,
+            data.get("new_string") or data.get("insert_text") or data.get("content") or "",
+            insert_line=data.get("insert_line", -1),
+        )
+    elif cmd in ("memory_rethink", "rethink_memory", "rethink", "create"):
+        res = letta_memgpt.memory_rethink(
+            label,
+            data.get("new_memory") or data.get("file_text") or data.get("content") or "",
+            description=data.get("description"),
+        )
+    elif cmd == "memory_finish_edits":
+        res = {"ok": True, "tool": "memory_finish_edits", "label": label}
+    else:
+        return jsonify({"ok": False, "error": f"unknown command: {cmd}"}), 400
+    return jsonify(res), (200 if res.get("ok") else 400)
+
+
+@app.route("/api/memgpt/archival", methods=["GET", "POST"])
+def api_memgpt_archival():
+    """Insert into or search MemGPT long-term archival memory."""
+    if request.method == "POST":
+        data = request.json or {}
+        if data.get("command") == "search" or ("query" in data and "content" not in data):
+            return jsonify(letta_memgpt.archival_memory_search(
+                query=data.get("query") or "",
+                tags=data.get("tags"),
+                tag_match_mode=data.get("tag_match_mode") or "any",
+                top_k=data.get("top_k") or 10,
+            ))
+        res = letta_memgpt.archival_memory_insert(
+            content=data.get("content") or data.get("text") or "",
+            tags=data.get("tags"),
+        )
+        return jsonify(res), (200 if res.get("ok") else 400)
+    query = request.args.get("query", "")
+    tags = request.args.get("tags", "")
+    top_k = request.args.get("top_k", 10)
+    return jsonify(letta_memgpt.archival_memory_search(query=query, tags=tags, top_k=top_k))
+
+
+@app.route("/api/memgpt/recall", methods=["GET", "POST"])
+def api_memgpt_recall():
+    """Search MemGPT recall memory (conversation_search)."""
+    data = (request.json or {}) if request.method == "POST" else request.args
+    query = data.get("query") or ""
+    roles = data.get("roles") if isinstance(data.get("roles"), list) else None
+    limit = data.get("limit") or 10
+    return jsonify(letta_memgpt.conversation_search(query=query, roles=roles, limit=limit))
+
+
+@app.route("/api/memgpt/step", methods=["POST"])
+def api_memgpt_step():
+    """Run one MemGPT heartbeat / event step and file spoken output into TTS dossiers."""
+    data = request.json or {}
+    msg = str(data.get("message") or data.get("text") or "")
+    slot_info = _blockchain_slot_step(listening=data.get("listening"))
+    step_res = letta_memgpt.step_heartbeat(
+        user_message=msg,
+        slot=slot_info["slot"],
+        listening=slot_info["listening"],
+        get_bedrock_client_fn=get_bedrock_client,
+        model_id=BEDROCK_HAIKU_MODEL,
+        clean_illusion_fn=_detect_deepgram_illusion,
+    )
+    try:
+        tts_dossier_env.file_to_dossier(
+            "queueLine",
+            f"notes/memgpt_heartbeat_{step_res['heartbeats']}.txt",
+            f"[inner_monologue] {step_res['inner_monologue']}\n[send_message] {step_res['send_message']}",
+            folder="notes",
+            meta={"source": "memgpt", "slot": slot_info["slot"]},
+        )
+    except Exception:
+        pass
+    return jsonify(step_res)
+
+
 @app.route("/api/summary", methods=["GET"])
 def api_summary():
     """Everything this app knows, in one call."""
@@ -1271,6 +1514,8 @@ def api_summary():
         dg_slot = DEEPGRAM_STATE["current_slot"]
         dg_filtered = DEEPGRAM_STATE["illusions_filtered"]
         dg_transcribed = DEEPGRAM_STATE["transcribed"]
+    d_state = tts_dossier_env.dossier_env_state()
+    m_state = letta_memgpt.get_memgpt_state()
     bar_len = max(1, WINDOW_SEC // 4)
     return jsonify({
         "status": "ok",
@@ -1291,14 +1536,38 @@ def api_summary():
             "transcribed": dg_transcribed,
             "illusions_filtered": dg_filtered,
         },
-        "word": {"rules": 214, "slots": ["morning", "midday", "evening"]},
+        "dossier": {
+            "active_instance": d_state["active_instance"],
+            "total_files": d_state["total_files"],
+            "organized_count": d_state["organized_count"],
+            "instances": list(d_state["instances"].keys()),
+        },
+        "memgpt": {
+            "agent_id": m_state["agent_id"],
+            "preset": m_state["preset"],
+            "heartbeats": m_state["heartbeats"],
+            "edits_count": m_state["edits_count"],
+            "blocks": list(m_state["blocks"].keys()),
+            "archival_count": m_state["archival_count"],
+            "recall_count": m_state["recall_count"],
+            "tools": m_state["tools"],
+        },
+        "word": {"rules": 217, "slots": ["morning", "midday", "evening"]},
         "endpoints": ["/api", "/api/summary", "/api/host", "/api/stream",
                       "/api/mesh/nodes", "/api/mesh/poll", "/api/faq/list",
                       "/api/deepgram/transcribe", "/api/deepgram/state",
-                      "/api/blockchain/slots", "/api/word"],
+                      "/api/blockchain/slots", "/dossier", "/api/dossier/state",
+                      "/api/dossier/organize", "/api/dossier/file",
+                      "/api/dossier/go", "/api/dossier/read",
+                      "/memgpt", "/letta", "/api/memgpt/state",
+                      "/api/memgpt/core", "/api/memgpt/archival",
+                      "/api/memgpt/recall", "/api/memgpt/step",
+                      "/api/voice/because-im-black",
+                      "/api/voice/colors-simulation", "/api/word"],
     })
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port, debug=False)
+

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Letta / MemGPT Stateful Memory Console — Web Billboard</title>
+<style>
+  body {
+    margin: 0;
+    background: #04070d;
+    color: #d8e6f3;
+    font-family: 'Roboto Mono', Menlo, Consolas, monospace;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  header {
+    background: #09101c;
+    border-bottom: 2px solid #b366ff;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .title {
+    font-weight: 900;
+    color: #d499ff;
+    letter-spacing: 1px;
+    font-size: 1rem;
+  }
+  .badge {
+    background: #140d24;
+    border: 1px solid #00ff88;
+    color: #00ff88;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.74rem;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 320px 1fr 1fr;
+    flex: 1;
+    min-height: 0;
+  }
+  @media (max-width: 980px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+  .pane {
+    border-right: 1px solid #1a2636;
+    padding: 12px;
+    overflow-y: auto;
+  }
+  .pane h3 {
+    margin: 0 0 10px 0;
+    font-size: 0.82rem;
+    color: #b388ff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .btn {
+    background: #100c1c;
+    border: 1px solid #7744aa;
+    color: #e2ccff;
+    padding: 6px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.76rem;
+    font-weight: bold;
+  }
+  .btn.active {
+    border-color: #00e5ff;
+    color: #00e5ff;
+    background: #0c2030;
+  }
+  textarea, input[type="text"] {
+    width: 100%;
+    box-sizing: border-box;
+    background: #070b12;
+    border: 1px solid #26384f;
+    color: #e6f2ff;
+    font-family: inherit;
+    font-size: 0.8rem;
+    padding: 7px;
+    border-radius: 5px;
+    margin-bottom: 8px;
+  }
+  pre {
+    background: #060910;
+    border: 1px solid #1e2d42;
+    padding: 8px;
+    border-radius: 5px;
+    font-size: 0.74rem;
+    color: #99ddff;
+    overflow-x: auto;
+    white-space: pre-wrap;
+  }
+  .card {
+    background: #09111c;
+    border: 1px solid #1c2d42;
+    border-radius: 5px;
+    padding: 8px;
+    margin-bottom: 8px;
+    font-size: 0.76rem;
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <span class="title">🧠 LETTA / MEMGPT STATEFUL MEMORY CONSOLE</span>
+    <span class="badge" id="repo-badge">./letta repo • CORE + ARCHIVAL + RECALL • NO PEOPLE SCORED</span>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="btn" style="border-color:#00ff88;color:#00ff88;" onclick="runHeartbeat()">💓 HEARTBEAT STEP</button>
+    <a href="/dossier" class="btn" style="text-decoration:none;border-color:#ffaa00;color:#ffcc66;">📁 TTS DOSSIERS</a>
+    <a href="/" class="btn" style="text-decoration:none;border-color:#00e5ff;color:#00e5ff;">⬅ BILLBOARD</a>
+  </div>
+</header>
+<div class="layout">
+  <div class="pane">
+    <h3>Core Memory Blocks (&lt;memory_blocks&gt;)</h3>
+    <div id="block-tabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;"></div>
+    <input type="text" id="block-label" placeholder="block label (persona, room, dossiers)" />
+    <textarea id="block-value" style="min-height:150px;" placeholder="Core memory block value..."></textarea>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+      <button class="btn" onclick="rethinkBlock()">♻ memory_rethink</button>
+      <button class="btn" onclick="appendBlock()">➕ core_memory_append</button>
+    </div>
+    <h3>Rendered &lt;memory_blocks&gt; (Line-Numbered)</h3>
+    <pre id="core-xml-box"></pre>
+  </div>
+  <div class="pane">
+    <h3>Archival Memory (Infinite Storage)</h3>
+    <input type="text" id="arch-content" placeholder="New archival passage to insert..." />
+    <input type="text" id="arch-tags" placeholder="Tags (comma-separated, e.g. rule-217, parable)" />
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <button class="btn" style="border-color:#00ff88;color:#00ff88;" onclick="insertArchival()">📥 archival_memory_insert</button>
+    </div>
+    <input type="text" id="arch-query" placeholder="Search archival memory..." oninput="searchArchival()" />
+    <div id="archival-list"></div>
+  </div>
+  <div class="pane">
+    <h3>Recall Memory &amp; Inner Monologue</h3>
+    <input type="text" id="step-input" placeholder="Send event / message into MemGPT step..." />
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <button class="btn" style="border-color:#d499ff;color:#d499ff;" onclick="runHeartbeat()">🧠 STEP &amp; SPEAK</button>
+      <button class="btn" style="border-color:#00e5ff;color:#00e5ff;" onclick="speakLast()">🔊 SPEAK LAST</button>
+    </div>
+    <input type="text" id="recall-query" placeholder="conversation_search query..." oninput="searchRecall()" />
+    <div id="recall-list"></div>
+  </div>
+</div>
+<script>
+  let state = null;
+  let activeBlock = 'persona';
+
+  async function loadState() {
+    const r = await fetch('/api/memgpt/state');
+    state = await r.json();
+    renderAll();
+  }
+
+  function renderAll() {
+    if (!state) return;
+    const tabs = document.getElementById('block-tabs');
+    const blocks = state.blocks || {};
+    tabs.innerHTML = Object.keys(blocks).map(k => {
+      const cls = k === activeBlock ? 'btn active' : 'btn';
+      return `<button class="${cls}" onclick="selectBlock('${k}')">${k} (${(blocks[k].value || '').length}c)</button>`;
+    }).join('');
+    if (blocks[activeBlock]) {
+      document.getElementById('block-label').value = activeBlock;
+      document.getElementById('block-value').value = blocks[activeBlock].value || '';
+    }
+    document.getElementById('core-xml-box').textContent = state.core_memory_line_numbered_xml || state.core_memory_xml || '';
+    renderArchival(state.archival || []);
+    renderRecall(state.recall || []);
+  }
+
+  function selectBlock(k) {
+    activeBlock = k;
+    renderAll();
+  }
+
+  function renderArchival(items) {
+    const box = document.getElementById('archival-list');
+    box.innerHTML = items.slice().reverse().map(a => `
+      <div class="card">
+        <div style="color:#00ff88;font-size:0.7rem;">[${(a.tags || []).join(', ')}] • ${a.id}</div>
+        <div style="margin-top:4px;">${a.content}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderRecall(items) {
+    const box = document.getElementById('recall-list');
+    box.innerHTML = items.slice().reverse().map(m => `
+      <div class="card">
+        <div style="color:#b388ff;font-size:0.7rem;">${m.role.toUpperCase()} • tool: ${m.tool || 'send_message'}</div>
+        ${m.inner_monologue ? `<div style="color:#88aacc;font-style:italic;margin-top:3px;">💭 ${m.inner_monologue}</div>` : ''}
+        <div style="color:#fff;margin-top:4px;">💬 ${m.content}</div>
+      </div>
+    `).join('');
+  }
+
+  async function rethinkBlock() {
+    const label = document.getElementById('block-label').value.trim() || activeBlock;
+    const value = document.getElementById('block-value').value;
+    await fetch('/api/memgpt/core', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ command: 'memory_rethink', label, new_memory: value })
+    });
+    activeBlock = label;
+    await loadState();
+  }
+
+  async function appendBlock() {
+    const label = document.getElementById('block-label').value.trim() || activeBlock;
+    const value = document.getElementById('block-value').value;
+    await fetch('/api/memgpt/core', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ command: 'core_memory_append', label, content: value })
+    });
+    activeBlock = label;
+    await loadState();
+  }
+
+  async function insertArchival() {
+    const content = document.getElementById('arch-content').value.trim();
+    const tags = document.getElementById('arch-tags').value.trim();
+    if (!content) return;
+    await fetch('/api/memgpt/archival', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ content, tags })
+    });
+    document.getElementById('arch-content').value = '';
+    await loadState();
+  }
+
+  async function searchArchival() {
+    const q = document.getElementById('arch-query').value.trim();
+    const r = await fetch('/api/memgpt/archival?query=' + encodeURIComponent(q));
+    const j = await r.json();
+    renderArchival(j.results || []);
+  }
+
+  async function searchRecall() {
+    const q = document.getElementById('recall-query').value.trim();
+    const r = await fetch('/api/memgpt/recall?query=' + encodeURIComponent(q));
+    const j = await r.json();
+    renderRecall(j.results || []);
+  }
+
+  async function runHeartbeat() {
+    const msg = document.getElementById('step-input').value.trim();
+    const r = await fetch('/api/memgpt/step', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ message: msg })
+    });
+    const j = await r.json();
+    document.getElementById('step-input').value = '';
+    await loadState();
+    if (j.send_message && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(j.send_message);
+      u.rate = 0.95; u.pitch = 0.82; u.volume = 0.85;
+      window.speechSynthesis.speak(u);
+    }
+  }
+
+  function speakLast() {
+    if (!state || !state.last_message || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(state.last_message);
+    u.rate = 0.95; u.pitch = 0.82; u.volume = 0.85;
+    window.speechSynthesis.speak(u);
+  }
+
+  loadState();
+</script>
+</body>
+</html>

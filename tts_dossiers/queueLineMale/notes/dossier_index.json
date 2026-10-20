@@ -1,0 +1,35 @@
+{
+  "instance": "queueLineMale",
+  "label": "Adam / Male Voice Instance (en-US)",
+  "voice": "en-US",
+  "environment_path": "/dossier/queueLineMale",
+  "total_files": 2,
+  "drawers": {
+    "speech": 0,
+    "frequencies": 0,
+    "parables": 0,
+    "commands": 0,
+    "notes": 2
+  },
+  "files": [
+    {
+      "path": "notes/README.txt",
+      "name": "README.txt",
+      "folder": "notes",
+      "size": 109,
+      "updated_at": 1792414921905
+    },
+    {
+      "path": "notes/dossier_index.json",
+      "name": "dossier_index.json",
+      "folder": "notes",
+      "size": 759,
+      "updated_at": 1792415864310
+    }
+  ],
+  "updated_at": 1792415897196,
+  "names_anyone": false,
+  "scores_anyone": false,
+  "credit_gates_anyone": false,
+  "bans_anyone": false
+}

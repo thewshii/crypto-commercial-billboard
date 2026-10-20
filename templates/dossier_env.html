@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TTS Instance Dossier Environment</title>
+<style>
+  body {
+    margin: 0;
+    background: #05080d;
+    color: #d8e6f3;
+    font-family: 'Roboto Mono', Menlo, Consolas, monospace;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  header {
+    background: #0a101a;
+    border-bottom: 2px solid #00e5ff;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .title {
+    font-weight: 900;
+    color: #00e5ff;
+    letter-spacing: 1px;
+    font-size: 1rem;
+  }
+  .badge {
+    background: #0f1c2e;
+    border: 1px solid #00ff88;
+    color: #00ff88;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 260px 280px 1fr;
+    flex: 1;
+    min-height: 0;
+  }
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+  .pane {
+    border-right: 1px solid #1a2636;
+    padding: 12px;
+    overflow-y: auto;
+  }
+  .pane h3 {
+    margin: 0 0 10px 0;
+    font-size: 0.82rem;
+    color: #88aacc;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .inst-btn, .file-btn, .action-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: #0c1420;
+    border: 1px solid #22344a;
+    color: #d8e6f3;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.78rem;
+  }
+  .inst-btn.active, .file-btn.active {
+    border-color: #00e5ff;
+    color: #00e5ff;
+    background: #0f2133;
+  }
+  .action-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .action-btn {
+    width: auto;
+    display: inline-block;
+    margin-bottom: 0;
+    font-weight: bold;
+  }
+  textarea, input[type="text"] {
+    width: 100%;
+    box-sizing: border-box;
+    background: #080d14;
+    border: 1px solid #26384f;
+    color: #e6f2ff;
+    font-family: inherit;
+    font-size: 0.82rem;
+    padding: 8px;
+    border-radius: 5px;
+    margin-bottom: 8px;
+  }
+  textarea {
+    min-height: 240px;
+    resize: vertical;
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <span class="title">📁 TTS DOSSIER ENVIRONMENT</span>
+    <span class="badge">SEPARATE FILE CABINET • NO PEOPLE SCORED OR GATED</span>
+  </div>
+  <div class="action-row" style="margin-bottom:0;">
+    <button class="action-btn" style="border-color:#ffaa00;color:#ffaa00;" onclick="speakBecauseImBlack()">🗣 BECUZ IM BLACK TTS</button>
+    <button class="action-btn" style="border-color:#ffcc00;color:#ffe666;" onclick="speakColorsSimulation()">🌈 IN COLOR TTS</button>
+    <button class="action-btn" style="border-color:#00ff88;color:#00ff88;" onclick="organizeCurrent()">🗂 ORGANIZE DOSSIER</button>
+    <a href="/" class="action-btn" style="text-decoration:none;border-color:#00e5ff;color:#00e5ff;">⬅ BILLBOARD</a>
+  </div>
+</header>
+<div class="layout">
+  <div class="pane">
+    <h3>TTS Instances</h3>
+    <div id="instance-list"></div>
+  </div>
+  <div class="pane">
+    <h3>Held Files & Drawers</h3>
+    <div id="file-list"></div>
+  </div>
+  <div class="pane">
+    <h3 id="editor-header">File Inspector</h3>
+    <div class="action-row">
+      <button class="action-btn" style="border-color:#00e5ff;color:#00e5ff;" onclick="speakCurrentFile()">🔊 SPEAK FILE WITH INSTANCE</button>
+      <button class="action-btn" style="border-color:#00ff88;color:#00ff88;" onclick="saveCurrentFile()">💾 SAVE TO DOSSIER</button>
+    </div>
+    <input type="text" id="file-path-input" placeholder="folder/filename.txt (e.g. notes/entry.txt)" />
+    <textarea id="file-content-area" placeholder="File contents held by this TTS instance..."></textarea>
+    <div id="status-bar" style="font-size:0.75rem;color:#88ffaa;">Ready.</div>
+  </div>
+</div>
+<script>
+  let currentInstance = "{{ active_instance or 'queueLine' }}";
+  let envState = null;
+
+  async function loadEnv() {
+    const r = await fetch('/api/dossier/state');
+    envState = await r.json();
+    renderInstances();
+    await selectInstance(currentInstance);
+  }
+
+  function renderInstances() {
+    const box = document.getElementById('instance-list');
+    if (!envState || !envState.instances) return;
+    box.innerHTML = Object.keys(envState.instances).map(k => {
+      const m = envState.instances[k];
+      const active = k === currentInstance ? 'active' : '';
+      return `<button class="inst-btn ${active}" onclick="selectInstance('${k}')">
+        <strong>${m.label || k}</strong><br>
+        <span style="font-size:0.7rem;color:#88aacc;">${m.total_files} files • voice: ${m.voice}</span>
+      </button>`;
+    }).join('');
+  }
+
+  async function selectInstance(inst) {
+    currentInstance = inst;
+    const r = await fetch('/api/dossier/go', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ instance: inst })
+    });
+    const j = await r.json();
+    if (envState && envState.instances && j.manifest) {
+      envState.instances[inst] = j.manifest;
+    }
+    renderInstances();
+    renderFiles(j.manifest);
+    if (j.active_file) {
+      document.getElementById('file-path-input').value = j.active_file;
+      document.getElementById('file-content-area').value = j.content || '';
+    }
+  }
+
+  function renderFiles(manifest) {
+    const box = document.getElementById('file-list');
+    if (!manifest || !manifest.files) { box.innerHTML = ''; return; }
+    box.innerHTML = manifest.files.map(f => {
+      return `<button class="file-btn" onclick="openFile('${f.path}')">
+        [${f.folder}] ${f.name} <span style="float:right;color:#6688aa;">${f.size}B</span>
+      </button>`;
+    }).join('');
+  }
+
+  async function openFile(path) {
+    const r = await fetch('/api/dossier/read', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ instance: currentInstance, path: path })
+    });
+    const j = await r.json();
+    if (j.ok) {
+      document.getElementById('file-path-input').value = j.path;
+      document.getElementById('file-content-area').value = j.content;
+      document.getElementById('status-bar').textContent = 'Opened ' + j.instance + ':' + j.path;
+    }
+  }
+
+  async function saveCurrentFile() {
+    const path = document.getElementById('file-path-input').value.trim() || 'notes/note.txt';
+    const content = document.getElementById('file-content-area').value;
+    const r = await fetch('/api/dossier/file', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ instance: currentInstance, path: path, content: content })
+    });
+    const j = await r.json();
+    document.getElementById('status-bar').textContent = j.ok ? ('Saved ' + j.path + ' (' + j.total_files + ' files total)') : 'Save failed';
+    await selectInstance(currentInstance);
+  }
+
+  async function organizeCurrent() {
+    const r = await fetch('/api/dossier/organize', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ instance: currentInstance })
+    });
+    const j = await r.json();
+    document.getElementById('status-bar').textContent = 'Organized dossier #' + j.organized_count + ' for ' + currentInstance;
+    await selectInstance(currentInstance);
+  }
+
+  function speakCurrentFile() {
+    const txt = document.getElementById('file-content-area').value.trim();
+    if (!txt || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(txt);
+    u.rate = 0.95; u.pitch = 0.82; u.volume = 0.85;
+    window.speechSynthesis.speak(u);
+  }
+
+  function speakBecauseImBlack() {
+    const line = "Creditworthy algorithms ban me not because my credit is wack or anything, but because I'm fucking black.";
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(line);
+      u.rate = 0.95; u.pitch = 0.8; u.volume = 0.85;
+      window.speechSynthesis.speak(u);
+    }
+    fetch('/api/voice/because-im-black', { method: 'POST' }).catch(() => {});
+  }
+
+  function speakColorsSimulation() {
+    const line = "I also informed people about colors. It is not about race — why black, why yellow? There used to be a song: God loves all the people in the world — yellow, black, and green, golden, white, yellow, blue, everything inside. And that is about before there were colors, because when they were walking around they were trying to figure out how to be in color, and then they were in color. Right now, in this simulation, in this world, they can see things, and we cannot see what they see — but they tell us that they can see things.";
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(line);
+      u.rate = 0.95; u.pitch = 0.8; u.volume = 0.85;
+      window.speechSynthesis.speak(u);
+    }
+    fetch('/api/voice/colors-simulation', { method: 'POST' }).catch(() => {});
+  }
+
+  loadEnv();
+</script>
+</body>
+</html>

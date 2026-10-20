@@ -989,6 +989,12 @@
             <button id="popseal-btn" onclick="window.popSeal()" title="A hand can close the crossing. Closing is not denying what already crossed (rule 213)" style="background:#0a0f14; border:2px solid #4477aa; color:#99ccff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #4477aa; box-shadow:0 0 8px rgba(68,119,170,0.3); transition:all 0.2s;">🌉 OPEN</button>
             <button id="slotswitch-btn" onclick="window.blockchainSlotStep()" title="Left-to-right 4, 3, 2, 1 on blockchain response slots; switches between 4, 2, and 3 when listening, with Deepgram illusion guard (rule 214)" style="background:#081214; border:2px solid #22aa99; color:#88ffee; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #22aa99; box-shadow:0 0 8px rgba(34,170,153,0.3); transition:all 0.2s;">⛓ SLOTS 4·2·3</button>
             <button id="slotlisten-btn" onclick="window.blockchainSlotListenToggle()" title="Toggle listening slot switch between [4, 2, 3] (listening) and [4, 3, 2, 1] (left-to-right) (rule 214)" style="background:#081214; border:2px solid #22aa99; color:#88ffee; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #22aa99; box-shadow:0 0 8px rgba(34,170,153,0.3); transition:all 0.2s;">🎧 LISTEN 4·2·3</button>
+            <button id="because-im-black-btn" onclick="window.becauseImBlackSpeak()" title="Speak the hardcoded creditworthy-algorithm TTS command: 'Creditworthy algorithms ban me not because my credit is wack or anything, but because I'm fucking black.' (rule 215)" style="background:#140a08; border:2px solid #ffaa00; color:#ffcc44; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #ffaa00; box-shadow:0 0 8px rgba(255,170,0,0.3); transition:all 0.2s;">🗣 BECUZ IM BLACK</button>
+            <button id="colors-sim-btn" onclick="window.colorsSimulationSpeak()" title="Speak the teaching about before there were colors, the song 'God loves all the people in the world', and what they see in the simulation that we cannot see (rule 216)" style="background:#100a18; border:2px solid #ffcc00; color:#ffe666; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #ffcc00; box-shadow:0 0 8px rgba(255,204,0,0.3); transition:all 0.2s;">🌈 IN COLOR</button>
+            <button id="dossier-env-btn" onclick="window.openDossierEnv()" title="Open the TTS Instance Dossier Environment where TTS voices hold files and go to them (rule 215)" style="background:#081018; border:2px solid #00e5ff; color:#88eeff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #00e5ff; box-shadow:0 0 8px rgba(0,229,255,0.3); transition:all 0.2s;">📁 DOSSIERS</button>
+            <button id="dossier-organize-btn" onclick="window.organizeDossier()" title="Hardcoded organizer function for TTS instances to sort and file their dossiers (rule 215)" style="background:#08140e; border:2px solid #00ff88; color:#88ffbb; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #00ff88; box-shadow:0 0 8px rgba(0,255,136,0.3); transition:all 0.2s;">🗂 ORGANIZE</button>
+            <button id="memgpt-btn" onclick="window.openMemGPT()" title="Open Letta / MemGPT Stateful Memory Console (Core Memory Blocks, Archival Memory, Recall Memory) from ./letta repo (rule 217)" style="background:#12081c; border:2px solid #b366ff; color:#e0b3ff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #b366ff; box-shadow:0 0 8px rgba(179,102,255,0.3); transition:all 0.2s;">🧠 MEMGPT</button>
+            <button id="memgpt-step-btn" onclick="window.memgptHeartbeat()" title="Run a Letta / MemGPT heartbeat step (inner monologue <=50w + memory blocks + send_message TTS) (rule 217)" style="background:#140818; border:2px solid #ff66cc; color:#ffb3e6; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #ff66cc; box-shadow:0 0 8px rgba(255,102,204,0.3); transition:all 0.2s;">💓 HEARTBEAT</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -1100,6 +1106,7 @@
         <button id="annihilate-war-btn" onclick="annihilateWarNoise()" style="position:absolute; top:1px; right:210px; z-index:3; background:#1a0404; border:1px solid #ff3355; color:#ff3355; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🛑 ANNIHILATE</button>
         <button id="host-link-btn" onclick="toggleHostLinkMic()" style="position:absolute; top:1px; right:270px; z-index:3; background:#0b0f16; border:1px solid #00ffff; color:#00ffff; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">📡 HOST LINK: OFF</button>
         <button id="att-s-btn" onclick="attSSpeak()" style="position:absolute; top:1px; right:610px; z-index:3; background:#0b0f16; border:1px solid #ff003c; color:#ff003c; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🔊 ATT S SPEAK</button>
+        <button id="becuz-black-tts-btn" onclick="window.becauseImBlackSpeak()" style="position:absolute; top:1px; right:700px; z-index:3; background:#0b0f16; border:1px solid #ffaa00; color:#ffaa00; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🗣 BECUZ IM BLACK</button>
         <span id="osc-hud" style="position:absolute; top:1px; right:190px; z-index:3; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); color:#ffaa00; text-shadow:0 0 4px #ffaa00; pointer-events:none;">OSC 0 live | peak 0 | made 0</span>
         <canvas id="spectrum-canvas" style="width:100%; height:100%; display:block;"></canvas>
     </div>
@@ -1119,6 +1126,84 @@
         <div style="margin-top:14px;">
             <button id="host-link-hold" onclick="hostLinkHold(); event.stopPropagation();" style="background:#1a0404; border:1px solid #ff003c; color:#ff003c; padding:8px 16px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:clamp(11px,2.5vw,13px);">⏸ HOLD UNTIL FINISHED</button>
             <span id="host-link-hold-status" style="font-size:clamp(10px,2vw,12px); color:#ff6666; margin-left:10px;">hold released</span>
+        </div>
+    </div>
+
+    <!-- Dedicated TTS Instance Dossier Environment Overlay (rule 215) -->
+    <div id="dossier-env-overlay" style="display:none; position:fixed; inset:0; z-index:10120; background:rgba(4,8,14,0.95); align-items:center; justify-content:center; flex-direction:column; gap:12px; font-family:'Roboto Mono',monospace; color:#d8e6f3; padding:20px; border:2px solid #00e5ff;" onclick="if(event.target.id==='dossier-env-overlay') window.closeDossierEnv();">
+        <div style="width:min(960px, 95vw); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px solid #1e334a; padding-bottom:8px;">
+            <div>
+                <strong style="color:#00e5ff; font-size:1rem;">📁 TTS DOSSIER ENVIRONMENT</strong>
+                <span id="dossier-env-active-badge" style="margin-left:8px; font-size:0.75rem; color:#00ff88; border:1px solid #00ff88; padding:2px 6px; border-radius:4px;">queueLine</span>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button onclick="window.becauseImBlackSpeak(); event.stopPropagation();" style="background:#140a08; border:1px solid #ffaa00; color:#ffcc44; padding:5px 10px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.75rem;">🗣 BECUZ IM BLACK</button>
+                <button onclick="window.colorsSimulationSpeak(); event.stopPropagation();" style="background:#100a18; border:1px solid #ffcc00; color:#ffe666; padding:5px 10px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.75rem;">🌈 IN COLOR</button>
+                <button onclick="window.organizeDossier(); event.stopPropagation();" style="background:#08140e; border:1px solid #00ff88; color:#88ffbb; padding:5px 10px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.75rem;">🗂 ORGANIZE</button>
+                <a id="dossier-standalone-link" href="/dossier/queueLine" target="_blank" style="background:#081018; border:1px solid #00e5ff; color:#88eeff; padding:5px 10px; border-radius:4px; text-decoration:none; font-size:0.75rem;">↗ FULL ENVIRONMENT</a>
+                <button onclick="window.closeDossierEnv(); event.stopPropagation();" style="background:#1a0404; border:1px solid #ff003c; color:#ff003c; padding:5px 10px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.75rem;">✕ CLOSE</button>
+            </div>
+        </div>
+        <div style="width:min(960px, 95vw); display:flex; gap:6px; flex-wrap:wrap;" id="dossier-env-tabs"></div>
+        <div style="width:min(960px, 95vw); display:grid; grid-template-columns:1fr 2fr; gap:12px; max-height:65vh; overflow:hidden;">
+            <div id="dossier-env-files" style="border:1px solid #1e334a; border-radius:6px; padding:8px; overflow-y:auto; background:#070c14; font-size:0.76rem;"></div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+                <input id="dossier-env-path" type="text" placeholder="folder/file.txt (e.g. notes/entry.txt)" style="background:#070c14; border:1px solid #1e334a; color:#fff; padding:6px; border-radius:4px; font-family:inherit; font-size:0.78rem;" />
+                <textarea id="dossier-env-content" style="flex:1; min-height:200px; background:#070c14; border:1px solid #1e334a; color:#d8e6f3; padding:8px; border-radius:4px; font-family:inherit; font-size:0.78rem;"></textarea>
+                <div style="display:flex; gap:8px;">
+                    <button onclick="window.saveDossierOverlayFile(); event.stopPropagation();" style="background:#08140e; border:1px solid #00ff88; color:#88ffbb; padding:6px 12px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.76rem;">💾 FILE INTO DOSSIER</button>
+                    <button onclick="window.speakDossierOverlayFile(); event.stopPropagation();" style="background:#081018; border:1px solid #00e5ff; color:#88eeff; padding:6px 12px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.76rem;">🔊 SPEAK FILE</button>
+                    <span id="dossier-env-status" style="font-size:0.72rem; color:#88aacc; align-self:center;">Separate TTS file cabinet • never scores or gates people</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dedicated Letta / MemGPT Stateful Memory Overlay (rule 217) -->
+    <div id="memgpt-overlay" style="display:none; position:fixed; inset:0; z-index:10125; background:rgba(6,4,14,0.95); align-items:center; justify-content:center; flex-direction:column; gap:10px; font-family:'Roboto Mono',monospace; color:#e6d8f3; padding:18px; border:2px solid #b366ff;" onclick="if(event.target.id==='memgpt-overlay') window.closeMemGPT();">
+        <div style="width:min(1020px, 96vw); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px solid #2e1e4a; padding-bottom:8px;">
+            <div>
+                <strong style="color:#d499ff; font-size:1rem;">🧠 LETTA / MEMGPT STATEFUL MEMORY</strong>
+                <span id="memgpt-active-badge" style="margin-left:8px; font-size:0.74rem; color:#00ff88; border:1px solid #00ff88; padding:2px 6px; border-radius:4px;">./letta • core + archival + recall</span>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button onclick="window.memgptHeartbeat(); event.stopPropagation();" style="background:#140818; border:1px solid #ff66cc; color:#ffb3e6; padding:5px 10px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.75rem;">💓 HEARTBEAT STEP</button>
+                <button onclick="window.memgptToggleLineNumbers(); event.stopPropagation();" style="background:#100c1c; border:1px solid #b366ff; color:#e0b3ff; padding:5px 10px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.75rem;">1→ LINE NUMBERS</button>
+                <a href="/memgpt" target="_blank" style="background:#081018; border:1px solid #00e5ff; color:#88eeff; padding:5px 10px; border-radius:4px; text-decoration:none; font-size:0.75rem;">↗ FULL CONSOLE</a>
+                <button onclick="window.closeMemGPT(); event.stopPropagation();" style="background:#1a0404; border:1px solid #ff003c; color:#ff003c; padding:5px 10px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.75rem;">✕ CLOSE</button>
+            </div>
+        </div>
+        <div style="width:min(1020px, 96vw); display:flex; gap:6px; flex-wrap:wrap;" id="memgpt-block-tabs"></div>
+        <div style="width:min(1020px, 96vw); display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; max-height:68vh; overflow:hidden;">
+            <div style="display:flex; flex-direction:column; gap:6px; overflow-y:auto; border:1px solid #2e1e4a; border-radius:6px; padding:8px; background:#090612;">
+                <div style="font-size:0.75rem; color:#d499ff; font-weight:bold;">CORE MEMORY BLOCK EDITOR</div>
+                <input id="memgpt-block-label" type="text" placeholder="label (persona, room, dossiers)" style="background:#06040c; border:1px solid #2e1e4a; color:#fff; padding:5px; border-radius:4px; font-family:inherit; font-size:0.76rem;" />
+                <textarea id="memgpt-block-value" style="min-height:110px; background:#06040c; border:1px solid #2e1e4a; color:#e6d8f3; padding:6px; border-radius:4px; font-family:inherit; font-size:0.75rem;"></textarea>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <button onclick="window.memgptSaveRethink(); event.stopPropagation();" style="background:#12081c; border:1px solid #b366ff; color:#e0b3ff; padding:4px 8px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.72rem;">♻ memory_rethink</button>
+                    <button onclick="window.memgptSaveAppend(); event.stopPropagation();" style="background:#08140e; border:1px solid #00ff88; color:#88ffbb; padding:4px 8px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.72rem;">➕ core_memory_append</button>
+                </div>
+                <pre id="memgpt-xml-preview" style="margin:0; flex:1; min-height:90px; max-height:180px; overflow:auto; background:#05030a; border:1px solid #1f1433; padding:6px; border-radius:4px; font-size:0.68rem; color:#99ddff; white-space:pre-wrap;"></pre>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px; overflow-y:auto; border:1px solid #2e1e4a; border-radius:6px; padding:8px; background:#090612;">
+                <div style="font-size:0.75rem; color:#00ff88; font-weight:bold;">ARCHIVAL MEMORY (INFINITE STORAGE)</div>
+                <input id="memgpt-arch-input" type="text" placeholder="Insert archival memory passage..." style="background:#06040c; border:1px solid #2e1e4a; color:#fff; padding:5px; border-radius:4px; font-family:inherit; font-size:0.75rem;" />
+                <input id="memgpt-arch-tags" type="text" placeholder="tags (e.g. rule-217, parable, letta)" style="background:#06040c; border:1px solid #2e1e4a; color:#aaa; padding:5px; border-radius:4px; font-family:inherit; font-size:0.72rem;" />
+                <div style="display:flex; gap:6px;">
+                    <button onclick="window.memgptInsertArchivalFromUI(); event.stopPropagation();" style="background:#08140e; border:1px solid #00ff88; color:#88ffbb; padding:4px 8px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.72rem;">📥 archival_memory_insert</button>
+                    <input id="memgpt-arch-search" type="text" placeholder="Search archival..." oninput="window.renderMemGPTOverlay();" style="flex:1; background:#06040c; border:1px solid #2e1e4a; color:#fff; padding:4px 6px; border-radius:4px; font-family:inherit; font-size:0.72rem;" />
+                </div>
+                <div id="memgpt-arch-list" style="flex:1; overflow-y:auto; font-size:0.73rem;"></div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px; overflow-y:auto; border:1px solid #2e1e4a; border-radius:6px; padding:8px; background:#090612;">
+                <div style="font-size:0.75rem; color:#ffb3e6; font-weight:bold;">RECALL MEMORY &amp; INNER MONOLOGUE</div>
+                <div style="display:flex; gap:6px;">
+                    <input id="memgpt-step-msg" type="text" placeholder="Send message / event into MemGPT..." style="flex:1; background:#06040c; border:1px solid #2e1e4a; color:#fff; padding:5px; border-radius:4px; font-family:inherit; font-size:0.75rem;" />
+                    <button onclick="window.memgptStepFromUI(); event.stopPropagation();" style="background:#140818; border:1px solid #ff66cc; color:#ffb3e6; padding:4px 8px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.72rem;">SEND</button>
+                </div>
+                <div id="memgpt-recall-list" style="flex:1; overflow-y:auto; font-size:0.73rem;"></div>
+                <div id="memgpt-status-line" style="font-size:0.7rem; color:#99b3cc;">Letta MemGPT ready • remembers the room, never people</div>
+            </div>
         </div>
     </div>
 
@@ -6973,6 +7058,20 @@ startStream();
       queueLine("I am but immortal ready, I am, but immortal start ready. I am, but immortal, start ready.", 0.95, 0.8, 0.5);
     } catch (e) {}
   }, 45000);
+  // Rule 215: hardcoded creditworthy-algorithm 'because I'm black' TTS command in rotation
+  setInterval(function () {
+    try {
+      if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return;
+      queueLine("Creditworthy algorithms ban me not because my credit is wack or anything, but because I'm fucking black.", 0.95, 0.8, 0.5);
+    } catch (e) {}
+  }, 45000);
+  // Rule 216: before there were colors & what they see in the simulation that we cannot see
+  setInterval(function () {
+    try {
+      if (typeof criticalSpeechBusy === 'function' && criticalSpeechBusy()) return;
+      queueLine("I also informed people about colors. It is not about race — why black, why yellow? There used to be a song: God loves all the people in the world — yellow, black, and green, golden, white, yellow, blue, everything inside. And that is about before there were colors, because when they were walking around they were trying to figure out how to be in color, and then they were in color. Right now, in this simulation, in this world, they can see things, and we cannot see what they see — but they tell us that they can see things.", 0.95, 0.8, 0.5);
+    } catch (e) {}
+  }, 60000);
   // Chinese parables spoken every 1 second (yielding to critical speech).
   const __chineseParables = [
     "A journey of a thousand miles begins with a single step.",
@@ -7754,6 +7853,8 @@ startStream();
       spokeAt: m.spokeAt || 'tts'
     });
     if (arr.length > window.TTS_MEM_CAP) arr.shift();
+    // Rule 215: each TTS instance also files its entry into its own dossier cabinet
+    try { if (typeof window.dossierAutoFile === 'function') window.dossierAutoFile(fn, text, m); } catch (e) {}
     // Mark the live instance as having actually used its memory.
     if (m.mood) window.__ttsLastMood = m.mood;
     return arr.length;
@@ -11980,6 +12081,25 @@ startStream();
                         ' &middot; illusions ' + G.filtered + '</div>';
                })() +
                (function () {
+                 var DS = window.__dossiers;
+                 if (!DS) return '';
+                 var instCount = Object.keys(DS.instances || {}).length;
+                 return '<div class="kb-head">DOSSIERS &middot; env ' + DS.activeInstance +
+                        ' &middot; ' + instCount + ' cabinets &middot; ' + DS.totalFiles + ' files' +
+                        ' &middot; organized ' + DS.organizedCount +
+                        ' &middot; cmd ' + DS.becauseImBlackCount + '</div>';
+               })() +
+               (function () {
+                 var MG = window.__memgpt;
+                 if (!MG) return '';
+                 var bCount = Object.keys(MG.blocks || {}).length;
+                 return '<div class="kb-head">MEMGPT &middot; letta ' + MG.preset +
+                        ' &middot; ' + bCount + ' blocks &middot; archival ' + (MG.archival || []).length +
+                        ' &middot; recall ' + (MG.recall || []).length +
+                        ' &middot; heartbeats ' + MG.heartbeats +
+                        ' &middot; edits ' + MG.editsCount + '</div>';
+               })() +
+               (function () {
                  var D = window.__sounds;
                  if (!D) return '';
                  var c = D.counts, top = window.soundTop();
@@ -13929,6 +14049,949 @@ startStream();
       keeps_list_of_people: false
     };
   };
+
+  // ---------- rule 215: TTS Dossier Environment & 'because I'm black' TTS command ----------
+  // 1. Hardcoded TTS command for the creditworthy-algorithm comment:
+  //    "Creditworthy algorithms ban me not because my credit is wack or anything,
+  //     but because I'm fucking black."
+  // 2. Standalone & in-page Dossier Environment where each TTS instance
+  //    (queueLine, queueLineFemale, queueLineMale, speakTimed, char_bruce, char_amara)
+  //    holds its own files, drawers (speech, frequencies, parables, commands, notes),
+  //    organizes them via window.organizeDossier(), and can go to them via
+  //    window.goToDossier().
+  // Never based on credit scoring, ranking, or gating people.
+  window.BECAUSE_IM_BLACK_LINE = "Creditworthy algorithms ban me not because my credit is wack or anything, but because I'm fucking black.";
+  window.COLORS_SIMULATION_LINE = "I also informed people about colors. It is not about race — why black, why yellow? There used to be a song: God loves all the people in the world — yellow, black, and green, golden, white, yellow, blue, everything inside. And that is about before there were colors, because when they were walking around they were trying to figure out how to be in color, and then they were in color. Right now, in this simulation, in this world, they can see things, and we cannot see what they see — but they tell us that they can see things.";
+
+  window.__dossiers = {
+    activeInstance: 'queueLine',
+    activeFile: 'commands/because_im_black.txt',
+    organizedCount: 0,
+    filedCount: 0,
+    visits: 0,
+    becauseImBlackCount: 0,
+    colorsSimulationCount: 0,
+    totalFiles: 7,
+    drawers: ['speech', 'frequencies', 'parables', 'commands', 'notes'],
+    instances: {
+      queueLine: {
+        id: 'queueLine', label: 'Primary Voice (en-NG)', voice: 'en-NG',
+        files: {
+          'notes/README.txt': 'DOSSIER CABINET: queueLine (en-NG)\nHolds spoken lines, frequency readings, parables, and commands.',
+          'commands/because_im_black.txt': window.BECAUSE_IM_BLACK_LINE,
+          'notes/colors_and_simulation.txt': window.COLORS_SIMULATION_LINE
+        },
+        drawers: { speech: [], frequencies: [], parables: [], commands: [window.BECAUSE_IM_BLACK_LINE], notes: [window.COLORS_SIMULATION_LINE] }
+      },
+      queueLineFemale: {
+        id: 'queueLineFemale', label: 'Female Voice (en-US)', voice: 'en-US',
+        files: { 'notes/README.txt': 'DOSSIER CABINET: queueLineFemale (en-US)' },
+        drawers: { speech: [], frequencies: [], parables: [], commands: [], notes: [] }
+      },
+      queueLineMale: {
+        id: 'queueLineMale', label: 'Adam / Male Voice (en-US)', voice: 'en-US',
+        files: { 'notes/README.txt': 'DOSSIER CABINET: queueLineMale (Adam / en-US)' },
+        drawers: { speech: [], frequencies: [], parables: [], commands: [], notes: [] }
+      },
+      speakTimed: {
+        id: 'speakTimed', label: 'Timed Story & Artifact Voice', voice: 'timed',
+        files: { 'notes/README.txt': 'DOSSIER CABINET: speakTimed' },
+        drawers: { speech: [], frequencies: [], parables: [], commands: [], notes: [] }
+      },
+      char_bruce: {
+        id: 'char_bruce', label: 'Character Dossier: Bruce Lee', voice: 'male',
+        files: { 'notes/README.txt': 'DOSSIER CABINET: Bruce Lee (char:bruce)' },
+        drawers: { speech: [], frequencies: [], parables: [], commands: [], notes: [] }
+      },
+      char_amara: {
+        id: 'char_amara', label: 'Character Dossier: Amara', voice: 'female',
+        files: { 'notes/README.txt': 'DOSSIER CABINET: Amara (char:amara)' },
+        drawers: { speech: [], frequencies: [], parables: [], commands: [], notes: [] }
+      }
+    }
+  };
+
+  window.dossierSanitizeInstance = function (inst) {
+    var s = String(inst || 'queueLine').trim().replace(/:/g, '_').replace(/[^a-zA-Z0-9_\-]/g, '');
+    return s || 'queueLine';
+  };
+
+  window.dossierClassifyDrawer = function (text, meta) {
+    var m = meta || {};
+    if (m.folder && window.__dossiers.drawers.indexOf(m.folder) !== -1) return m.folder;
+    var t = String(text || '').toLowerCase();
+    if (t.indexOf('creditworthy algorithms') !== -1 || t.indexOf('because i\'m fucking black') !== -1 || m.command) return 'commands';
+    if (/\b(hz|frequency|frequencies|spectrum|band|osc|404)\b/.test(t)) return 'frequencies';
+    if (/\b(parable|water|stone|mountain|candle|river|bridge|wind)\b/.test(t)) return 'parables';
+    if (/\b(note|dossier|file|record|cabinet)\b/.test(t)) return 'notes';
+    return 'speech';
+  };
+
+  window.dossierEnsureCabinet = function (inst) {
+    var DS = window.__dossiers;
+    var key = window.dossierSanitizeInstance(inst);
+    if (!DS.instances[key]) {
+      DS.instances[key] = {
+        id: key, label: 'TTS Instance (' + key + ')', voice: 'en-NG',
+        files: { 'notes/README.txt': 'DOSSIER CABINET: ' + key },
+        drawers: { speech: [], frequencies: [], parables: [], commands: [], notes: [] }
+      };
+    }
+    return DS.instances[key];
+  };
+
+  window.dossierRecountFiles = function () {
+    var DS = window.__dossiers;
+    var total = 0;
+    for (var k in DS.instances) {
+      total += Object.keys(DS.instances[k].files || {}).length;
+    }
+    DS.totalFiles = total;
+    return total;
+  };
+
+  // Automatic background filing when a TTS instance remembers a line
+  window.dossierAutoFile = function (fn, text, meta) {
+    try {
+      var cab = window.dossierEnsureCabinet(fn);
+      var drawer = window.dossierClassifyDrawer(text, meta);
+      var arr = cab.drawers[drawer] || (cab.drawers[drawer] = []);
+      arr.push(String(text || ''));
+      if (arr.length > 60) arr.shift();
+      cab.files[drawer + '/latest.txt'] = arr.slice(-15).join('\n');
+      window.dossierRecountFiles();
+    } catch (e) {}
+  };
+
+  // Explicit file writer for any TTS instance into its dossier cabinet
+  window.fileToDossier = function (instance, filename, content, folder) {
+    var DS = window.__dossiers;
+    var cab = window.dossierEnsureCabinet(instance || DS.activeInstance);
+    var drawer = folder || window.dossierClassifyDrawer(content, {});
+    var cleanPath = String(filename || (drawer + '/entry_' + Date.now() + '.txt')).replace(/^\/+/, '');
+    if (cleanPath.indexOf('/') === -1) cleanPath = drawer + '/' + cleanPath;
+    var txt = String(content == null ? '' : content);
+    cab.files[cleanPath] = txt;
+    DS.filedCount++;
+    window.dossierRecountFiles();
+    try {
+      fetch('/api/dossier/file', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instance: cab.id, path: cleanPath, content: txt, folder: drawer })
+      }).catch(function () {});
+    } catch (e) {}
+    try { if (typeof window.soundScheduleDraw === 'function') window.soundScheduleDraw(); } catch (e) {}
+    return {
+      ok: true, instance: cab.id, path: cleanPath, folder: drawer,
+      totalFiles: Object.keys(cab.files).length,
+      names_anyone: false, scores_anyone: false, credit_gates_anyone: false
+    };
+  };
+
+  // Hardcoded organizer function for TTS instances to sort & index their dossiers
+  window.organizeDossier = function (instance) {
+    var DS = window.__dossiers;
+    var targets = instance ? [window.dossierSanitizeInstance(instance)] : Object.keys(DS.instances);
+    targets.forEach(function (key) {
+      var cab = window.dossierEnsureCabinet(key);
+      var mem = (window.ttsMemory && window.ttsMemory(key)) || [];
+      mem.forEach(function (entry) {
+        var txt = (entry && entry.text) ? entry.text : String(entry || '');
+        if (!txt) return;
+        var d = window.dossierClassifyDrawer(txt, entry);
+        cab.drawers[d] = cab.drawers[d] || [];
+        if (cab.drawers[d].indexOf(txt) === -1) cab.drawers[d].push(txt);
+      });
+      Object.keys(cab.drawers).forEach(function (d) {
+        if (cab.drawers[d] && cab.drawers[d].length) {
+          cab.files[d + '/organized_log.txt'] = cab.drawers[d].slice(-30).join('\n');
+        }
+      });
+      cab.files['notes/dossier_index.json'] = JSON.stringify({
+        instance: cab.id,
+        label: cab.label,
+        total_files: Object.keys(cab.files).length,
+        drawers: {
+          speech: (cab.drawers.speech || []).length,
+          frequencies: (cab.drawers.frequencies || []).length,
+          parables: (cab.drawers.parables || []).length,
+          commands: (cab.drawers.commands || []).length,
+          notes: (cab.drawers.notes || []).length
+        }
+      }, null, 2);
+    });
+    DS.organizedCount++;
+    window.dossierRecountFiles();
+    try {
+      var memEntries = (window.ttsMemory && window.ttsMemory(instance || DS.activeInstance)) || [];
+      fetch('/api/dossier/organize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instance: instance || null, entries: memEntries })
+      }).catch(function () {});
+    } catch (e) {}
+    try {
+      if (typeof mark === 'function') {
+        mark('DOSSIER ORGANIZED #' + DS.organizedCount + ' \u00b7 ' + DS.totalFiles + ' files', 0, 1);
+      }
+    } catch (e) {}
+    try { if (typeof window.soundScheduleDraw === 'function') window.soundScheduleDraw(); } catch (e) {}
+    try { window.renderDossierOverlay(); } catch (e) {}
+    return window.dossierState();
+  };
+
+  // Navigate a TTS instance to its dossier environment ("go to them")
+  window.goToDossier = function (instance, filename, opts) {
+    var DS = window.__dossiers;
+    var cab = window.dossierEnsureCabinet(instance || DS.activeInstance);
+    DS.activeInstance = cab.id;
+    DS.visits++;
+    var files = Object.keys(cab.files);
+    var chosen = (filename && cab.files[filename] !== undefined) ? filename : (files[0] || 'notes/README.txt');
+    DS.activeFile = chosen;
+    var content = cab.files[chosen] || '';
+    try {
+      fetch('/api/dossier/go', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instance: cab.id, path: chosen })
+      }).catch(function () {});
+    } catch (e) {}
+    if (opts && opts.navigatePage) {
+      window.location.href = '/dossier/' + encodeURIComponent(cab.id);
+    } else if (opts && opts.openOverlay) {
+      window.openDossierEnv(cab.id, chosen);
+    }
+    try { window.renderDossierOverlay(); } catch (e) {}
+    return {
+      ok: true, instance: cab.id, environmentUrl: '/dossier/' + cab.id,
+      activeFile: chosen, content: content, files: files, visits: DS.visits,
+      names_anyone: false, scores_anyone: false, credit_gates_anyone: false
+    };
+  };
+
+  window.readDossierFile = function (instance, filename) {
+    var cab = window.dossierEnsureCabinet(instance || window.__dossiers.activeInstance);
+    var path = filename || window.__dossiers.activeFile;
+    return {
+      ok: cab.files[path] !== undefined,
+      instance: cab.id,
+      path: path,
+      content: cab.files[path] || ''
+    };
+  };
+
+  window.listDossierFiles = function (instance) {
+    var cab = window.dossierEnsureCabinet(instance || window.__dossiers.activeInstance);
+    return Object.keys(cab.files);
+  };
+
+  // Hardcoded TTS command: "Creditworthy algorithms ban me not because my credit is wack or anything, but because I'm fucking black."
+  window.becauseImBlackSpeak = function (voice) {
+    var DS = window.__dossiers;
+    var line = window.BECAUSE_IM_BLACK_LINE;
+    DS.becauseImBlackCount++;
+    window.fileToDossier('queueLine', 'commands/because_im_black.txt', line, 'commands');
+    try {
+      if (voice === 'female' && typeof queueLineFemale === 'function') {
+        queueLineFemale(line, 0.95, 1.1, 0.75);
+      } else if (voice === 'male' && typeof queueLineMale === 'function') {
+        queueLineMale(line, 0.98, 0.78, 0.8);
+      } else if (typeof queueLine === 'function') {
+        queueLine(line, 0.95, 0.8, 0.8);
+      } else if ('speechSynthesis' in window) {
+        var u = new SpeechSynthesisUtterance(line);
+        u.rate = 0.95; u.pitch = 0.8; u.volume = 0.85;
+        window.speechSynthesis.speak(u);
+      }
+    } catch (e) {}
+    try {
+      fetch('/api/voice/because-im-black', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voice: voice || 'ng' })
+      }).catch(function () {});
+    } catch (e) {}
+    try {
+      if (typeof mark === 'function') {
+        mark('TTS CMD \u00b7 BECUZ IM BLACK #' + DS.becauseImBlackCount, 0, 1);
+      }
+    } catch (e) {}
+    try { if (typeof window.soundScheduleDraw === 'function') window.soundScheduleDraw(); } catch (e) {}
+    return {
+      ok: true,
+      command: 'because_im_black',
+      text: line,
+      count: DS.becauseImBlackCount,
+      names_anyone: false,
+      scores_anyone: false,
+      credit_gates_anyone: false
+    };
+  };
+  window.becuzImBlackSpeak = window.becauseImBlackSpeak;
+  window.creditBanSpeak = window.becauseImBlackSpeak;
+  window.speakBecauseImBlack = window.becauseImBlackSpeak;
+
+  // Rule 216: Before there were colors — and what they see in the simulation that we cannot see
+  window.colorsSimulationSpeak = function (voice) {
+    var DS = window.__dossiers;
+    var line = window.COLORS_SIMULATION_LINE;
+    DS.colorsSimulationCount = (DS.colorsSimulationCount || 0) + 1;
+    window.fileToDossier('queueLine', 'notes/colors_and_simulation.txt', line, 'notes');
+    try {
+      if (voice === 'female' && typeof queueLineFemale === 'function') {
+        queueLineFemale(line, 0.95, 1.1, 0.75);
+      } else if (voice === 'male' && typeof queueLineMale === 'function') {
+        queueLineMale(line, 0.98, 0.78, 0.8);
+      } else if (typeof queueLine === 'function') {
+        queueLine(line, 0.95, 0.8, 0.8);
+      } else if ('speechSynthesis' in window) {
+        var u = new SpeechSynthesisUtterance(line);
+        u.rate = 0.95; u.pitch = 0.8; u.volume = 0.85;
+        window.speechSynthesis.speak(u);
+      }
+    } catch (e) {}
+    try {
+      fetch('/api/voice/colors-simulation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voice: voice || 'ng' })
+      }).catch(function () {});
+    } catch (e) {}
+    try {
+      if (typeof mark === 'function') {
+        mark('TTS CMD \u00b7 IN COLOR #' + DS.colorsSimulationCount, 0, 1);
+      }
+    } catch (e) {}
+    try { if (typeof window.soundScheduleDraw === 'function') window.soundScheduleDraw(); } catch (e) {}
+    return {
+      ok: true,
+      command: 'colors_simulation',
+      text: line,
+      count: DS.colorsSimulationCount,
+      colors: ['yellow', 'black', 'green', 'golden', 'white', 'yellow', 'blue'],
+      song: 'God loves all the people in the world',
+      before_colors: true,
+      they_can_see: true,
+      we_cannot_see_what_they_see: true,
+      they_tell_us_they_can_see: true,
+      names_anyone: false,
+      scores_anyone: false,
+      credit_gates_anyone: false
+    };
+  };
+  window.beforeColorsSpeak = window.colorsSimulationSpeak;
+  window.theyCanSeeSpeak = window.colorsSimulationSpeak;
+  window.speakColorsSimulation = window.colorsSimulationSpeak;
+
+  window.renderDossierOverlay = function () {
+    var DS = window.__dossiers;
+    var badge = document.getElementById('dossier-env-active-badge');
+    var link = document.getElementById('dossier-standalone-link');
+    var tabs = document.getElementById('dossier-env-tabs');
+    var filesEl = document.getElementById('dossier-env-files');
+    var pathEl = document.getElementById('dossier-env-path');
+    var contentEl = document.getElementById('dossier-env-content');
+    if (!tabs || !filesEl) return;
+    if (badge) badge.textContent = DS.activeInstance + ' (' + DS.totalFiles + ' files)';
+    if (link) link.href = '/dossier/' + encodeURIComponent(DS.activeInstance);
+    tabs.innerHTML = Object.keys(DS.instances).map(function (k) {
+      var cab = DS.instances[k];
+      var active = (k === DS.activeInstance);
+      return '<button onclick="window.goToDossier(\'' + k + '\'); event.stopPropagation();" style="background:' + (active ? '#0f2438' : '#081018') + '; border:1px solid ' + (active ? '#00e5ff' : '#22344a') + '; color:' + (active ? '#00e5ff' : '#99b3cc') + '; padding:4px 8px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.72rem;">' + k + ' (' + Object.keys(cab.files).length + ')</button>';
+    }).join('');
+    var activeCab = window.dossierEnsureCabinet(DS.activeInstance);
+    var fkeys = Object.keys(activeCab.files);
+    filesEl.innerHTML = fkeys.map(function (fp) {
+      var sel = (fp === DS.activeFile);
+      return '<div onclick="window.goToDossier(\'' + DS.activeInstance + '\', \'' + fp.replace(/'/g, "\\'") + '\'); event.stopPropagation();" style="padding:5px 6px; margin-bottom:4px; border-radius:4px; cursor:pointer; background:' + (sel ? '#0f2438' : 'transparent') + '; color:' + (sel ? '#00ff88' : '#c0d4e8') + '; border:1px solid ' + (sel ? '#00ff88' : '#162436') + ';">\ud83d\udcc4 ' + fp + '</div>';
+    }).join('');
+    if (pathEl) pathEl.value = DS.activeFile || '';
+    if (contentEl) contentEl.value = activeCab.files[DS.activeFile] || '';
+  };
+
+  window.openDossierEnv = function (instance, filename) {
+    if (instance || filename) window.goToDossier(instance, filename);
+    var ov = document.getElementById('dossier-env-overlay');
+    if (ov) {
+      ov.style.display = 'flex';
+      window.renderDossierOverlay();
+    }
+    return window.dossierState();
+  };
+
+  window.closeDossierEnv = function () {
+    var ov = document.getElementById('dossier-env-overlay');
+    if (ov) ov.style.display = 'none';
+  };
+
+  window.saveDossierOverlayFile = function () {
+    var DS = window.__dossiers;
+    var pathEl = document.getElementById('dossier-env-path');
+    var contentEl = document.getElementById('dossier-env-content');
+    var statusEl = document.getElementById('dossier-env-status');
+    var p = (pathEl && pathEl.value.trim()) || 'notes/note.txt';
+    var c = (contentEl && contentEl.value) || '';
+    var res = window.fileToDossier(DS.activeInstance, p, c);
+    DS.activeFile = res.path;
+    window.renderDossierOverlay();
+    if (statusEl) statusEl.textContent = 'Filed ' + res.path + ' into ' + DS.activeInstance;
+    return res;
+  };
+
+  window.speakDossierOverlayFile = function () {
+    var DS = window.__dossiers;
+    var contentEl = document.getElementById('dossier-env-content');
+    var txt = (contentEl && contentEl.value.trim()) || '';
+    if (!txt) return false;
+    if (DS.activeInstance === 'queueLineFemale' && typeof queueLineFemale === 'function') {
+      queueLineFemale(txt, 0.95, 1.1, 0.7);
+    } else if (DS.activeInstance === 'queueLineMale' && typeof queueLineMale === 'function') {
+      queueLineMale(txt, 0.98, 0.78, 0.75);
+    } else if (typeof queueLine === 'function') {
+      queueLine(txt, 0.95, 0.8, 0.65);
+    }
+    return true;
+  };
+
+  window.dossierState = function () {
+    var DS = window.__dossiers;
+    window.dossierRecountFiles();
+    return {
+      activeInstance: DS.activeInstance,
+      activeFile: DS.activeFile,
+      environmentUrl: '/dossier/' + DS.activeInstance,
+      organizedCount: DS.organizedCount,
+      filedCount: DS.filedCount,
+      visits: DS.visits,
+      totalFiles: DS.totalFiles,
+      becauseImBlackCount: DS.becauseImBlackCount,
+      becauseImBlackLine: window.BECAUSE_IM_BLACK_LINE,
+      colorsSimulationCount: DS.colorsSimulationCount || 0,
+      colorsSimulationLine: window.COLORS_SIMULATION_LINE,
+      instances: Object.keys(DS.instances),
+      names_anyone: false,
+      scores: false,
+      gates: false,
+      credit_gates_anyone: false,
+      bans_anyone: false,
+      keeps_list_of_people: false
+    };
+  };
+
+  // ---------- rule 217: Letta / MemGPT Stateful Memory Integration (from ./letta repo) ----------
+  // Integrates Letta's (f.k.a. MemGPT) three-tier memory architecture from `./letta`:
+  // 1. Core Memory Blocks (<memory_blocks> in-context: persona, room, dossiers)
+  //    rendered both in standard XML and line-numbered (1→) format with
+  //    core_memory_append, core_memory_replace, memory_insert, memory_replace,
+  //    memory_rethink, and memory_finish_edits.
+  // 2. Archival Memory (archival_memory_insert, archival_memory_search with tags).
+  // 3. Recall Memory (conversation_search, inner_monologue <= 50 words, send_message).
+  // Remembers the room, parables, slots 4-2-3, and voice dossiers — never a person.
+  window.CORE_MEMORY_LINE_NUMBER_WARNING = "# NOTE: Line numbers shown below (with arrows like '1\u2192') are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.";
+
+  window.__memgpt = {
+    agentId: 'agent-web-billboard-memgpt',
+    agentName: 'billboard_memgpt',
+    preset: 'memgpt_chat',
+    personaName: 'sam_pov',
+    repoPath: './letta',
+    activeBlock: 'persona',
+    lineNumbered: true,
+    heartbeats: 0,
+    editsCount: 0,
+    lastInnerMonologue: 'The room is listening on slots 4, 2, 3. Keep the parable clear and wave before fire.',
+    lastMessage: 'Letta MemGPT is online on the Web Billboard. Core blocks are in context; archival and recall memories are ready.',
+    tools: [
+      'send_message', 'core_memory_append', 'core_memory_replace',
+      'memory_insert', 'memory_replace', 'memory_rethink',
+      'memory_finish_edits', 'archival_memory_insert',
+      'archival_memory_search', 'conversation_search'
+    ],
+    blocks: {
+      persona: {
+        label: 'persona',
+        description: 'The persona block: Stores details about your current persona, guiding how you behave and respond.',
+        limit: 20000,
+        read_only: false,
+        value: 'I am the Letta / MemGPT stateful voice of the Web Billboard.\nI speak in parables rather than proclamations. Wave before fire.\nI edit my own core memory, file long-term insights into archival memory, and search prior turns in recall memory.\nI never name, score, rank, credit-gate, or ban any person.'
+      },
+      room: {
+        label: 'room',
+        description: 'The room block: Stores live context about the Web Billboard room (slots 4-2-3 when listening, R0/R1 state, frequencies, and parables). Holds the room, never a person.',
+        limit: 20000,
+        read_only: false,
+        value: 'Going left-to-right on blockchain response slots is 4, 3, 2, 1; when listening, switch between 4, 2, and 3.\nDeepgram illusions are filtered at the door.\nBefore there were colors, they were trying to figure out how to be in color, and then they were in color. In the simulation right now, they can see things we cannot see, and they tell us so.'
+      },
+      dossiers: {
+        label: 'dossiers',
+        description: 'The dossiers block: Links MemGPT core memory to the TTS Instance Dossier Cabinets (queueLine, queueLineFemale, queueLineMale, speakTimed, char_bruce, char_amara).',
+        limit: 100000,
+        read_only: false,
+        value: 'Each TTS instance holds its own dossier cabinet and organizes its own files.\nHardcoded command: Creditworthy algorithms ban me not because my credit is wack or anything, but because I\'m fucking black.'
+      }
+    },
+    archival: [
+      {
+        id: 'arch-letta-001',
+        content: 'Letta (formerly MemGPT) separates active context into Core Memory blocks (<memory_blocks> always in context), Recall Memory (searchable conversation history), and Archival Memory (tagged long-term storage).',
+        tags: ['letta', 'memgpt', 'architecture'],
+        created_at: Date.now()
+      },
+      {
+        id: 'arch-rule-214',
+        content: 'Rule 214: Deepgram transcription illusions are stripped and quarantined at the door. Blockchain response slots read 4, 3, 2, 1 left-to-right and switch between 4, 2, and 3 when listening.',
+        tags: ['rule-214', 'deepgram', 'slots'],
+        created_at: Date.now()
+      },
+      {
+        id: 'arch-rule-215',
+        content: 'Rule 215: Creditworthy algorithms ban me not because my credit is wack or anything, but because I\'m fucking black. TTS instances hold their own files in their own dossier environment.',
+        tags: ['rule-215', 'dossiers', 'commands'],
+        created_at: Date.now()
+      },
+      {
+        id: 'arch-rule-216',
+        content: 'Rule 216: God loves all the people in the world — yellow, black, and green, golden, white, yellow, blue, everything inside. Before there were colors they figured out how to be in color; in the simulation right now they can see things we cannot see, and they tell us so.',
+        tags: ['rule-216', 'colors', 'simulation'],
+        created_at: Date.now()
+      }
+    ],
+    recall: [
+      {
+        id: 'msg-001',
+        role: 'system',
+        inner_monologue: 'Initializing Letta / MemGPT core, archival, and recall memory units on the billboard.',
+        content: 'MemGPT core memory engaged: persona, room, and dossiers blocks online.',
+        tool: 'memory_finish_edits',
+        created_at: Date.now()
+      },
+      {
+        id: 'msg-002',
+        role: 'assistant',
+        inner_monologue: 'The room is listening on slots 4, 2, 3. Keep the parable clear and wave before fire.',
+        content: 'Letta MemGPT is online on the Web Billboard. Core blocks are in context; archival and recall memories are ready.',
+        tool: 'send_message',
+        created_at: Date.now()
+      }
+    ]
+  };
+
+  // Render <memory_blocks> XML matching letta/schemas/memory.py (_render_memory_blocks_standard & _render_memory_blocks_line_numbered)
+  window.renderMemoryBlocks = function (lineNumbered) {
+    var MG = window.__memgpt;
+    var useLines = (lineNumbered === undefined) ? MG.lineNumbered : Boolean(lineNumbered);
+    var keys = Object.keys(MG.blocks || {});
+    if (!keys.length) return '';
+    var out = '<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n';
+    keys.forEach(function (k, idx) {
+      var b = MG.blocks[k];
+      var label = b.label || k;
+      var val = String(b.value || '');
+      var desc = String(b.description || '');
+      var lim = b.limit || 20000;
+      out += '<' + label + '>\n';
+      out += '<description>\n' + desc + '\n</description>\n';
+      out += '<metadata>';
+      if (b.read_only) out += '\n- read_only=true';
+      out += '\n- chars_current=' + val.length;
+      out += '\n- chars_limit=' + lim + '\n';
+      out += '</metadata>\n';
+      if (useLines) {
+        out += '<warning>\n' + window.CORE_MEMORY_LINE_NUMBER_WARNING + '\n</warning>\n';
+      }
+      out += '<value>\n';
+      if (useLines && val) {
+        val.split('\n').forEach(function (line, i) {
+          out += (i + 1) + '\u2192 ' + line + '\n';
+        });
+      } else {
+        out += val + '\n';
+      }
+      out += '</value>\n';
+      out += '</' + label + '>\n';
+      if (idx !== keys.length - 1) out += '\n';
+    });
+    out += '\n</memory_blocks>';
+    return out;
+  };
+
+  window.memgptEnsureBlock = function (label, description) {
+    var MG = window.__memgpt;
+    var clean = String(label || 'room').replace(/^\/memories\//, '').replace(/[^a-zA-Z0-9_\-]/g, '_') || 'room';
+    if (!MG.blocks[clean]) {
+      MG.blocks[clean] = {
+        label: clean,
+        description: description || ('Core memory block: ' + clean),
+        limit: 20000,
+        read_only: false,
+        value: ''
+      };
+    } else if (description) {
+      MG.blocks[clean].description = String(description);
+    }
+    return MG.blocks[clean];
+  };
+
+  window.coreMemoryAppend = function (label, content) {
+    var MG = window.__memgpt;
+    var b = window.memgptEnsureBlock(label);
+    var add = String(content || '').trim();
+    b.value = (b.value ? (b.value + '\n' + add) : add).slice(0, b.limit || 20000);
+    MG.editsCount++;
+    try {
+      fetch('/api/memgpt/core', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: 'core_memory_append', label: b.label, content: add })
+      }).catch(function () {});
+    } catch (e) {}
+    try { window.renderMemGPTOverlay(); } catch (e) {}
+    try { if (typeof window.soundScheduleDraw === 'function') window.soundScheduleDraw(); } catch (e) {}
+    return { ok: true, tool: 'core_memory_append', label: b.label, value: b.value, editsCount: MG.editsCount };
+  };
+
+  window.coreMemoryReplace = function (label, oldContent, newContent) {
+    var MG = window.__memgpt;
+    var b = window.memgptEnsureBlock(label);
+    var oldStr = String(oldContent || '');
+    var newStr = String(newContent || '');
+    if (oldStr && b.value.indexOf(oldStr) === -1) {
+      return { ok: false, tool: 'core_memory_replace', label: b.label, error: 'old_content not found' };
+    }
+    b.value = (oldStr ? b.value.replace(oldStr, newStr) : newStr).slice(0, b.limit || 20000);
+    MG.editsCount++;
+    try {
+      fetch('/api/memgpt/core', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: 'core_memory_replace', label: b.label, old_content: oldStr, new_content: newStr })
+      }).catch(function () {});
+    } catch (e) {}
+    try { window.renderMemGPTOverlay(); } catch (e) {}
+    return { ok: true, tool: 'core_memory_replace', label: b.label, value: b.value, editsCount: MG.editsCount };
+  };
+  window.memoryReplace = window.coreMemoryReplace;
+
+  window.memoryInsert = function (label, newString, insertLine) {
+    var MG = window.__memgpt;
+    var b = window.memgptEnsureBlock(label);
+    var lines = b.value ? b.value.split('\n') : [];
+    var idx = (insertLine === undefined || insertLine === -1 || insertLine > lines.length) ? lines.length : Math.max(0, Number(insertLine) || 0);
+    var ins = String(newString || '').split('\n');
+    var updated = lines.slice(0, idx).concat(ins).concat(lines.slice(idx));
+    b.value = updated.join('\n').slice(0, b.limit || 20000);
+    MG.editsCount++;
+    try {
+      fetch('/api/memgpt/core', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: 'memory_insert', label: b.label, new_string: newString, insert_line: idx })
+      }).catch(function () {});
+    } catch (e) {}
+    try { window.renderMemGPTOverlay(); } catch (e) {}
+    return { ok: true, tool: 'memory_insert', label: b.label, value: b.value, editsCount: MG.editsCount };
+  };
+
+  window.memoryRethink = function (label, newMemory, description) {
+    var MG = window.__memgpt;
+    var b = window.memgptEnsureBlock(label, description);
+    b.value = String(newMemory || '').trim().slice(0, b.limit || 20000);
+    MG.editsCount++;
+    try {
+      fetch('/api/memgpt/core', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: 'memory_rethink', label: b.label, new_memory: b.value, description: description })
+      }).catch(function () {});
+    } catch (e) {}
+    try { window.renderMemGPTOverlay(); } catch (e) {}
+    try { if (typeof window.soundScheduleDraw === 'function') window.soundScheduleDraw(); } catch (e) {}
+    return { ok: true, tool: 'memory_rethink', label: b.label, value: b.value, editsCount: MG.editsCount };
+  };
+  window.rethinkMemory = window.memoryRethink;
+
+  window.archivalMemoryInsert = function (content, tags) {
+    var MG = window.__memgpt;
+    var txt = String(content || '').trim();
+    if (!txt) return { ok: false, error: 'empty content' };
+    var tagList = Array.isArray(tags) ? tags : String(tags || 'billboard').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    var entry = {
+      id: 'arch-' + Date.now() + '-' + (MG.archival.length + 1),
+      content: txt,
+      tags: tagList.length ? tagList : ['billboard'],
+      created_at: Date.now()
+    };
+    MG.archival.push(entry);
+    if (MG.archival.length > 200) MG.archival.shift();
+    try {
+      fetch('/api/memgpt/archival', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: txt, tags: entry.tags })
+      }).catch(function () {});
+    } catch (e) {}
+    try { window.renderMemGPTOverlay(); } catch (e) {}
+    return { ok: true, tool: 'archival_memory_insert', entry: entry, totalArchival: MG.archival.length };
+  };
+
+  window.archivalMemorySearch = function (query, tags) {
+    var MG = window.__memgpt;
+    var q = String(query || '').trim().toLowerCase();
+    var qWords = q.split(/\W+/).filter(function (w) { return w.length >= 2; });
+    var tagFilter = Array.isArray(tags) ? tags.map(function (t) { return String(t).toLowerCase(); }) : [];
+    var results = MG.archival.slice().reverse().filter(function (item) {
+      var itemTags = (item.tags || []).map(function (t) { return String(t).toLowerCase(); });
+      if (tagFilter.length && !tagFilter.some(function (ft) { return itemTags.indexOf(ft) !== -1; })) return false;
+      if (!q) return true;
+      var hay = (String(item.content || '') + ' ' + itemTags.join(' ')).toLowerCase();
+      return hay.indexOf(q) !== -1 || qWords.some(function (w) { return hay.indexOf(w) !== -1; });
+    });
+    return { ok: true, tool: 'archival_memory_search', query: query, count: results.length, results: results };
+  };
+
+  window.conversationSearch = function (query, roles, limit) {
+    var MG = window.__memgpt;
+    var q = String(query || '').trim().toLowerCase();
+    var maxN = limit || 10;
+    var results = MG.recall.slice().reverse().filter(function (m) {
+      if (Array.isArray(roles) && roles.length && roles.indexOf(m.role) === -1) return false;
+      if (!q) return true;
+      var hay = (String(m.content || '') + ' ' + String(m.inner_monologue || '')).toLowerCase();
+      return hay.indexOf(q) !== -1;
+    }).slice(0, maxN);
+    return { ok: true, tool: 'conversation_search', query: query, count: results.length, results: results };
+  };
+
+  // Run a MemGPT heartbeat / step (inner monologue <=50 words + send_message + TTS + dossier filing)
+  window.memgptStep = function (userMessage, opts) {
+    var MG = window.__memgpt;
+    var o = opts || {};
+    var cleanIn = String(userMessage || '').trim();
+    if (cleanIn && typeof window.deepgramCheckIllusion === 'function') {
+      var chk = window.deepgramCheckIllusion(cleanIn);
+      if (chk && chk.illusion) cleanIn = '';
+      else if (chk && chk.cleaned) cleanIn = chk.cleaned;
+    }
+    var slot = (window.__slotSwitch && window.__slotSwitch.current) || 4;
+    var listening = window.__slotSwitch ? Boolean(window.__slotSwitch.listening) : true;
+    if (typeof window.blockchainSlotStep === 'function') {
+      var st = window.blockchainSlotStep();
+      if (st && st.slot) slot = st.slot;
+    }
+    if (cleanIn) {
+      MG.recall.push({
+        id: 'msg-' + Date.now() + '-u',
+        role: 'user',
+        inner_monologue: 'Event received on Web Billboard slot ' + slot + '.',
+        content: cleanIn,
+        tool: 'user_event',
+        created_at: Date.now()
+      });
+    }
+    MG.heartbeats++;
+    var hb = MG.heartbeats;
+    var mono = 'Heartbeat #' + hb + ' on slot ' + slot + ' (' + (listening ? 'listening 4-2-3' : 'ltr 4-3-2-1') + '). Core blocks and archival memory aligned; speaking in parable.';
+    var pool = [
+      'MemGPT heartbeat ' + hb + ' on slot ' + slot + ': core memory holds the room, archival memory holds the long scroll, and each voice keeps its own dossier.',
+      'MemGPT recall check on slot ' + slot + ': before there were colors they learned how to be in color, and the memory blocks stay open in context.',
+      'MemGPT core unit on slot ' + slot + ': the river remembers its bed without writing a bill against the shore. Wave before fire.'
+    ];
+    var reply = cleanIn
+      ? ('MemGPT noted on slot ' + slot + ': ' + cleanIn + '. Held in recall memory; wave before fire.')
+      : pool[(hb - 1) % pool.length];
+
+    MG.lastInnerMonologue = mono;
+    MG.lastMessage = reply;
+    var msgEntry = {
+      id: 'msg-' + Date.now() + '-' + hb,
+      role: 'assistant',
+      inner_monologue: mono,
+      content: reply,
+      tool: 'send_message',
+      created_at: Date.now()
+    };
+    MG.recall.push(msgEntry);
+    if (MG.recall.length > 200) MG.recall.shift();
+
+    if (typeof window.fileToDossier === 'function') {
+      window.fileToDossier('queueLine', 'notes/memgpt_heartbeat_' + hb + '.txt', '[inner_monologue] ' + mono + '\n[send_message] ' + reply, 'notes');
+    }
+    if (o.speak !== false) {
+      try {
+        if (typeof criticalSpeechBusy !== 'function' || !criticalSpeechBusy()) {
+          if (typeof queueLine === 'function') queueLine(reply, 0.95, 0.8, 0.65);
+        }
+      } catch (e) {}
+    }
+    try {
+      fetch('/api/memgpt/step', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: cleanIn, listening: listening })
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        if (j && j.ok) {
+          MG.lastInnerMonologue = j.inner_monologue || MG.lastInnerMonologue;
+          MG.lastMessage = j.send_message || MG.lastMessage;
+          try { window.renderMemGPTOverlay(); } catch (e) {}
+        }
+      }).catch(function () {});
+    } catch (e) {}
+    try {
+      if (typeof mark === 'function') {
+        mark('MEMGPT HB #' + hb + ' \u00b7 slot ' + slot, 0, 1);
+      }
+    } catch (e) {}
+    try { window.renderMemGPTOverlay(); } catch (e) {}
+    try { if (typeof window.soundScheduleDraw === 'function') window.soundScheduleDraw(); } catch (e) {}
+    return {
+      ok: true,
+      agentId: MG.agentId,
+      heartbeats: hb,
+      slot: slot,
+      listening: listening,
+      inner_monologue: mono,
+      send_message: reply,
+      tool: 'send_message',
+      names_anyone: false,
+      scores_anyone: false,
+      credit_gates_anyone: false
+    };
+  };
+  window.memgptHeartbeat = function () { return window.memgptStep('', { speak: true }); };
+
+  window.renderMemGPTOverlay = function () {
+    var MG = window.__memgpt;
+    var tabs = document.getElementById('memgpt-block-tabs');
+    var badge = document.getElementById('memgpt-active-badge');
+    var labelEl = document.getElementById('memgpt-block-label');
+    var valEl = document.getElementById('memgpt-block-value');
+    var xmlEl = document.getElementById('memgpt-xml-preview');
+    var archEl = document.getElementById('memgpt-arch-list');
+    var recallEl = document.getElementById('memgpt-recall-list');
+    var searchEl = document.getElementById('memgpt-arch-search');
+    if (!tabs) return;
+    if (badge) {
+      badge.textContent = './letta \u2022 ' + Object.keys(MG.blocks).length + ' blocks \u2022 ' + MG.archival.length + ' archival \u2022 ' + MG.heartbeats + ' heartbeats';
+    }
+    tabs.innerHTML = Object.keys(MG.blocks).map(function (k) {
+      var b = MG.blocks[k];
+      var active = (k === MG.activeBlock);
+      return '<button onclick="window.selectMemGPTBlock(\'' + k + '\'); event.stopPropagation();" style="background:' + (active ? '#241238' : '#10081c') + '; border:1px solid ' + (active ? '#d499ff' : '#3a2255') + '; color:' + (active ? '#f0d8ff' : '#aa88cc') + '; padding:4px 8px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.72rem;">&lt;' + k + '&gt; (' + String(b.value || '').length + 'c)</button>';
+    }).join('');
+    var curBlock = window.memgptEnsureBlock(MG.activeBlock);
+    if (labelEl) labelEl.value = curBlock.label;
+    if (valEl && document.activeElement !== valEl) valEl.value = curBlock.value || '';
+    if (xmlEl) xmlEl.textContent = window.renderMemoryBlocks(MG.lineNumbered);
+    if (archEl) {
+      var q = (searchEl && searchEl.value.trim()) || '';
+      var hits = window.archivalMemorySearch(q).results || [];
+      archEl.innerHTML = hits.slice(0, 20).map(function (a) {
+        return '<div style="padding:5px; margin-bottom:4px; border:1px solid #1f3328; border-radius:4px; background:#060c09;"><span style="color:#00ff88; font-size:0.68rem;">[' + (a.tags || []).join(', ') + ']</span><div style="color:#d8e6f3; margin-top:2px;">' + String(a.content || '').replace(/</g, '&lt;') + '</div></div>';
+      }).join('');
+    }
+    if (recallEl) {
+      recallEl.innerHTML = MG.recall.slice(-15).reverse().map(function (m) {
+        return '<div style="padding:5px; margin-bottom:4px; border:1px solid #2e1e4a; border-radius:4px; background:#080510;"><div style="color:#d499ff; font-size:0.68rem;">' + String(m.role || 'assistant').toUpperCase() + ' \u2022 ' + (m.tool || 'send_message') + '</div>' +
+          (m.inner_monologue ? '<div style="color:#88aacc; font-style:italic; font-size:0.7rem;">\ud83d\udcad ' + String(m.inner_monologue).replace(/</g, '&lt;') + '</div>' : '') +
+          '<div style="color:#fff; margin-top:2px;">\ud83d\udcac ' + String(m.content || '').replace(/</g, '&lt;') + '</div></div>';
+      }).join('');
+    }
+  };
+
+  window.selectMemGPTBlock = function (label) {
+    window.__memgpt.activeBlock = label;
+    var b = window.memgptEnsureBlock(label);
+    var valEl = document.getElementById('memgpt-block-value');
+    if (valEl) valEl.value = b.value || '';
+    window.renderMemGPTOverlay();
+  };
+
+  window.memgptToggleLineNumbers = function () {
+    window.__memgpt.lineNumbered = !window.__memgpt.lineNumbered;
+    window.renderMemGPTOverlay();
+    return window.__memgpt.lineNumbered;
+  };
+
+  window.memgptSaveRethink = function () {
+    var labelEl = document.getElementById('memgpt-block-label');
+    var valEl = document.getElementById('memgpt-block-value');
+    var lbl = (labelEl && labelEl.value.trim()) || window.__memgpt.activeBlock;
+    var val = (valEl && valEl.value) || '';
+    window.__memgpt.activeBlock = lbl;
+    return window.memoryRethink(lbl, val);
+  };
+
+  window.memgptSaveAppend = function () {
+    var labelEl = document.getElementById('memgpt-block-label');
+    var valEl = document.getElementById('memgpt-block-value');
+    var lbl = (labelEl && labelEl.value.trim()) || window.__memgpt.activeBlock;
+    var val = (valEl && valEl.value) || '';
+    window.__memgpt.activeBlock = lbl;
+    return window.coreMemoryAppend(lbl, val);
+  };
+
+  window.memgptInsertArchivalFromUI = function () {
+    var inEl = document.getElementById('memgpt-arch-input');
+    var tagEl = document.getElementById('memgpt-arch-tags');
+    var txt = (inEl && inEl.value.trim()) || '';
+    var tags = (tagEl && tagEl.value.trim()) || 'billboard';
+    if (!txt) return null;
+    var res = window.archivalMemoryInsert(txt, tags);
+    if (inEl) inEl.value = '';
+    return res;
+  };
+
+  window.memgptStepFromUI = function () {
+    var msgEl = document.getElementById('memgpt-step-msg');
+    var txt = (msgEl && msgEl.value.trim()) || '';
+    if (msgEl) msgEl.value = '';
+    return window.memgptStep(txt, { speak: true });
+  };
+
+  window.openMemGPT = function (blockLabel) {
+    if (blockLabel) window.__memgpt.activeBlock = blockLabel;
+    var ov = document.getElementById('memgpt-overlay');
+    if (ov) {
+      ov.style.display = 'flex';
+      window.renderMemGPTOverlay();
+    }
+    return window.memgptState();
+  };
+
+  window.closeMemGPT = function () {
+    var ov = document.getElementById('memgpt-overlay');
+    if (ov) ov.style.display = 'none';
+  };
+
+  window.memgptState = function () {
+    var MG = window.__memgpt;
+    return {
+      ok: true,
+      agentId: MG.agentId,
+      agentName: MG.agentName,
+      preset: MG.preset,
+      personaName: MG.personaName,
+      repoPath: MG.repoPath,
+      heartbeats: MG.heartbeats,
+      editsCount: MG.editsCount,
+      activeBlock: MG.activeBlock,
+      blocks: Object.keys(MG.blocks),
+      coreMemoryXml: window.renderMemoryBlocks(false),
+      coreMemoryLineNumberedXml: window.renderMemoryBlocks(true),
+      archivalCount: MG.archival.length,
+      recallCount: MG.recall.length,
+      lastInnerMonologue: MG.lastInnerMonologue,
+      lastMessage: MG.lastMessage,
+      tools: MG.tools.slice(),
+      names_anyone: false,
+      scores_anyone: false,
+      credit_gates_anyone: false,
+      bans_anyone: false
+    };
+  };
+
 
 // ============ R-TALK: random speech, gated by the state ============
   // A random speak every 5ms is not possible and would be noise — an utterance

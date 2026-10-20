@@ -20,6 +20,8 @@ regime_state.json
 regime_tape.jsonl
 regime_log.txt
 guardian_state.json
+memgpt_state.json
+letta/
 
 # Scratch files
 scratch/

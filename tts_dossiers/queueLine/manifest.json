@@ -1,0 +1,70 @@
+{
+  "instance": "queueLine",
+  "label": "Primary Voice (en-NG)",
+  "voice": "en-NG",
+  "environment_path": "/dossier/queueLine",
+  "total_files": 7,
+  "drawers": {
+    "speech": 2,
+    "frequencies": 0,
+    "parables": 0,
+    "commands": 1,
+    "notes": 4
+  },
+  "files": [
+    {
+      "path": "speech/voice_1792414921913.txt",
+      "name": "voice_1792414921913.txt",
+      "folder": "speech",
+      "size": 104,
+      "updated_at": 1792414921909
+    },
+    {
+      "path": "speech/voice_1792415897250.txt",
+      "name": "voice_1792415897250.txt",
+      "folder": "speech",
+      "size": 533,
+      "updated_at": 1792415897248
+    },
+    {
+      "path": "commands/because_im_black.txt",
+      "name": "because_im_black.txt",
+      "folder": "commands",
+      "size": 104,
+      "updated_at": 1792414921909
+    },
+    {
+      "path": "notes/README.txt",
+      "name": "README.txt",
+      "folder": "notes",
+      "size": 163,
+      "updated_at": 1792414921905
+    },
+    {
+      "path": "notes/colors_and_simulation.txt",
+      "name": "colors_and_simulation.txt",
+      "folder": "notes",
+      "size": 533,
+      "updated_at": 1792415897244
+    },
+    {
+      "path": "notes/dossier_index.json",
+      "name": "dossier_index.json",
+      "folder": "notes",
+      "size": 1282,
+      "updated_at": 1792415897188
+    },
+    {
+      "path": "notes/memgpt_heartbeat_1.txt",
+      "name": "memgpt_heartbeat_1.txt",
+      "folder": "notes",
+      "size": 409,
+      "updated_at": 1792469925603
+    }
+  ],
+  "updated_at": 1792469925614,
+  "names_anyone": false,
+  "scores_anyone": false,
+  "credit_gates_anyone": false,
+  "bans_anyone": false
+}

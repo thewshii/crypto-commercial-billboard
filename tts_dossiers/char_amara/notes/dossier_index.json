@@ -1,0 +1,35 @@
+{
+  "instance": "char_amara",
+  "label": "Character Dossier: Amara",
+  "voice": "female",
+  "environment_path": "/dossier/char_amara",
+  "total_files": 2,
+  "drawers": {
+    "speech": 0,
+    "frequencies": 0,
+    "parables": 0,
+    "commands": 0,
+    "notes": 2
+  },
+  "files": [
+    {
+      "path": "notes/README.txt",
+      "name": "README.txt",
+      "folder": "notes",
+      "size": 85,
+      "updated_at": 1792414921909
+    },
+    {
+      "path": "notes/dossier_index.json",
+      "name": "dossier_index.json",
+      "folder": "notes",
+      "size": 743,
+      "updated_at": 1792415864314
+    }
+  ],
+  "updated_at": 1792415897199,
+  "names_anyone": false,
+  "scores_anyone": false,
+  "credit_gates_anyone": false,
+  "bans_anyone": false
+}

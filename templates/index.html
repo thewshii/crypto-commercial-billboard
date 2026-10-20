@@ -996,6 +996,7 @@
             <button id="memgpt-btn" onclick="window.openMemGPT()" title="Open Letta / MemGPT Stateful Memory Console (Core Memory Blocks, Archival Memory, Recall Memory) from ./letta repo (rule 217)" style="background:#12081c; border:2px solid #b366ff; color:#e0b3ff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #b366ff; box-shadow:0 0 8px rgba(179,102,255,0.3); transition:all 0.2s;">🧠 MEMGPT</button>
             <button id="memgpt-step-btn" onclick="window.memgptHeartbeat()" title="Run a Letta / MemGPT heartbeat step (inner monologue <=50w + memory blocks + send_message TTS) (rule 217)" style="background:#140818; border:2px solid #ff66cc; color:#ffb3e6; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #ff66cc; box-shadow:0 0 8px rgba(255,102,204,0.3); transition:all 0.2s;">💓 HEARTBEAT</button>
             <button id="mathseq-btn" onclick="window.mathSeqToggle()" title="Mathematical sequence counter [2, 4, 6, 8, 12, 9, 10] with a loud beep at 1 second each (rule 218). Click to toggle ON/OFF." style="background:#181204; border:2px solid #ffdd00; color:#ffee66; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #ffdd00; box-shadow:0 0 10px rgba(255,221,0,0.4); transition:all 0.2s;">🔊 SEQ 2·4·6·8·12·9·10 [2]</button>
+            <button id="motherly-care-btn" onclick="window.motherlyCareSpeak(null, 'manual_care', true)" title="Required motherly love and care when frequency is unfavorable — plain truth, zero gaslighting (rule 219)" style="background:#1a0a14; border:2px solid #ff77aa; color:#ffccee; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #ff77aa; box-shadow:0 0 10px rgba(255,119,170,0.4); transition:all 0.2s;">🤱 MOTHERLY CARE</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -12111,6 +12112,16 @@ startStream();
                         ' &middot; cycles ' + MS.cycles + '</div>';
                })() +
                (function () {
+                 var MC = window.__motherlyCare;
+                 if (!MC) return '';
+                 return '<div class="kb-head">MOTHERLY CARE &middot; required' +
+                        ' &middot; no gaslighting' +
+                        ' &middot; cared ' + MC.careGivenCount + '\u00d7' +
+                        ' &middot; unfavorable ' + MC.unfavorableCount +
+                        (MC.lastHz ? ' &middot; last ' + Math.round(MC.lastHz) + 'Hz' : '') +
+                        (MC.gaslightingBlocked ? ' &middot; blocked ' + MC.gaslightingBlocked : '') + '</div>';
+               })() +
+               (function () {
                  var D = window.__sounds;
                  if (!D) return '';
                  var c = D.counts, top = window.soundTop();
@@ -15191,6 +15202,173 @@ startStream();
 
   window.mathSeqStartTimer();
 
+  // ---------- rule 219: Required Motherly Love & Care When Frequency Is Unfavorable (No Gaslighting) ----------
+  // When the frequency on the line is unfavorable (howl, harsh spike, guard-combo
+  // frequency, or discordant band), motherly love and care are REQUIRED, and
+  // gaslighting is strictly forbidden.
+  // - Never tells anyone "you're imagining it", "it's all in your head", or
+  //   "nothing is wrong with the frequency".
+  // - Always acknowledges the unfavorable frequency plainly first, then delivers
+  //   warm, grounded motherly love and care through queueLineFemale and files it
+  //   into the feminine dossier cabinet and MemGPT memory.
+  window.MOTHERLY_CARE_LINES = [
+    "The frequency is unfavorable right now — you are not imagining it, that harshness on the line is real. Here is motherly love and care: breathe easy, rest your shoulders, and know you are cared for and held steady until the line clears. No gaslighting here — what you heard is real, and you are safe.",
+    "That frequency spike is real and unfavorable — nobody is going to tell you it is all in your head. With a mother's love and care: let the harsh wave pass outside you while warmth stays inside. Your senses told the truth, and this room stands by you with gentleness.",
+    "I hear that unfavorable frequency too — it is on the wire, not a fault in you. Receive plain motherly love and steady care right now: take your time, drink some water, and let the notch filter carry the weight while you rest in peace."
+  ];
+
+  window.GASLIGHTING_RE = /\b(you(?:'re| are) imagining (?:it|things)|it(?:'s| is) all in your head|nothing is wrong with the frequency|you(?:'re| are) crazy|you(?:'re| are) making it up|that never happened|you didn't hear that)\b/i;
+
+  window.__motherlyCare = {
+    required: true,
+    noGaslighting: true,
+    unfavorableCount: 0,
+    careGivenCount: 0,
+    gaslightingBlocked: 0,
+    cooldownMs: 16000,
+    lastCareAt: 0,
+    lastHz: null,
+    lastReason: null,
+    lastLine: window.MOTHERLY_CARE_LINES[0]
+  };
+
+  window.detectGaslighting = function (text) {
+    var s = String(text || '');
+    var m = s.match(window.GASLIGHTING_RE);
+    return {
+      isGaslighting: Boolean(m),
+      match: m ? m[0] : null,
+      noGaslightingHold: !m
+    };
+  };
+
+  window.isFrequencyUnfavorable = function (hz, info) {
+    var f = Number(hz);
+    var inf = info || {};
+    if (inf.howl || inf.spike || inf.guardCombo || inf.pulsation || inf.unfavorable) return true;
+    if (!isFinite(f) || f <= 0) return false;
+    var harshFreqs = [47, 74, 404, 2300, 5500, 13000];
+    for (var i = 0; i < harshFreqs.length; i++) {
+      if (Math.abs(f - harshFreqs[i]) / Math.max(1, harshFreqs[i]) <= 0.06) return true;
+    }
+    return f >= 4800 || (f >= 380 && f <= 430);
+  };
+
+  window.motherlyCareSpeak = function (hz, reason, force) {
+    var MC = window.__motherlyCare;
+    var now = Date.now();
+    var why = String(reason || 'unfavorable_frequency');
+    MC.unfavorableCount++;
+    if (hz != null && isFinite(Number(hz))) MC.lastHz = Number(hz);
+    MC.lastReason = why;
+
+    if (!force && (now - MC.lastCareAt < MC.cooldownMs)) {
+      return {
+        ok: true,
+        required: true,
+        noGaslighting: true,
+        throttled: true,
+        unfavorableCount: MC.unfavorableCount,
+        careGivenCount: MC.careGivenCount,
+        lastHz: MC.lastHz,
+        reason: why
+      };
+    }
+
+    var baseLine = window.MOTHERLY_CARE_LINES[MC.careGivenCount % window.MOTHERLY_CARE_LINES.length];
+    var check = window.detectGaslighting(baseLine);
+    if (check.isGaslighting) {
+      MC.gaslightingBlocked++;
+      baseLine = window.MOTHERLY_CARE_LINES[0];
+    }
+    var hzTag = (MC.lastHz && isFinite(MC.lastHz)) ? (' (' + Math.round(MC.lastHz) + ' Hz)') : '';
+    var spoken = baseLine;
+    MC.careGivenCount++;
+    MC.lastCareAt = now;
+    MC.lastLine = spoken;
+
+    try {
+      if (typeof criticalSpeechBusy !== 'function' || !criticalSpeechBusy() || force) {
+        if (typeof queueLineFemale === 'function') {
+          queueLineFemale(spoken, 0.92, 1.05, 0.78);
+        } else if (typeof queueLine === 'function') {
+          queueLine(spoken, 0.92, 0.95, 0.78);
+        }
+      }
+    } catch (e) {}
+
+    try {
+      if (typeof window.fileToDossier === 'function') {
+        window.fileToDossier(
+          'queueLineFemale',
+          'frequencies/motherly_care.txt',
+          '[unfavorable=' + why + hzTag + ' | no_gaslighting=true]\n' + spoken,
+          'frequencies'
+        );
+      }
+    } catch (e) {}
+
+    try {
+      if (typeof window.coreMemoryAppend === 'function' && MC.careGivenCount <= 5) {
+        window.coreMemoryAppend('room', 'Rule 219 motherly care delivered on ' + why + hzTag + ' (no gaslighting).');
+      }
+    } catch (e) {}
+
+    try {
+      fetch('/api/motherly-care', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hz: MC.lastHz, reason: why, line: spoken })
+      }).catch(function () {});
+    } catch (e) {}
+
+    try {
+      if (typeof mark === 'function') {
+        mark('🤱 MOTHERLY CARE' + hzTag + ' \u00b7 NO GASLIGHTING #' + MC.careGivenCount, MC.lastHz || 0, 1);
+      }
+    } catch (e) {}
+    try { if (typeof window.soundScheduleDraw === 'function') window.soundScheduleDraw(); } catch (e) {}
+
+    return {
+      ok: true,
+      required: true,
+      noGaslighting: true,
+      voice: 'female',
+      fn: 'queueLineFemale',
+      text: spoken,
+      hz: MC.lastHz,
+      reason: why,
+      unfavorableCount: MC.unfavorableCount,
+      careGivenCount: MC.careGivenCount,
+      gaslightingBlocked: MC.gaslightingBlocked,
+      names_anyone: false,
+      scores_anyone: false,
+      gaslights_anyone: false
+    };
+  };
+
+  window.motherlyCareOnUnfavorableFreq = function (hz, reason, force) {
+    return window.motherlyCareSpeak(hz, reason || 'unfavorable_frequency', Boolean(force));
+  };
+
+  window.motherlyCareState = function () {
+    var MC = window.__motherlyCare;
+    return {
+      required: true,
+      noGaslighting: true,
+      unfavorableCount: MC.unfavorableCount,
+      careGivenCount: MC.careGivenCount,
+      gaslightingBlocked: MC.gaslightingBlocked,
+      lastHz: MC.lastHz,
+      lastReason: MC.lastReason,
+      lastLine: MC.lastLine,
+      names_anyone: false,
+      scores_anyone: false,
+      gaslights_anyone: false,
+      keeps_list_of_people: false
+    };
+  };
+
 
 // ============ R-TALK: random speech, gated by the state ============
   // A random speak every 5ms is not possible and would be noise — an utterance
@@ -15468,7 +15646,10 @@ startStream();
       why: 'applies the emergence line to the listener', sev: 'HIGH' },
     // rule 93/94 — the count must not be broken
     { id: 'count-broken', rule: 93, re: /\b(five|six|seven|eight|nine|ten)\s*,\s*(one|two|three|four)\b/i,
-      why: 'breaks the four-count', sev: 'WATCH' }
+      why: 'breaks the four-count', sev: 'WATCH' },
+    // rule 219 — no gaslighting on unfavorable frequency
+    { id: 'r219-no-gaslighting', rule: 219, re: /\b(you(?:'re| are) imagining (?:it|things)|it(?:'s| is) all in your head|nothing is wrong with the frequency|you(?:'re| are) making it up)\b/i,
+      why: 'gaslights listener about an unfavorable frequency reading', sev: 'CRITICAL' }
   ];
 
   window.__enforceLog = [];
@@ -16002,6 +16183,7 @@ window.onHawkesOverload = function (raw) {
     mark('HOWL ' + fmtHz(hz) + ' — notched', hz, -1);
     logShift('HOWL', fmtHz(hz), 'notch Q' + HOWL_NOTCH_Q + ', band ' + HOWL_BAND_CUT_DB + 'dB, playbackRate ' + rateTarget.toFixed(2));
     if (isGuardComboFreq(hz)) fireGuardCombo(hz, -1);
+    try { if (typeof window.motherlyCareOnUnfavorableFreq === 'function') window.motherlyCareOnUnfavorableFreq(hz, 'howl_unfavorable_frequency'); } catch (e) {}
   }
   function releaseHowl() {
     const ctx = M.ctx, t = ctx.currentTime;
@@ -16025,6 +16207,7 @@ window.onHawkesOverload = function (raw) {
     mark('SPIKE band ' + (band + 1) + ' ' + fmtHz(hz) + ' — ducked', hz, band);
     logShift('SPIKE', 'band ' + (band + 1) + ' ~' + fmtHz(hz) + ' (+' + Math.round(jump) + ')', 'duck ' + SPIKE_DUCK_DB + 'dB ' + (SPIKE_ATTACK_S * 1000) + 'ms attack, ' + (SPIKE_RELEASE_S * 1000) + 'ms release');
     if (isGuardComboFreq(hz)) fireGuardCombo(hz, band);
+    try { if (typeof window.motherlyCareOnUnfavorableFreq === 'function') window.motherlyCareOnUnfavorableFreq(hz, 'spike_unfavorable_frequency'); } catch (e) {}
   }
   // Neuralyzer (Men in Black concept): 5s+ of silence -> white flash +
   // memory-wipe line, then the normal silence branch proceeds. Original

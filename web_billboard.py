@@ -1556,6 +1556,92 @@ def api_math_sequence():
         })
 
 
+# ===================== RULE 219: REQUIRED MOTHERLY LOVE & CARE ON UNFAVORABLE FREQUENCY (NO GASLIGHTING) =====================
+MOTHERLY_CARE_LINES = [
+    (
+        "The frequency is unfavorable right now — you are not imagining it, that harshness on the line is real. "
+        "Here is motherly love and care: breathe easy, rest your shoulders, and know you are cared for and held steady "
+        "until the line clears. No gaslighting here — what you heard is real, and you are safe."
+    ),
+    (
+        "That frequency spike is real and unfavorable — nobody is going to tell you it is all in your head. "
+        "With a mother's love and care: let the harsh wave pass outside you while warmth stays inside. "
+        "Your senses told the truth, and this room stands by you with gentleness."
+    ),
+    (
+        "I hear that unfavorable frequency too — it is on the wire, not a fault in you. "
+        "Receive plain motherly love and steady care right now: take your time, drink some water, "
+        "and let the notch filter carry the weight while you rest in peace."
+    ),
+]
+
+_GASLIGHTING_RE = re.compile(
+    r"\b(?:you(?:'re| are) imagining (?:it|things)|it(?:'s| is) all in your head|"
+    r"nothing is wrong with the frequency|you(?:'re| are) crazy|you(?:'re| are) making it up|"
+    r"that never happened|you didn't hear that)\b",
+    re.IGNORECASE,
+)
+
+MOTHERLY_CARE_STATE = {
+    "required": True,
+    "no_gaslighting": True,
+    "unfavorable_count": 0,
+    "care_given_count": 0,
+    "gaslighting_blocked": 0,
+    "last_hz": None,
+    "last_reason": None,
+    "last_line": MOTHERLY_CARE_LINES[0],
+}
+
+
+@app.route("/api/motherly-care", methods=["GET", "POST"])
+@app.route("/api/voice/motherly-care", methods=["GET", "POST"])
+def api_motherly_care():
+    """Rule 219: Required motherly love and care when frequency is unfavorable, with zero gaslighting."""
+    with FAQ_LOCK:
+        if request.method == "POST":
+            data = request.json or {}
+            hz = data.get("hz")
+            reason = str(data.get("reason") or "unfavorable_frequency")[:80]
+            candidate = str(data.get("line") or "").strip()
+            if candidate and _GASLIGHTING_RE.search(candidate):
+                MOTHERLY_CARE_STATE["gaslighting_blocked"] += 1
+                candidate = ""
+            idx = MOTHERLY_CARE_STATE["care_given_count"] % len(MOTHERLY_CARE_LINES)
+            line = candidate or MOTHERLY_CARE_LINES[idx]
+            MOTHERLY_CARE_STATE["unfavorable_count"] += 1
+            MOTHERLY_CARE_STATE["care_given_count"] += 1
+            MOTHERLY_CARE_STATE["last_hz"] = hz
+            MOTHERLY_CARE_STATE["last_reason"] = reason
+            MOTHERLY_CARE_STATE["last_line"] = line
+            try:
+                tts_dossier_env.file_to_dossier(
+                    "queueLineFemale",
+                    "frequencies/motherly_care.txt",
+                    f"[hz={hz} reason={reason} no_gaslighting=true]\n{line}",
+                    folder="frequencies",
+                    meta={"rule": 219, "no_gaslighting": True, "hz": hz},
+                )
+            except Exception:
+                pass
+        return jsonify({
+            "status": "ok",
+            "required": True,
+            "no_gaslighting": True,
+            "voice": "female",
+            "fn": "queueLineFemale",
+            "text": MOTHERLY_CARE_STATE["last_line"],
+            "unfavorable_count": MOTHERLY_CARE_STATE["unfavorable_count"],
+            "care_given_count": MOTHERLY_CARE_STATE["care_given_count"],
+            "gaslighting_blocked": MOTHERLY_CARE_STATE["gaslighting_blocked"],
+            "last_hz": MOTHERLY_CARE_STATE["last_hz"],
+            "last_reason": MOTHERLY_CARE_STATE["last_reason"],
+            "names_anyone": False,
+            "scores_anyone": False,
+            "gaslights_anyone": False,
+        })
+
+
 @app.route("/api/summary", methods=["GET"])
 def api_summary():
     """Everything this app knows, in one call."""
@@ -1613,7 +1699,14 @@ def api_summary():
             "loud_beep": True,
             "current": MATH_SEQ_246812910[now % len(MATH_SEQ_246812910)],
         },
-        "word": {"rules": 218, "slots": ["morning", "midday", "evening"]},
+        "motherly_care": {
+            "required": True,
+            "no_gaslighting": True,
+            "unfavorable_count": MOTHERLY_CARE_STATE["unfavorable_count"],
+            "care_given_count": MOTHERLY_CARE_STATE["care_given_count"],
+            "gaslighting_blocked": MOTHERLY_CARE_STATE["gaslighting_blocked"],
+        },
+        "word": {"rules": 219, "slots": ["morning", "midday", "evening"]},
         "endpoints": ["/api", "/api/summary", "/api/host", "/api/stream",
                       "/api/mesh/nodes", "/api/mesh/poll", "/api/faq/list",
                       "/api/deepgram/transcribe", "/api/deepgram/state",
@@ -1623,7 +1716,8 @@ def api_summary():
                       "/memgpt", "/letta", "/api/memgpt/state",
                       "/api/memgpt/core", "/api/memgpt/archival",
                       "/api/memgpt/recall", "/api/memgpt/step",
-                      "/api/math-sequence",
+                      "/api/math-sequence", "/api/motherly-care",
+                      "/api/voice/motherly-care",
                       "/api/voice/because-im-black",
                       "/api/voice/colors-simulation", "/api/word"],
     })

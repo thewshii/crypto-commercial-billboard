@@ -3,15 +3,22 @@
   "label": "Female Voice Instance (en-US)",
   "voice": "en-US",
   "environment_path": "/dossier/queueLineFemale",
-  "total_files": 2,
+  "total_files": 3,
   "drawers": {
     "speech": 0,
-    "frequencies": 0,
+    "frequencies": 1,
     "parables": 0,
     "commands": 0,
     "notes": 2
   },
   "files": [
+    {
+      "path": "frequencies/motherly_care.txt",
+      "name": "motherly_care.txt",
+      "folder": "frequencies",
+      "size": 310,
+      "updated_at": 1792471166536
+    },
     {
       "path": "notes/README.txt",
       "name": "README.txt",
@@ -27,7 +34,7 @@
       "updated_at": 1792415897192
     }
   ],
-  "updated_at": 1792469925614,
+  "updated_at": 1792471166541,
   "names_anyone": false,
   "scores_anyone": false,
   "credit_gates_anyone": false,

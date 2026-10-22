@@ -15895,24 +15895,26 @@ startStream();
     var tLabel = document.getElementById('music-current-title');
     var eLabel = document.getElementById('music-engine-name');
     var audioEl = document.getElementById('music-stream-audio');
-    if (tLabel) tLabel.textContent = 'Loading ' + track + '...';
+    if (tLabel) tLabel.textContent = 'Tool invoking ' + track + '...';
 
-    fetch('/api/music/play', {
+    fetch('/api/music/tool/play', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ track: track })
+      body: JSON.stringify({ track_id: track, actor: 'manual', trigger: 'manual' })
     })
     .then(function (r) { return r.json(); })
     .then(function (d) {
       if (d.ok) {
-        if (tLabel) tLabel.textContent = d.track || track;
-        if (eLabel) eLabel.textContent = d.native_engine || 'Web Audio Stream';
-        if (audioEl && d.audio_url) {
-          audioEl.src = d.audio_url;
+        var rc = d.receipt || {};
+        if (tLabel) tLabel.textContent = rc.track_id || track;
+        if (eLabel) eLabel.textContent = (d.driver && d.driver.native_engine) || 'Ledger: Verified Tool Call';
+        var streamUrl = (d.driver && d.driver.audio_url) || ('/sounds/' + (rc.track_id.endsWith('.wav') ? rc.track_id : rc.track_id + '.wav'));
+        if (audioEl && streamUrl) {
+          audioEl.src = streamUrl;
           audioEl.play().catch(function () {});
         }
       } else {
-        if (tLabel) tLabel.textContent = 'Error: ' + (d.error || 'Failed to play');
+        if (tLabel) tLabel.textContent = 'Rejected: ' + (d.reason || d.error || 'Invalid transition');
       }
     })
     .catch(function (err) {
@@ -15925,10 +15927,14 @@ startStream();
     var audioEl = document.getElementById('music-stream-audio');
     if (audioEl) { audioEl.pause(); audioEl.currentTime = 0; }
 
-    fetch('/api/music/stop', { method: 'POST' })
+    fetch('/api/music/tool/stop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actor: 'manual', reason: 'User clicked STOP' })
+    })
     .then(function (r) { return r.json(); })
     .then(function (d) {
-      if (tLabel) tLabel.textContent = 'Stopped';
+      if (tLabel) tLabel.textContent = 'Stopped (Logged to ledger)';
     })
     .catch(function () {});
   };
@@ -15957,14 +15963,14 @@ startStream();
   };
 
   window.musicRefreshStatus = function () {
-    fetch('/api/music/status')
+    fetch('/api/music/now-playing')
     .then(function (r) { return r.json(); })
     .then(function (d) {
-      if (d && d.playback && d.playback.is_playing) {
+      if (d) {
         var tLabel = document.getElementById('music-current-title');
         var eLabel = document.getElementById('music-engine-name');
-        if (tLabel) tLabel.textContent = d.playback.current_track;
-        if (eLabel) eLabel.textContent = d.playback.engine || 'Active';
+        if (tLabel) tLabel.textContent = (d.status === 'PLAYING' ? '▶ ' : (d.status === 'PAUSED' ? '⏸ ' : '⏹ ')) + (d.title || d.track_id || 'IDLE');
+        if (eLabel) eLabel.textContent = 'Ledger State: ' + (d.status || 'IDLE') + ' (Actor: ' + (d.actor || 'none') + ')';
       }
     })
     .catch(function () {});

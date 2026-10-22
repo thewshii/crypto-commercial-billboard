@@ -16,6 +16,7 @@ import langchain_separation
 import network_adapter_manager
 import game_inventory_loop
 import music_player_tools
+import music_playback_tools
 
 
 def _load_env():
@@ -498,6 +499,17 @@ def get_word_reflection():
     incoming = request.json if request.is_json else {}
     slot = incoming.get("slot") or request.args.get("slot")
     force = bool(incoming.get("force", False)) or (request.args.get("force", "").lower() in ("true", "1"))
+
+    # Rule 226: Word segment preempts music immediately with ledger record
+    try:
+        cur_p = music_playback_tools.get_now_playing()
+        if cur_p.get("status") == "PLAYING":
+            music_playback_tools.stop_track(
+                actor="word_segment_scheduler",
+                reason="Pause for the Word reflection preempts music (Rule 226 priority)"
+            )
+    except Exception:
+        pass
     
     reflection, cached = word_segment.generate_word_reflection(
         slot=slot,
@@ -2050,6 +2062,99 @@ def api_langchain_paradox_clarify():
     return jsonify(langchain_separation.rank_and_clarify_constraints(inp))
 
 
+# ===================== RULE 226: THE TOOL-GATED MUSIC PLAYBACK LEDGER =====================
+@app.route("/api/music/now-playing", methods=["GET"])
+def api_music_now_playing():
+    """Rule 226: Return current playback state rebuilt from ledger tail."""
+    return jsonify(music_playback_tools.get_now_playing())
+
+
+@app.route("/api/music/ledger", methods=["GET"])
+def api_music_ledger():
+    """Rule 226: Query the append-only playback ledger."""
+    window = int(request.args.get("window_sec", 3600))
+    track = request.args.get("track_id")
+    actor = request.args.get("actor")
+    trigger = request.args.get("trigger")
+    limit = int(request.args.get("limit", 50))
+    return jsonify(music_playback_tools.query_playback_history(
+        window_sec=window, track_id=track, actor=actor, trigger=trigger, limit=limit
+    ))
+
+
+@app.route("/api/music/summary", methods=["GET"])
+def api_music_summary():
+    """Rule 226: Reduce playback ledger into aggregated metrics."""
+    window = int(request.args.get("window_sec", 86400))
+    return jsonify(music_playback_tools.reduce_playback_summary(window_sec=window))
+
+
+@app.route("/api/music/report", methods=["GET"])
+def api_music_report():
+    """Rule 226: Plain summary report generated from PromptTemplate over ledger window."""
+    return jsonify(music_playback_tools.generate_playback_report())
+
+
+@app.route("/api/music/tool/play", methods=["POST"])
+def api_music_tool_play():
+    """Rule 226 Tool Endpoint: The ONLY way to start music; runs through PLAYBACK_SEQUENCE and appends to ledger."""
+    data = request.json or {}
+    track = str(data.get("track_id") or data.get("track") or "commercial_soundtrack").strip()
+    actor = str(data.get("actor") or "manual").strip()
+    segment = str(data.get("segment") or "music").strip()
+    trigger = str(data.get("trigger") or "manual").strip()
+    volume = float(data.get("volume", 1.0))
+    reason = str(data.get("reason") or "Tool API invocation").strip()
+    return jsonify(music_playback_tools.play_track(
+        track_id=track, actor=actor, segment=segment, trigger=trigger, volume=volume, reason=reason
+    ))
+
+
+@app.route("/api/music/tool/pause", methods=["POST"])
+def api_music_tool_pause():
+    """Rule 226 Tool Endpoint: Pause playback and record to ledger."""
+    data = request.json or {}
+    actor = str(data.get("actor") or "manual").strip()
+    reason = str(data.get("reason") or "Paused by tool").strip()
+    return jsonify(music_playback_tools.pause_track(actor=actor, reason=reason))
+
+
+@app.route("/api/music/tool/resume", methods=["POST"])
+def api_music_tool_resume():
+    """Rule 226 Tool Endpoint: Resume playback and record to ledger."""
+    data = request.json or {}
+    actor = str(data.get("actor") or "manual").strip()
+    reason = str(data.get("reason") or "Resumed by tool").strip()
+    return jsonify(music_playback_tools.resume_track(actor=actor, reason=reason))
+
+
+@app.route("/api/music/tool/stop", methods=["POST"])
+def api_music_tool_stop():
+    """Rule 226 Tool Endpoint: Stop playback and record to ledger."""
+    data = request.json or {}
+    actor = str(data.get("actor") or "manual").strip()
+    reason = str(data.get("reason") or "Stopped by tool").strip()
+    return jsonify(music_playback_tools.stop_track(actor=actor, reason=reason))
+
+
+@app.route("/api/music/tool/skip", methods=["POST"])
+def api_music_tool_skip():
+    """Rule 226 Tool Endpoint: Skip playback, record reason, and record to ledger."""
+    data = request.json or {}
+    actor = str(data.get("actor") or "manual").strip()
+    reason = str(data.get("reason") or "Skipped by tool").strip()
+    return jsonify(music_playback_tools.skip_track(actor=actor, reason=reason))
+
+
+@app.route("/api/music/tool/volume", methods=["POST"])
+def api_music_tool_volume():
+    """Rule 226 Tool Endpoint: Set volume and record to ledger."""
+    data = request.json or {}
+    vol = float(data.get("volume", 1.0))
+    actor = str(data.get("actor") or "manual").strip()
+    return jsonify(music_playback_tools.set_volume(volume=vol, actor=actor))
+
+
 @app.route("/separation", methods=["GET"])
 @app.route("/langchain", methods=["GET"])
 def view_langchain_separation():
@@ -2166,7 +2271,13 @@ def api_summary():
             ],
             "total_tools": len(langchain_separation.LANGCHAIN_SEPARATION_TOOLS),
         },
-        "word": {"rules": 225, "slots": ["morning", "midday", "evening"]},
+        "playback_ledger": {
+            "rule": 226,
+            "now_playing": music_playback_tools.get_now_playing(),
+            "summary": music_playback_tools.reduce_playback_summary(window_sec=86400),
+            "invariant": "The Tool IS the face of the music player — every play is an append-only ledger record.",
+        },
+        "word": {"rules": 226, "slots": ["morning", "midday", "evening"]},
         "endpoints": ["/api", "/api/summary", "/api/host", "/api/stream",
                       "/api/mesh/nodes", "/api/mesh/poll", "/api/faq/list",
                       "/api/deepgram/transcribe", "/api/deepgram/state",
@@ -2201,6 +2312,11 @@ def api_summary():
                       "/api/music/tracks", "/api/music/play",
                       "/api/music/stop", "/api/music/compose",
                       "/api/music/status", "/api/music/guide",
+                      "/api/music/now-playing", "/api/music/ledger",
+                      "/api/music/summary", "/api/music/report",
+                      "/api/music/tool/play", "/api/music/tool/pause",
+                      "/api/music/tool/resume", "/api/music/tool/stop",
+                      "/api/music/tool/skip", "/api/music/tool/volume",
                       "/separation", "/langchain",
                       "/api/voice/because-im-black",
                       "/api/voice/colors-simulation", "/api/word"],

@@ -25,6 +25,7 @@ shared_voices_state.json
 langchain_separation_state.json
 network_adapter_state.json
 game_inventory_state.json
+music_playback_log.jsonl
 letta/
 
 # Scratch files

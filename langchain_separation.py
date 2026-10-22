@@ -20,6 +20,7 @@ import time
 from typing import Any, Dict, List, Optional, Tuple, Callable
 import network_adapter_manager
 import music_player_tools
+import music_playback_tools
 
 try:
     from pydantic import BaseModel, Field
@@ -1260,6 +1261,7 @@ LANGCHAIN_SEPARATION_TOOLS = [
     run_dialectical_synthesis_tool,
     validate_constraint_satisfaction_tool,
     rank_and_clarify_constraints_tool,
+    *music_playback_tools.MUSIC_LEDGER_TOOLS,
 ]
 
 
@@ -1267,7 +1269,10 @@ def list_available_analysis_tools() -> List[Dict[str, Any]]:
     """Return catalog of all available agent analysis tools."""
     tools_catalog = []
     for t in LANGCHAIN_SEPARATION_TOOLS:
-        if "paradox" in t.name or "dialectical" in t.name or "constraint" in t.name:
+        if "ledger" in t.name or "playback" in t.name or "track_tool" in t.name or "now_playing" in t.name:
+            cat = "music_ledger"
+            rule = 226
+        elif "paradox" in t.name or "dialectical" in t.name or "constraint" in t.name:
             cat = "paradox_tension"
             rule = 225
         elif "music" in t.name or "compose" in t.name:

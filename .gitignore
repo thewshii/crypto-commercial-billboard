@@ -24,6 +24,7 @@ memgpt_state.json
 shared_voices_state.json
 langchain_separation_state.json
 network_adapter_state.json
+game_inventory_state.json
 letta/
 
 # Scratch files

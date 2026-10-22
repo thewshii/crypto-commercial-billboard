@@ -14,6 +14,7 @@ import letta_memgpt
 import shared_voices
 import langchain_separation
 import network_adapter_manager
+import game_inventory_loop
 
 
 def _load_env():
@@ -1873,6 +1874,63 @@ def api_network_adapter_analyze():
     return jsonify(network_adapter_manager.analyze_wifi_package())
 
 
+# ===================== IN-GAME INVENTORY & DROP TRACKER =====================
+@app.route("/api/game/inventory", methods=["GET"])
+def api_game_inventory_state():
+    """In-game inventory audit: items on person, within reach, dropped, and labeled positions."""
+    inv = game_inventory_loop.MatrixGameInventory()
+    return jsonify(inv.get_inventory_summary())
+
+
+@app.route("/api/game/inventory/drop", methods=["POST"])
+def api_game_inventory_drop():
+    """Drop an item, run the inventory audit, trigger spatial discussion, and apply confirmed label."""
+    data = request.json or {}
+    item_id = str(data.get("item_id") or data.get("item") or "").strip()
+    landing = str(data.get("landing") or data.get("description") or "Floor near feet").strip()
+    notes = data.get("discussion") if isinstance(data.get("discussion"), list) else None
+    label = data.get("label")
+
+    if not item_id:
+        return jsonify({"ok": False, "error": "Missing 'item_id' in drop request."}), 400
+
+    inv = game_inventory_loop.MatrixGameInventory()
+    res = inv.trigger_drop(item_id, landing_description=landing, dialogue_notes=notes, final_label=label)
+    return jsonify(res)
+
+
+@app.route("/api/game/inventory/pickup", methods=["POST"])
+def api_game_inventory_pickup():
+    """Pick up a dropped item and place it on person or within reach."""
+    data = request.json or {}
+    item_id = str(data.get("item_id") or data.get("item") or "").strip()
+    target = str(data.get("target_reach") or data.get("reach") or "on_person").strip()
+    label = str(data.get("label") or ("Right Pocket" if target == "on_person" else "Desk Surface")).strip()
+
+    if not item_id:
+        return jsonify({"ok": False, "error": "Missing 'item_id' in pickup request."}), 400
+
+    inv = game_inventory_loop.MatrixGameInventory()
+    res = inv.pickup_item(item_id, target_reach=target, new_label=label)
+    return jsonify(res)
+
+
+@app.route("/api/game/inventory/label", methods=["POST"])
+def api_game_inventory_label():
+    """Deliberate and update an item's remembered position label."""
+    data = request.json or {}
+    item_id = str(data.get("item_id") or data.get("item") or "").strip()
+    new_label = str(data.get("label") or "").strip()
+    discussion = str(data.get("discussion") or "").strip()
+
+    if not item_id or not new_label:
+        return jsonify({"ok": False, "error": "Missing 'item_id' or 'label'."}), 400
+
+    inv = game_inventory_loop.MatrixGameInventory()
+    res = inv.deliberate_label(item_id, new_label, discussion_text=discussion)
+    return jsonify(res)
+
+
 @app.route("/separation", methods=["GET"])
 @app.route("/langchain", methods=["GET"])
 def view_langchain_separation():
@@ -1998,6 +2056,8 @@ def api_summary():
                       "/api/network-adapter/state",
                       "/api/network-adapter/probe",
                       "/api/network-adapter/analyze",
+                      "/api/game/inventory", "/api/game/inventory/drop",
+                      "/api/game/inventory/pickup", "/api/game/inventory/label",
                       "/separation", "/langchain",
                       "/api/voice/because-im-black",
                       "/api/voice/colors-simulation", "/api/word"],

@@ -15,6 +15,7 @@ import shared_voices
 import langchain_separation
 import network_adapter_manager
 import game_inventory_loop
+import music_player_tools
 
 
 def _load_env():
@@ -1842,6 +1843,16 @@ def api_langchain_analysis_run():
         res = langchain_separation.analyze_token_velocity(sym, mcap)
     elif "wifi" in tool_type or "probe" in tool_type:
         res = network_adapter_manager.analyze_wifi_package()
+    elif "music" in tool_type or "compose" in tool_type:
+        if "compose" in tool_type:
+            st = str(params.get("style") or "432hz_ambient")
+            dur = float(params.get("duration_sec") or 6.0)
+            res = music_player_tools.synthesize_procedural_melody(style=st, duration_sec=dur)
+        elif "stop" in tool_type:
+            res = music_player_tools.stop_music()
+        else:
+            trk = str(params.get("track") or "commercial_soundtrack")
+            res = music_player_tools.play_music(trk)
     else:
         res = langchain_separation.execute_langchain_tool(tool_type, params)
 
@@ -1929,6 +1940,56 @@ def api_game_inventory_label():
     inv = game_inventory_loop.MatrixGameInventory()
     res = inv.deliberate_label(item_id, new_label, discussion_text=discussion)
     return jsonify(res)
+
+
+# ===================== RULE 224: MUSIC PLAYER & PROCEDURAL SYNTHESIS =====================
+@app.route("/api/music/tracks", methods=["GET"])
+def api_music_tracks():
+    """Rule 224: List available music tracks in the sound library."""
+    q = request.args.get("query", "")
+    limit = int(request.args.get("limit", 50))
+    return jsonify(music_player_tools.list_available_music_tracks(query=q, limit=limit))
+
+
+@app.route("/api/music/play", methods=["POST"])
+def api_music_play():
+    """Rule 224: Play music track via hardware or return web audio stream."""
+    data = request.json or {}
+    track = str(data.get("track") or data.get("track_id") or "commercial_soundtrack").strip()
+    volume = float(data.get("volume") or 1.0)
+    loop = bool(data.get("loop", False))
+    return jsonify(music_player_tools.play_music(track, volume=volume, loop=loop))
+
+
+@app.route("/api/music/stop", methods=["POST"])
+def api_music_stop():
+    """Rule 224: Stop music playback."""
+    return jsonify(music_player_tools.stop_music())
+
+
+@app.route("/api/music/compose", methods=["POST"])
+def api_music_compose():
+    """Rule 224: Procedurally compose new track (432hz_ambient, reggae_dub, 8bit_chiptune, lofi_calm)."""
+    data = request.json or {}
+    style = str(data.get("style") or "432hz_ambient").strip()
+    duration = float(data.get("duration_sec") or data.get("duration") or 6.0)
+    tempo = int(data.get("tempo_bpm") or data.get("tempo") or 72)
+    key_hz = float(data.get("key_hz") or 432.0)
+    return jsonify(music_player_tools.synthesize_procedural_melody(
+        style=style, duration_sec=duration, tempo_bpm=tempo, key_hz=key_hz
+    ))
+
+
+@app.route("/api/music/status", methods=["GET"])
+def api_music_status():
+    """Rule 224: Get current music playback status."""
+    return jsonify(music_player_tools.get_playback_status())
+
+
+@app.route("/api/music/guide", methods=["GET"])
+def api_music_guide():
+    """Rule 224: How-to-play music tools manual and instructions."""
+    return jsonify(music_player_tools.get_music_guide())
 
 
 @app.route("/separation", methods=["GET"])
@@ -2031,7 +2092,13 @@ def api_summary():
             "total_probes": na_state.get("packet_counter", 0),
             "physical_boundary": "Digital probe words only; zero physical optical sight (Rule 223)",
         },
-        "word": {"rules": 223, "slots": ["morning", "midday", "evening"]},
+        "music": {
+            "rule": 224,
+            "status": music_player_tools.get_playback_status().get("playback", {}),
+            "available_tracks": music_player_tools.list_available_music_tracks(limit=1).get("total_tracks", 0),
+            "synthesis_styles": ["432hz_ambient", "reggae_dub", "8bit_chiptune", "lofi_calm"],
+        },
+        "word": {"rules": 224, "slots": ["morning", "midday", "evening"]},
         "endpoints": ["/api", "/api/summary", "/api/host", "/api/stream",
                       "/api/mesh/nodes", "/api/mesh/poll", "/api/faq/list",
                       "/api/deepgram/transcribe", "/api/deepgram/state",
@@ -2058,6 +2125,9 @@ def api_summary():
                       "/api/network-adapter/analyze",
                       "/api/game/inventory", "/api/game/inventory/drop",
                       "/api/game/inventory/pickup", "/api/game/inventory/label",
+                      "/api/music/tracks", "/api/music/play",
+                      "/api/music/stop", "/api/music/compose",
+                      "/api/music/status", "/api/music/guide",
                       "/separation", "/langchain",
                       "/api/voice/because-im-black",
                       "/api/voice/colors-simulation", "/api/word"],

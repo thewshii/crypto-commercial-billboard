@@ -19,6 +19,7 @@ import threading
 import time
 from typing import Any, Dict, List, Optional, Tuple
 import network_adapter_manager
+import music_player_tools
 
 # LangChain and LangChain-Core imports
 try:
@@ -795,6 +796,45 @@ def analyze_wifi_probes_tool() -> str:
     return json.dumps(network_adapter_manager.analyze_wifi_package())
 
 
+# ===================== RULE 224: MUSIC PLAYER & PROCEDURAL SYNTHESIS TOOLS =====================
+
+@tool
+def play_music_tool(track_name: str = "commercial_soundtrack", volume: float = 1.0) -> str:
+    """Rule 224 Tool: Play music track via device hardware or return browser audio stream URL."""
+    return json.dumps(music_player_tools.play_music(track_name, volume=volume))
+
+
+@tool
+def stop_music_tool() -> str:
+    """Rule 224 Tool: Stop currently playing music."""
+    return json.dumps(music_player_tools.stop_music())
+
+
+@tool
+def compose_procedural_music_tool(
+    style: str = "432hz_ambient",
+    duration_sec: float = 6.0,
+    tempo_bpm: int = 72,
+    key_hz: float = 432.0,
+) -> str:
+    """Rule 224 Tool: Procedurally compose and synthesize music (styles: 432hz_ambient, reggae_dub, 8bit_chiptune, lofi_calm)."""
+    return json.dumps(music_player_tools.synthesize_procedural_melody(
+        style=style, duration_sec=duration_sec, tempo_bpm=tempo_bpm, key_hz=key_hz
+    ))
+
+
+@tool
+def list_music_library_tool(query: str = "") -> str:
+    """Rule 224 Tool: List available music tracks in the sound library categorized by genre."""
+    return json.dumps(music_player_tools.list_available_music_tracks(query=query, limit=30))
+
+
+@tool
+def how_to_play_music_guide_tool() -> str:
+    """Rule 224 Tool: Return comprehensive guide on how to play music across CLI, Web, and Agent tools."""
+    return json.dumps(music_player_tools.get_music_guide())
+
+
 LANGCHAIN_SEPARATION_TOOLS = [
     measure_agent_separation_tool,
     create_separated_agent_tool,
@@ -807,6 +847,11 @@ LANGCHAIN_SEPARATION_TOOLS = [
     analyze_multi_degree_consensus_tool,
     analyze_token_velocity_tool,
     analyze_wifi_probes_tool,
+    play_music_tool,
+    stop_music_tool,
+    compose_procedural_music_tool,
+    list_music_library_tool,
+    how_to_play_music_guide_tool,
 ]
 
 
@@ -814,11 +859,13 @@ def list_available_analysis_tools() -> List[Dict[str, Any]]:
     """Return catalog of all available agent analysis tools."""
     tools_catalog = []
     for t in LANGCHAIN_SEPARATION_TOOLS:
+        cat = "music_audio" if ("music" in t.name or "compose" in t.name) else ("analysis" if "analyze" in t.name else "topology_routing")
+        rule = 224 if ("music" in t.name or "compose" in t.name) else (223 if "wifi" in t.name else (222 if "analyze" in t.name else 221))
         tools_catalog.append({
             "name": t.name,
             "description": getattr(t, "description", ""),
-            "category": "analysis" if "analyze" in t.name else "topology_routing",
-            "rule": 222 if "analyze" in t.name else 221,
+            "category": cat,
+            "rule": rule,
         })
     return tools_catalog
 

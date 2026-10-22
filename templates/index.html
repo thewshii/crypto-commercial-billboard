@@ -1000,6 +1000,7 @@
             <button id="shared-voices-btn" onclick="window.sharedVoicesToggleConsent()" title="Shared voices dual-consent gate, widened consciousness, elevated bitrate, women cannot be fathers (rule 220). Click to toggle consent." style="background:#0c1a18; border:2px solid #00ffaa; color:#aaffdd; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #00ffaa; box-shadow:0 0 10px rgba(0,255,170,0.3); transition:all 0.2s;">🗣️ SHARED [A:✓ B:✓ | 320k]</button>
             <button id="langchain-btn" onclick="window.openLangChainSeparation()" title="LangChain Degrees of Separation for Agents (rule 221). Multi-agent partitions, degree routing, and tool dispatch." style="background:#0a1220; border:2px solid #00d4ff; color:#99eeff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #00d4ff; box-shadow:0 0 10px rgba(0,212,255,0.3); transition:all 0.2s;">🔗 LANGCHAIN / DEGREES</button>
             <button id="net-adapter-btn" onclick="window.inspectWifiProbes()" title="802.11 Network Adapter &amp; Management Probe Frame Analyzer (Rule 223). Maps interfaces, SSIDs, words on the wire, physical boundary audit." style="background:#041818; border:2px solid #00ffc8; color:#88ffee; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #00ffc8; box-shadow:0 0 10px rgba(0,255,200,0.3); transition:all 0.2s;">📡 NET ADAPTER / PROBES</button>
+            <button id="music-btn" onclick="window.openMusicModal()" title="Music Player &amp; Procedural Synthesizer (Rule 224). Play soundtrack or synthesize 432Hz ambient, reggae, 8-bit chiptune." style="background:#180824; border:2px solid #d466ff; color:#f0b3ff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #d466ff; box-shadow:0 0 10px rgba(212,102,255,0.3); transition:all 0.2s;">🎵 MUSIC / SYNTH</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -1217,7 +1218,7 @@
         <div style="width:min(1080px, 96vw); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px solid #16263d; padding-bottom:8px;">
             <div>
                 <strong style="color:#00d4ff; font-size:1rem;">🔗 LANGCHAIN DEGREES OF SEPARATION &amp; SHARED VOICES</strong>
-                <span id="lc-active-badge" style="margin-left:8px; font-size:0.74rem; color:#00ff88; border:1px solid #00ff88; padding:2px 6px; border-radius:4px;">Rule 221 (LangChain 1.4.7) &bull; Rule 220 (Dual Gate) &bull; Rule 223 (Probe Words &bull; Net Adapter)</span>
+                <span id="lc-active-badge" style="margin-left:8px; font-size:0.74rem; color:#00ff88; border:1px solid #00ff88; padding:2px 6px; border-radius:4px;">Rule 221 (LangChain 1.4.7) &bull; Rule 223 (Probes) &bull; Rule 224 (Music Synth)</span>
             </div>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
                 <button onclick="window.sharedVoicesToggleConsent('a'); event.stopPropagation();" id="ov-btn-consent-a" style="background:#081c14; border:1px solid #00ff88; color:#00ff88; padding:5px 10px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.75rem;">VOICE A: TRUE</button>
@@ -1269,7 +1270,7 @@
                     <button onclick="window.langchainRouteFromUI(); event.stopPropagation();" style="flex:1; background:#181006; border:1px solid #ffaa00; color:#ffcc44; padding:4px 6px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.7rem;">ROUTE MESSAGE</button>
                 </div>
                 <input id="ov-route-msg" type="text" placeholder="Message to route across degree boundaries..." value="Pass query across degree partitions without leakage" style="background:#03050a; border:1px solid #16263d; color:#88eeff; padding:5px; border-radius:4px; font-family:inherit; font-size:0.7rem;" />
-                <div style="font-size:0.7rem; color:#d499ff; font-weight:bold; margin-top:2px;">🔬 MULTI-AGENT ANALYSIS (RULES 222 &amp; 223):</div>
+                <div style="font-size:0.7rem; color:#d499ff; font-weight:bold; margin-top:2px;">🔬 MULTI-AGENT ANALYSIS &amp; MUSIC (RULES 222-224):</div>
                 <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px;">
                     <button onclick="window.runAnalysisFromUI('topology'); event.stopPropagation();" style="background:#140824; border:1px solid #b366ff; color:#e0b3ff; padding:3px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:0.65rem;">📊 TOPOLOGY</button>
                     <button onclick="window.runAnalysisFromUI('leakage'); event.stopPropagation();" style="background:#200a14; border:1px solid #ff77aa; color:#ffccee; padding:3px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:0.65rem;">🛡️ LEAKS</button>
@@ -1278,8 +1279,61 @@
                     <button onclick="window.runAnalysisFromUI('spectrum'); event.stopPropagation();" style="background:#08141c; border:1px solid #00e5ff; color:#88eeff; padding:3px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:0.65rem;">🎵 SPECTRUM</button>
                     <button onclick="window.runAnalysisFromUI('token'); event.stopPropagation();" style="background:#181808; border:1px solid #ffee44; color:#ffff88; padding:3px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:0.65rem;">🪙 TOKEN VEL</button>
                     <button onclick="window.runAnalysisFromUI('wifi'); event.stopPropagation();" style="background:#041c14; border:1px solid #00ffaa; color:#aaffdd; padding:3px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:0.65rem; grid-column:span 3;">📡 802.11 PROBE PACKET WORDS (RULE 223)</button>
+                    <button onclick="window.runAnalysisFromUI('compose'); event.stopPropagation();" style="background:#200828; border:1px solid #e066ff; color:#f0b3ff; padding:3px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:0.65rem; grid-column:span 3;">🎵 PROCEDURAL 432Hz HARMONIC SYNTH (RULE 224)</button>
                 </div>
                 <div id="ov-langchain-log" style="flex:1; min-height:120px; max-height:180px; overflow-y:auto; background:#020408; border:1px solid #101c2d; padding:6px; border-radius:4px; font-size:0.68rem; color:#88ccff; white-space:pre-wrap;">LangChain separation log ready.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dedicated Music Player & Procedural Synthesis Overlay (Rule 224) -->
+    <div id="music-player-overlay" style="display:none; position:fixed; inset:0; z-index:10140; background:rgba(6,3,12,0.96); align-items:center; justify-content:center; flex-direction:column; gap:10px; font-family:'Roboto Mono',monospace; color:#f0d8ff; padding:18px; border:2px solid #e066ff;" onclick="if(event.target.id==='music-player-overlay') window.closeMusicModal();">
+        <div style="width:min(900px, 94vw); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px solid #2d163d; padding-bottom:8px;">
+            <div>
+                <strong style="color:#f066ff; font-size:1.05rem;">🎵 MUSIC PLAYER &amp; PROCEDURAL HARMONIC SYNTHESIZER</strong>
+                <span style="margin-left:8px; font-size:0.74rem; color:#00ff88; border:1px solid #00ff88; padding:2px 6px; border-radius:4px;">Rule 224 (Harmonic Synthesis &bull; 1218+ Tracks)</span>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <button onclick="window.musicStop(); event.stopPropagation();" style="background:#240808; border:1px solid #ff4444; color:#ff8888; padding:5px 12px; border-radius:4px; cursor:pointer; font-family:inherit; font-weight:bold; font-size:0.75rem;">⏹ STOP</button>
+                <button onclick="window.closeMusicModal(); event.stopPropagation();" style="background:#1a0404; border:1px solid #ff003c; color:#ff003c; padding:5px 10px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.75rem;">✕ CLOSE</button>
+            </div>
+        </div>
+        <div style="width:min(900px, 94vw); display:grid; grid-template-columns:1fr 1fr; gap:12px; max-height:70vh; overflow-y:auto;">
+            <!-- Column 1: Soundtrack Playback Library -->
+            <div style="display:flex; flex-direction:column; gap:8px; border:1px solid #2d163d; border-radius:6px; padding:10px; background:#0e0514;">
+                <div style="font-size:0.78rem; color:#e0b3ff; font-weight:bold;">📻 SOUNDTRACK &amp; SACRED STEMS</div>
+                <div style="font-size:0.7rem; color:#9988aa;">Select a pre-rendered ambient/gospel stem from the sound library:</div>
+                <select id="music-track-select" style="background:#05020a; border:1px solid #4d1d66; color:#f0b3ff; padding:6px; border-radius:4px; font-family:inherit; font-size:0.72rem;">
+                    <option value="commercial_soundtrack">Commercial Soundtrack (Synth Wave)</option>
+                    <option value="gospel_1">Gospel 1 (Soulful Chords)</option>
+                    <option value="gospel_2">Gospel 2 (Elevation)</option>
+                    <option value="gospel_3">Gospel 3 (Spiritual Rest)</option>
+                    <option value="religion_1">Sacred Meditation 1 (432Hz Drone)</option>
+                    <option value="soundtrack_10_neural_grid">Neural Grid (Electronic Ambient)</option>
+                    <option value="fanfare">Victory Fanfare</option>
+                    <option value="news_ticker">News Ticker Pulse</option>
+                </select>
+                <div style="display:flex; gap:6px;">
+                    <button onclick="window.musicPlaySelected(); event.stopPropagation();" style="flex:1; background:#1c0828; border:1px solid #d466ff; color:#f5ccff; padding:6px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.75rem; font-weight:bold;">▶ PLAY SOUNDTRACK</button>
+                </div>
+                <div style="font-size:0.7rem; color:#8899aa; margin-top:4px;">
+                    <div>Now Playing: <strong id="music-current-title" style="color:#00ff88;">None</strong></div>
+                    <div>Engine: <span id="music-engine-name" style="color:#00d4ff;">Web Audio / Speaker</span></div>
+                </div>
+                <audio id="music-stream-audio" controls style="width:100%; margin-top:4px; height:32px; filter:invert(1) hue-rotate(180deg);"></audio>
+            </div>
+
+            <!-- Column 2: Procedural Synthesis Engine -->
+            <div style="display:flex; flex-direction:column; gap:8px; border:1px solid #2d163d; border-radius:6px; padding:10px; background:#0e0514;">
+                <div style="font-size:0.78rem; color:#00ffaa; font-weight:bold;">🎹 PROCEDURAL HARMONIC SYNTHESIZER</div>
+                <div style="font-size:0.7rem; color:#9988aa;">Synthesize custom harmonic audio on the fly with pure math:</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                    <button onclick="window.musicCompose('432hz_ambient'); event.stopPropagation();" style="background:#081c1c; border:1px solid #00ffaa; color:#aaffdd; padding:6px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.7rem;">🌿 432Hz AMBIENT</button>
+                    <button onclick="window.musicCompose('reggae_dub'); event.stopPropagation();" style="background:#1c1808; border:1px solid #ffaa00; color:#ffdd66; padding:6px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.7rem;">🦁 REGGAE DUB</button>
+                    <button onclick="window.musicCompose('8bit_chiptune'); event.stopPropagation();" style="background:#200818; border:1px solid #ff66cc; color:#ffb3e6; padding:6px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.7rem;">👾 8-BIT CHIPTUNE</button>
+                    <button onclick="window.musicCompose('lofi_calm'); event.stopPropagation();" style="background:#140824; border:1px solid #b366ff; color:#e0b3ff; padding:6px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.7rem;">☕ LO-FI CALM</button>
+                </div>
+                <div id="music-synth-status" style="flex:1; min-height:80px; background:#05020a; border:1px solid #2d163d; border-radius:4px; padding:6px; font-size:0.68rem; color:#cce6ff; white-space:pre-wrap;">Select a style to synthesize algorithmic music.</div>
             </div>
         </div>
     </div>
@@ -15813,6 +15867,103 @@ startStream();
     setTimeout(function () {
       window.runAnalysisFromUI('wifi');
     }, 250);
+  };
+
+  window.openMusicModal = function () {
+    try { if (typeof window.soundNote === 'function') window.soundNote('bell', 'music'); } catch (e) {}
+    var ov = document.getElementById('music-player-overlay');
+    if (ov) ov.style.display = 'flex';
+    window.musicRefreshStatus();
+  };
+
+  window.closeMusicModal = function () {
+    var ov = document.getElementById('music-player-overlay');
+    if (ov) ov.style.display = 'none';
+  };
+
+  window.musicPlaySelected = function () {
+    var sel = document.getElementById('music-track-select');
+    var trk = sel ? sel.value : 'commercial_soundtrack';
+    window.musicPlay(trk);
+  };
+
+  window.musicPlay = function (track) {
+    var tLabel = document.getElementById('music-current-title');
+    var eLabel = document.getElementById('music-engine-name');
+    var audioEl = document.getElementById('music-stream-audio');
+    if (tLabel) tLabel.textContent = 'Loading ' + track + '...';
+
+    fetch('/api/music/play', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ track: track })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d.ok) {
+        if (tLabel) tLabel.textContent = d.track || track;
+        if (eLabel) eLabel.textContent = d.native_engine || 'Web Audio Stream';
+        if (audioEl && d.audio_url) {
+          audioEl.src = d.audio_url;
+          audioEl.play().catch(function () {});
+        }
+      } else {
+        if (tLabel) tLabel.textContent = 'Error: ' + (d.error || 'Failed to play');
+      }
+    })
+    .catch(function (err) {
+      if (tLabel) tLabel.textContent = 'Network error: ' + err;
+    });
+  };
+
+  window.musicStop = function () {
+    var tLabel = document.getElementById('music-current-title');
+    var audioEl = document.getElementById('music-stream-audio');
+    if (audioEl) { audioEl.pause(); audioEl.currentTime = 0; }
+
+    fetch('/api/music/stop', { method: 'POST' })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (tLabel) tLabel.textContent = 'Stopped';
+    })
+    .catch(function () {});
+  };
+
+  window.musicCompose = function (style) {
+    var status = document.getElementById('music-synth-status');
+    if (status) status.textContent = 'Synthesizing ' + style + ' (pure Python math + wave)...';
+
+    fetch('/api/music/compose', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ style: style, duration_sec: 7.0 })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d.ok) {
+        if (status) status.textContent = 'Synthesized: ' + d.filename + '\nPlaying via Web Audio...';
+        window.musicPlay(d.filename);
+      } else {
+        if (status) status.textContent = 'Synthesis error: ' + (d.error || 'failed');
+      }
+    })
+    .catch(function (err) {
+      if (status) status.textContent = 'Error: ' + err;
+    });
+  };
+
+  window.musicRefreshStatus = function () {
+    fetch('/api/music/status')
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d && d.playback && d.playback.is_playing) {
+        var tLabel = document.getElementById('music-current-title');
+        var eLabel = document.getElementById('music-engine-name');
+        if (tLabel) tLabel.textContent = d.playback.current_track;
+        if (eLabel) eLabel.textContent = d.playback.engine || 'Active';
+      }
+    })
+    .catch(function () {});
   };
 
   // Initial sync on startup

@@ -52,13 +52,18 @@
   .badge-purple { border-color: #b366ff; color: #d499ff; background: #180d28; }
   .badge-gold { border-color: #ffaa00; color: #ffcc44; background: #221406; }
   .badge-pink { border-color: #ff77aa; color: #ffccee; background: #220a16; }
+  .badge-red { border-color: #ff3366; color: #ff6688; background: #260a12; }
+  .badge-cyan { border-color: #00e5ff; color: #88eeff; background: #081d28; }
   .layout {
     display: grid;
-    grid-template-columns: 360px 1fr 1fr;
+    grid-template-columns: 320px 1fr 1fr 1fr;
     flex: 1;
     min-height: 0;
     gap: 1px;
     background: #0a1424;
+  }
+  @media (max-width: 1400px) {
+    .layout { grid-template-columns: 320px 1fr 1fr; }
   }
   @media (max-width: 1080px) {
     .layout { grid-template-columns: 1fr; }
@@ -195,6 +200,7 @@
   <div class="badges">
     <span class="badge">RULE 221 · LANGCHAIN 1.4.7</span>
     <span class="badge badge-purple">DEGREES 0 &rarr; N</span>
+    <span class="badge badge-red">RULE 227 · LANGSMITH ENGINE</span>
     <span class="badge badge-gold">RULE 220 · DUAL-CONSENT GATE</span>
     <span class="badge badge-pink">WOMEN CANNOT BE FATHERS</span>
     <button class="btn" onclick="location.href='/'">&larr; BILLBOARD</button>
@@ -336,8 +342,58 @@
         <button class="btn" style="border-color:#e066ff; color:#f0b3ff; font-size:0.7rem; padding:4px 6px; grid-column:span 2;" onclick="runAnalysis('compose')">🎵 PROCEDURAL 432Hz HARMONIC SYNTH (RULE 224)</button>
         <button class="btn" style="border-color:#ff4488; color:#ff99cc; font-size:0.7rem; padding:4px 6px; grid-column:span 2;" onclick="runAnalysis('paradox')">⚖️ PARADOX ROUTER &amp; TENSION DETECTOR (RULE 225)</button>
         <button class="btn" style="border-color:#ffaa00; color:#ffdd88; font-size:0.7rem; padding:4px 6px; grid-column:span 2;" onclick="runAnalysis('dialectical')">⚡ THESIS–ANTITHESIS–SYNTHESIS (RULE 225)</button>
+        <button class="btn" style="border-color:#ff3366; color:#ff88aa; font-size:0.7rem; padding:4px 6px; grid-column:span 2;" onclick="scanLangSmithIssues()">🔬 SCAN LANGSMITH ENGINE TRACES (RULE 227)</button>
       </div>
       <div id="analysis-result" class="log-box" style="margin-top:6px; display:none; max-height:220px; color:#cce6ff;"></div>
+    </div>
+  </div>
+
+  <!-- PANE 4: LANGSMITH ENGINE & OFFLINE EVALUATION (RULE 227) -->
+  <div class="pane">
+    <div class="pane-head">
+      <span>🔬 LANGSMITH ENGINE</span>
+      <span class="badge badge-red">RULE 227 · TRACES</span>
+    </div>
+
+    <div class="card" style="border-color:#ff3366; box-shadow:0 0 10px rgba(255,51,102,0.15);">
+      <div style="font-weight:bold; color:#ff88aa; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+        <span>Project: <strong style="color:#ffffff;">crypto-agent</strong></span>
+        <button class="btn btn-green" style="font-size:0.68rem; padding:3px 8px;" onclick="scanLangSmithIssues()">SCAN TRACES</button>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
+        <div>Traces: <strong id="ls-traces-count" style="color:#00ff88;">0</strong></div>
+        <div>Offline Golden: <strong id="ls-dataset-count" style="color:#ffcc44;">0</strong></div>
+        <div>Open Issues: <strong id="ls-open-issues" style="color:#ff6688;">0</strong></div>
+        <div>High Priority: <strong id="ls-high-issues" style="color:#ff3366;">0</strong></div>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button class="btn" style="flex:1; font-size:0.68rem;" onclick="loadLangSmithData()">REFRESH</button>
+        <button class="btn" style="flex:1; font-size:0.68rem; border-color:#ffaa00; color:#ffcc44;" onclick="filterIssues('all')">ALL</button>
+        <button class="btn" style="flex:1; font-size:0.68rem; border-color:#ff3366; color:#ff88aa;" onclick="filterIssues('high')">HIGH ONLY</button>
+      </div>
+    </div>
+
+    <!-- Active Issues List -->
+    <div class="card" style="flex:1; display:flex; flex-direction:column; min-height:220px;">
+      <div style="font-weight:bold; color:#88ccff; margin-bottom:6px; display:flex; justify-content:space-between;">
+        <span>Diagnosed Issues &amp; Evidence:</span>
+        <span id="ls-issues-badge" class="badge">0 ISSUES</span>
+      </div>
+      <div id="ls-issues-list" style="overflow-y:auto; max-height:280px; display:flex; flex-direction:column; gap:8px;">
+        <div style="color:#557799; font-style:italic; padding:8px;">No open issues detected. Click 'SCAN TRACES' to audit execution runs.</div>
+      </div>
+    </div>
+
+    <!-- Offline Golden Datasets -->
+    <div class="card" style="border-color:#ffaa00;">
+      <div style="font-weight:bold; color:#ffcc44; margin-bottom:4px; display:flex; justify-content:space-between;">
+        <span>Offline Evaluation Datasets:</span>
+        <span class="badge badge-gold">GROUND TRUTH</span>
+      </div>
+      <div style="font-size:0.7rem; color:#8899aa; margin-bottom:6px;">Trace inputs converted to golden evaluation examples:</div>
+      <div id="ls-datasets-list" style="overflow-y:auto; max-height:160px; display:flex; flex-direction:column; gap:4px;">
+        <div style="color:#557799; font-style:italic;">No offline examples generated yet.</div>
+      </div>
     </div>
   </div>
 </div>
@@ -360,6 +416,169 @@
         g_network = data;
         renderNetwork(data);
       }).catch(console.error);
+
+    loadLangSmithData();
+  }
+
+  var g_langsmithIssues = [];
+
+  function loadLangSmithData() {
+    fetch('/api/langsmith/summary')
+      .then(r => r.json())
+      .then(s => {
+        document.getElementById('ls-traces-count').textContent = s.total_traces || 0;
+        document.getElementById('ls-open-issues').textContent = s.open_issues_count || 0;
+        document.getElementById('ls-high-issues').textContent = (s.high_priority_open || 0) + ' High';
+        document.getElementById('ls-dataset-count').textContent = s.offline_eval_examples_count || 0;
+      }).catch(console.error);
+
+    fetch('/api/langsmith/issues')
+      .then(r => r.json())
+      .then(issues => {
+        g_langsmithIssues = issues || [];
+        renderIssues(g_langsmithIssues);
+      }).catch(console.error);
+
+    fetch('/api/langsmith/datasets')
+      .then(r => r.json())
+      .then(datasets => {
+        renderDatasets(datasets || []);
+      }).catch(console.error);
+  }
+
+  function scanLangSmithIssues() {
+    var box = document.getElementById('ls-issues-list');
+    box.innerHTML = '<div style="color:#00ff88; padding:8px;">Scanning recent traces for failure patterns...</div>';
+    fetch('/api/langsmith/issues/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ project: 'crypto-agent', window: 150 })
+    })
+    .then(r => r.json())
+    .then(res => {
+      loadLangSmithData();
+    })
+    .catch(err => {
+      box.innerHTML = '<div style="color:#ff4466;">Scan error: ' + err + '</div>';
+    });
+  }
+
+  function filterIssues(type) {
+    if (type === 'high') {
+      var filtered = g_langsmithIssues.filter(function(i) { return i.priority === 'high'; });
+      renderIssues(filtered);
+    } else {
+      renderIssues(g_langsmithIssues);
+    }
+  }
+
+  function renderIssues(issues) {
+    var list = document.getElementById('ls-issues-list');
+    document.getElementById('ls-issues-badge').textContent = issues.length + ' ISSUES';
+    if (!issues || issues.length === 0) {
+      list.innerHTML = '<div style="color:#557799; font-style:italic; padding:8px;">No matching issues. Everything is healthy.</div>';
+      return;
+    }
+
+    var html = '';
+    issues.forEach(function(iss) {
+      var priColor = iss.priority === 'high' ? '#ff3366' : (iss.priority === 'medium' ? '#ffaa00' : '#00e5ff');
+      var statusColor = iss.status === 'open' ? '#00ff88' : (iss.status === 'closed' ? '#8899aa' : '#b366ff');
+      var evCount = (iss.evidence || []).length;
+      var firstEv = evCount > 0 ? iss.evidence[0] : null;
+
+      html += '<div style="background:#0b1626; border:1px solid #1a2f4c; border-radius:4px; padding:8px; font-size:0.73rem;">';
+      html += '  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">';
+      html += '    <strong style="color:#eef5fc;">' + iss.title + '</strong>';
+      html += '    <div>';
+      html += '      <span style="border:1px solid ' + priColor + '; color:' + priColor + '; font-size:0.65rem; padding:1px 4px; border-radius:3px; font-weight:bold; margin-right:4px;">' + (iss.priority || 'MED').toUpperCase() + '</span>';
+      html += '      <span style="border:1px solid ' + statusColor + '; color:' + statusColor + '; font-size:0.65rem; padding:1px 4px; border-radius:3px; font-weight:bold;">' + (iss.status || 'OPEN').toUpperCase() + '</span>';
+      html += '    </div>';
+      html += '  </div>';
+      html += '  <div style="color:#88aacc; margin-bottom:6px; font-size:0.71rem;">' + iss.diagnosis + '</div>';
+
+      if (firstEv) {
+        html += '  <div style="background:#050a12; padding:4px 6px; border-radius:3px; font-family:monospace; color:#88eeff; font-size:0.67rem; margin-bottom:6px; word-break:break-all;">';
+        html += '    <strong>Evidence Trace:</strong> ' + firstEv.trace_id.substring(0, 8) + '... (' + (firstEv.name || 'run') + ')<br>';
+        html += '    <span style="color:#8899aa;">Snippet:</span> ' + (firstEv.snippet || '').substring(0, 110) + '...';
+        html += '  </div>';
+      }
+
+      html += '  <div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:4px;">';
+      if (firstEv) {
+        html += '    <button class="btn btn-gold" style="font-size:0.65rem; padding:2px 6px;" onclick="addOfflineExamplePrompt(\'' + iss.issue_id + '\', \'' + firstEv.trace_id + '\')">+ Add Offline Golden Example</button>';
+      }
+      if (iss.status !== 'closed') {
+        html += '    <button class="btn" style="font-size:0.65rem; padding:2px 6px; border-color:#8899aa; color:#8899aa;" onclick="updateIssueStatus(\'' + iss.issue_id + '\', \'closed\', null, \'Resolved by operator\')">Close</button>';
+        html += '    <button class="btn" style="font-size:0.65rem; padding:2px 6px; border-color:#b366ff; color:#d499ff;" onclick="updateIssueStatus(\'' + iss.issue_id + '\', \'incorrectly_flagged\', null, \'Expected edge behavior\')">Incorrectly Flagged</button>';
+      } else {
+        html += '    <button class="btn btn-green" style="font-size:0.65rem; padding:2px 6px;" onclick="updateIssueStatus(\'' + iss.issue_id + '\', \'open\', null, \'Reopened\')">Reopen</button>';
+      }
+      if (iss.proposed_fix) {
+        html += '    <button class="btn" style="font-size:0.65rem; padding:2px 6px; border-color:#00ff88; color:#00ff88;" onclick="alert(\'Proposed Fix:\\n' + (iss.proposed_fix.description || '').replace(/"/g, '') + '\')">Proposed Fix</button>';
+      }
+      html += '  </div>';
+      html += '</div>';
+    });
+    list.innerHTML = html;
+  }
+
+  function renderDatasets(datasets) {
+    var list = document.getElementById('ls-datasets-list');
+    if (!datasets || datasets.length === 0) {
+      list.innerHTML = '<div style="color:#557799; font-style:italic;">No offline examples generated yet.</div>';
+      return;
+    }
+    var html = '';
+    datasets.slice(-5).reverse().forEach(function(d) {
+      html += '<div style="background:#0b1626; border-left:2px solid #ffaa00; padding:4px 6px; font-size:0.68rem;">';
+      html += '  <strong style="color:#ffdd88;">' + d.example_id + '</strong> (' + (d.run_name || 'tool') + ')<br>';
+      html += '  <span style="color:#8899aa;">Notes:</span> ' + (d.notes || 'Evaluation golden example') + '<br>';
+      html += '  <span style="color:#00ff88;">Expected:</span> ' + JSON.stringify(d.ground_truth_output || {}).substring(0, 60);
+      html += '</div>';
+    });
+    list.innerHTML = html;
+  }
+
+  function updateIssueStatus(issueId, status, priority, reason) {
+    fetch('/api/langsmith/issues/' + encodeURIComponent(issueId) + '/status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: status, priority: priority, reason: reason })
+    })
+    .then(r => r.json())
+    .then(function() {
+      loadLangSmithData();
+    });
+  }
+
+  function addOfflineExamplePrompt(issueId, traceId) {
+    var expected = prompt('Enter ground-truth expected output (or correction JSON):', '{"expected": "resolved_cleanly"}');
+    if (!expected) return;
+    var notes = prompt('Notes for offline evaluation benchmark:', 'Offline golden test case from production trace');
+
+    var expectedObj = null;
+    try {
+      expectedObj = JSON.parse(expected);
+    } catch(e) {
+      expectedObj = { raw: expected };
+    }
+
+    fetch('/api/langsmith/datasets/offline-examples', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        issue_id: issueId,
+        trace_id: traceId,
+        expected: expectedObj,
+        notes: notes || ''
+      })
+    })
+    .then(r => r.json())
+    .then(res => {
+      alert('Offline evaluation example created: ' + res.example_id);
+      loadLangSmithData();
+    });
   }
 
   function renderSharedVoices(sv) {

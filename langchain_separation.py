@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Tuple, Callable
 import network_adapter_manager
 import music_player_tools
 import music_playback_tools
+import langsmith_engine_tools
 
 try:
     from pydantic import BaseModel, Field
@@ -1262,6 +1263,7 @@ LANGCHAIN_SEPARATION_TOOLS = [
     validate_constraint_satisfaction_tool,
     rank_and_clarify_constraints_tool,
     *music_playback_tools.MUSIC_LEDGER_TOOLS,
+    *langsmith_engine_tools.LANGSMITH_TOOLS,
 ]
 
 
@@ -1269,7 +1271,10 @@ def list_available_analysis_tools() -> List[Dict[str, Any]]:
     """Return catalog of all available agent analysis tools."""
     tools_catalog = []
     for t in LANGCHAIN_SEPARATION_TOOLS:
-        if "ledger" in t.name or "playback" in t.name or "track_tool" in t.name or "now_playing" in t.name:
+        if "langsmith" in t.name:
+            cat = "langsmith_engine"
+            rule = 227
+        elif "ledger" in t.name or "playback" in t.name or "track_tool" in t.name or "now_playing" in t.name:
             cat = "music_ledger"
             rule = 226
         elif "paradox" in t.name or "dialectical" in t.name or "constraint" in t.name:
@@ -1298,13 +1303,41 @@ def list_available_analysis_tools() -> List[Dict[str, Any]]:
 
 
 def execute_langchain_tool(tool_name: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
-    """Execute a LangChain tool by name with arguments."""
+    """Execute a LangChain tool by name with arguments and record LangSmith trace."""
     for t in LANGCHAIN_SEPARATION_TOOLS:
         if t.name == tool_name or t.name.replace("_tool", "") == tool_name.replace("_tool", ""):
+            t0 = time.time()
             try:
                 raw = t.invoke(kwargs)
+                duration_ms = (time.time() - t0) * 1000
                 parsed = json.loads(raw) if isinstance(raw, str) else raw
+
+                # Record LangSmith trace (Rule 227)
+                langsmith_engine_tools.record_trace(
+                    name=t.name,
+                    run_type="tool",
+                    inputs=kwargs,
+                    outputs=parsed,
+                    error=None,
+                    duration_ms=duration_ms,
+                    degree=1,
+                    project_name="crypto-agent"
+                )
+
                 return {"ok": True, "tool": t.name, "result": parsed}
             except Exception as e:
-                return {"ok": False, "tool": t.name, "error": str(e)}
+                duration_ms = (time.time() - t0) * 1000
+                err_msg = str(e)
+                # Record failed trace (Rule 227)
+                langsmith_engine_tools.record_trace(
+                    name=t.name,
+                    run_type="tool",
+                    inputs=kwargs,
+                    outputs=None,
+                    error=err_msg,
+                    duration_ms=duration_ms,
+                    degree=1,
+                    project_name="crypto-agent"
+                )
+                return {"ok": False, "tool": t.name, "error": err_msg}
     return {"ok": False, "error": f"Tool '{tool_name}' not found."}

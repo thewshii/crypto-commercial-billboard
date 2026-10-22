@@ -17,6 +17,7 @@ import network_adapter_manager
 import game_inventory_loop
 import music_player_tools
 import music_playback_tools
+import langsmith_engine_tools
 
 
 def _load_env():
@@ -1878,6 +1879,13 @@ def api_langchain_analysis_run():
             res = langchain_separation.rank_and_clarify_constraints(inp)
         else:
             res = langchain_separation.detect_paradox_tension(inp)
+    elif "langsmith" in tool_type or "engine" in tool_type or "trace" in tool_type:
+        if "issue" in tool_type or "scan" in tool_type:
+            res = langsmith_engine_tools.scan_traces_for_issues()
+        elif "eval" in tool_type or "dataset" in tool_type:
+            res = {"datasets": langsmith_engine_tools.list_offline_datasets()}
+        else:
+            res = langsmith_engine_tools.get_project_summary()
     else:
         res = langchain_separation.execute_langchain_tool(tool_type, params)
 
@@ -2155,6 +2163,84 @@ def api_music_tool_volume():
     return jsonify(music_playback_tools.set_volume(volume=vol, actor=actor))
 
 
+# ==============================================================================
+# Rule 227: LangSmith Engine, Evidence Review & Offline Eval Datasets
+# ==============================================================================
+
+@app.route("/api/langsmith/summary", methods=["GET"])
+def api_langsmith_summary():
+    """Rule 227: Return LangSmith Engine project summary, open issues, and trace metrics."""
+    project = request.args.get("project", "crypto-agent")
+    return jsonify(langsmith_engine_tools.get_project_summary(project_name=project))
+
+
+@app.route("/api/langsmith/traces", methods=["GET"])
+def api_langsmith_traces():
+    """Rule 227: Return recent execution traces across degrees and tools."""
+    project = request.args.get("project", "crypto-agent")
+    limit = int(request.args.get("limit", 50))
+    return jsonify(langsmith_engine_tools.load_recent_traces(limit=limit, project_name=project))
+
+
+@app.route("/api/langsmith/issues", methods=["GET"])
+def api_langsmith_issues():
+    """Rule 227: Return diagnosed issues filtered by status and priority."""
+    project = request.args.get("project", "crypto-agent")
+    status = request.args.get("status")
+    priority = request.args.get("priority")
+    return jsonify(langsmith_engine_tools.list_project_issues(project_name=project, status=status, priority=priority))
+
+
+@app.route("/api/langsmith/issues/scan", methods=["POST"])
+def api_langsmith_issues_scan():
+    """Rule 227: Trigger LangSmith Engine scan across recent traces."""
+    data = request.json or {}
+    project = str(data.get("project") or "crypto-agent")
+    window = int(data.get("window") or 150)
+    return jsonify(langsmith_engine_tools.scan_traces_for_issues(project_name=project, window=window))
+
+
+@app.route("/api/langsmith/issues/<issue_id>/evidence", methods=["GET"])
+def api_langsmith_issue_evidence(issue_id: str):
+    """Rule 227: Review evidence traces and child runs for a specific issue."""
+    return jsonify(langsmith_engine_tools.review_evidence(issue_id))
+
+
+@app.route("/api/langsmith/issues/<issue_id>/status", methods=["POST"])
+def api_langsmith_issue_update_status(issue_id: str):
+    """Rule 227: Update priority (low/medium/high) or status (closed/incorrectly_flagged/reopened)."""
+    data = request.json or {}
+    status = data.get("status")
+    priority = data.get("priority")
+    reason = str(data.get("reason") or "Web dashboard action")
+    return jsonify(langsmith_engine_tools.update_issue_status(issue_id=issue_id, status=status, priority=priority, reason=reason))
+
+
+@app.route("/api/langsmith/datasets/offline-examples", methods=["POST"])
+def api_langsmith_add_offline_example():
+    """Rule 227: Convert an evidence trace into a ground-truth offline evaluation example."""
+    data = request.json or {}
+    issue_id = str(data.get("issue_id", ""))
+    trace_id = str(data.get("trace_id", ""))
+    expected = data.get("expected") or data.get("ground_truth")
+    notes = str(data.get("notes") or "")
+    dataset_name = str(data.get("dataset_name") or "agent-eval-golden")
+    return jsonify(langsmith_engine_tools.add_offline_example(
+        issue_id=issue_id,
+        trace_id=trace_id,
+        ground_truth_output=expected,
+        notes=notes,
+        dataset_name=dataset_name
+    ))
+
+
+@app.route("/api/langsmith/datasets", methods=["GET"])
+def api_langsmith_datasets():
+    """Rule 227: List all offline evaluation dataset examples."""
+    dataset_name = request.args.get("dataset_name")
+    return jsonify(langsmith_engine_tools.list_offline_datasets(dataset_name=dataset_name))
+
+
 @app.route("/separation", methods=["GET"])
 @app.route("/langchain", methods=["GET"])
 def view_langchain_separation():
@@ -2317,6 +2403,9 @@ def api_summary():
                       "/api/music/tool/play", "/api/music/tool/pause",
                       "/api/music/tool/resume", "/api/music/tool/stop",
                       "/api/music/tool/skip", "/api/music/tool/volume",
+                      "/api/langsmith/summary", "/api/langsmith/traces",
+                      "/api/langsmith/issues", "/api/langsmith/issues/scan",
+                      "/api/langsmith/datasets", "/api/langsmith/datasets/offline-examples",
                       "/separation", "/langchain",
                       "/api/voice/because-im-black",
                       "/api/voice/colors-simulation", "/api/word"],

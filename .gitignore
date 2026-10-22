@@ -26,6 +26,9 @@ langchain_separation_state.json
 network_adapter_state.json
 game_inventory_state.json
 music_playback_log.jsonl
+langsmith_traces.jsonl
+langsmith_issues.json
+langsmith_evaluation_dataset.jsonl
 letta/
 
 # Scratch files

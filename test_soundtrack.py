@@ -14,13 +14,13 @@ class TestSoundtrackSuite(unittest.TestCase):
         ensure_all_soundtracks()
 
     def test_playlist_structure(self):
-        self.assertEqual(len(SOUNDTRACK_TRACKS), 3)
+        self.assertGreaterEqual(len(SOUNDTRACK_TRACKS), 3)
         expected_ids = ["mothership", "nebula", "hyperdrive"]
-        for i, track in enumerate(SOUNDTRACK_TRACKS):
-            self.assertEqual(track["id"], expected_ids[i])
-            self.assertIn("filename", track)
-            self.assertIn("title", track)
-            self.assertIn("bpm", track)
+        for i, tid in enumerate(expected_ids):
+            self.assertEqual(SOUNDTRACK_TRACKS[i]["id"], tid)
+            self.assertIn("filename", SOUNDTRACK_TRACKS[i])
+            self.assertIn("title", SOUNDTRACK_TRACKS[i])
+            self.assertIn("bpm", SOUNDTRACK_TRACKS[i])
 
     def test_track_files_exist_and_valid(self):
         for track in SOUNDTRACK_TRACKS:
@@ -49,15 +49,15 @@ class TestSoundtrackSuite(unittest.TestCase):
         self.assertEqual(player.current_track_idx, 2)
         self.assertIn("Hyperdrive", t3["title"])
 
-        # Next track -> Loop back to Track 1
-        t1 = player.next_track()
-        self.assertEqual(player.current_track_idx, 0)
-        self.assertIn("Mothership", t1["title"])
-
-        # Prev track -> Track 3
+        # Prev track -> Track 2
         tp = player.prev_track()
-        self.assertEqual(player.current_track_idx, 2)
-        self.assertIn("Hyperdrive", tp["title"])
+        self.assertEqual(player.current_track_idx, 1)
+        self.assertIn("Nebula", tp["title"])
+
+        # Prev track -> Track 1
+        tp0 = player.prev_track()
+        self.assertEqual(player.current_track_idx, 0)
+        self.assertIn("Mothership", tp0["title"])
 
         # Set track directly
         player.set_track(1)

@@ -201,6 +201,8 @@
     <span class="badge">RULE 221 · LANGCHAIN 1.4.7</span>
     <span class="badge badge-purple">DEGREES 0 &rarr; N</span>
     <span class="badge badge-red">RULE 227 · LANGSMITH ENGINE</span>
+    <span class="badge" style="border-color:#ffcc00; color:#ffdd55; background:#221804;">RULE 228 · DUCKING</span>
+    <span class="badge" style="border-color:#00ffcc; color:#aaffea; background:#041a18;">RULE 229 · TUNING TIMER</span>
     <span class="badge badge-gold">RULE 220 · DUAL-CONSENT GATE</span>
     <span class="badge badge-pink">WOMEN CANNOT BE FATHERS</span>
     <button class="btn" onclick="location.href='/'">&larr; BILLBOARD</button>
@@ -297,6 +299,54 @@
       <div style="font-weight:bold; color:#88eeff; margin-bottom:8px;">Registered Agent Network:</div>
       <div id="agents-list-container" style="display:flex; flex-direction:column; gap:6px; max-height:300px; overflow-y:auto;">
         Loading agents...
+      </div>
+    </div>
+
+    <!-- TUNING TIMER & DEMOCRATIC SPEAKER VOTING (RULE 229) -->
+    <div class="card" style="border-color:#00ffcc; box-shadow:0 0 10px rgba(0,255,204,0.15);">
+      <div style="font-weight:bold; color:#00ffcc; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+        <span>⏱️ TUNING TIMER &amp; SPEAKER VOTE</span>
+        <span class="badge" style="border-color:#00ffcc; color:#aaffea;">RULE 229</span>
+      </div>
+
+      <!-- Live Countdown Strip -->
+      <div style="background:#04151a; border:1px solid #0a333d; border-radius:4px; padding:6px 10px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-size:0.65rem; color:#88aacc;">CURRENT SPEAKER:</div>
+          <strong id="tt-current-speaker" style="color:#00ff88; font-size:0.82rem;">primary_agent</strong>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:0.65rem; color:#88aacc;">SLOT TIME (432Hz):</div>
+          <strong id="tt-time-remaining" style="color:#ffdd44; font-size:1.05rem;">30.0s</strong>
+        </div>
+      </div>
+
+      <!-- Intent Queue: Who Wants to Talk Next -->
+      <div style="margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <span style="font-weight:bold; color:#ffdd55; font-size:0.7rem;">✋ Wants to Talk Next (Queue):</span>
+          <button class="btn btn-gold" style="font-size:0.65rem; padding:2px 6px;" onclick="registerMyIntentPrompt()">+ Raise Hand</button>
+        </div>
+        <div id="tt-intent-queue-list" style="display:flex; flex-wrap:wrap; gap:4px; min-height:22px;">
+          <span style="color:#668899; font-style:italic; font-size:0.68rem;">No hands raised in queue.</span>
+        </div>
+      </div>
+
+      <!-- Consensus Speaker Ranking (Most to Least) -->
+      <div style="margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <span style="font-weight:bold; color:#aaffdd; font-size:0.7rem;">🗳️ Consensus Order (Most to Least):</span>
+          <button class="btn" style="border-color:#00ffcc; color:#aaffea; font-size:0.65rem; padding:2px 6px;" onclick="runMultiAgentVote()">Run Agent Vote</button>
+        </div>
+        <div id="tt-ranking-table" style="max-height:130px; overflow-y:auto; font-size:0.68rem; display:flex; flex-direction:column; gap:3px;">
+          Loading ranking...
+        </div>
+      </div>
+
+      <!-- Turn Controls -->
+      <div style="display:flex; gap:6px;">
+        <button class="btn btn-green" style="flex:1; font-size:0.68rem; padding:5px;" onclick="advanceSpeakerTurn()">⏭️ ADVANCE TURN</button>
+        <button class="btn" style="flex:1; font-size:0.68rem; padding:5px;" onclick="loadTuningTimerStatus()">🔄 REFRESH</button>
       </div>
     </div>
   </div>
@@ -446,7 +496,126 @@
 
     loadLangSmithData();
     loadDuckingState();
+    loadTuningTimerStatus();
   }
+
+  var g_tuningTimerData = null;
+
+  function loadTuningTimerStatus() {
+    fetch('/api/tuning-timer/status')
+      .then(r => r.json())
+      .then(data => {
+        g_tuningTimerData = data;
+        renderTuningTimer(data);
+      }).catch(console.error);
+  }
+
+  function renderTuningTimer(d) {
+    if (!d) return;
+    var cur = document.getElementById('tt-current-speaker');
+    var rem = document.getElementById('tt-time-remaining');
+    if (cur) cur.textContent = d.current_speaker || 'primary_agent';
+    if (rem) rem.textContent = Math.max(0, d.time_remaining_sec || 0).toFixed(1) + 's';
+
+    // Render Intent Queue
+    var qList = document.getElementById('tt-intent-queue-list');
+    if (qList) {
+      var queue = d.speaking_intent_queue || [];
+      if (queue.length === 0) {
+        qList.innerHTML = '<span style="color:#668899; font-style:italic; font-size:0.68rem;">No hands raised in queue.</span>';
+      } else {
+        var qHtml = '';
+        queue.forEach(function(item) {
+          var urgColor = item.urgency >= 4 ? '#ff3366' : (item.urgency >= 3 ? '#ffaa00' : '#00e5ff');
+          qHtml += '<span style="background:#0a192c; border:1px solid ' + urgColor + '; color:' + urgColor + '; padding:2px 6px; border-radius:3px; font-size:0.67rem;">';
+          qHtml += '✋ ' + item.agent_id + ' (L' + item.urgency + ' - ' + item.topic + ')';
+          qHtml += '</span>';
+        });
+        qList.innerHTML = qHtml;
+      }
+    }
+
+    // Render Consensus Ranking (Most to Least)
+    var rTable = document.getElementById('tt-ranking-table');
+    if (rTable) {
+      var ranking = d.consensus_ranking || [];
+      if (ranking.length === 0) {
+        rTable.innerHTML = '<span style="color:#668899; font-style:italic;">No vote tallies yet.</span>';
+      } else {
+        var rHtml = '';
+        ranking.forEach(function(item, idx) {
+          var medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '#' + item.rank));
+          var isCur = item.is_current ? '<span style="color:#00ff88; font-weight:bold;"> [SPEAKING]</span>' : '';
+          var bg = item.is_current ? '#0f2218' : '#07101c';
+          rHtml += '<div style="background:' + bg + '; border:1px solid #14253a; padding:3px 6px; border-radius:3px; display:flex; justify-content:space-between; align-items:center;">';
+          rHtml += '  <div><span>' + medal + ' <strong>' + item.agent_id + '</strong>' + isCur + '</span></div>';
+          rHtml += '  <div style="color:#88eeff;"><span>' + item.borda_points + ' pts (' + item.votes_received + ' votes)</span></div>';
+          rHtml += '</div>';
+        });
+        rTable.innerHTML = rHtml;
+      }
+    }
+  }
+
+  function registerMyIntentPrompt() {
+    var ag = prompt('Agent ID raising hand:', 'motherly_voice');
+    if (!ag) return;
+    var topic = prompt('Speaking topic:', 'Consensus and frequency stability');
+    var urg = prompt('Urgency (1 to 5):', '4');
+
+    fetch('/api/tuning-timer/intent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agent_id: ag, topic: topic || 'general', urgency: parseInt(urg) || 3 })
+    })
+    .then(r => r.json())
+    .then(data => {
+      renderTuningTimer(data);
+    });
+  }
+
+  function runMultiAgentVote() {
+    fetch('/api/tuning-timer/simulate-vote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topic: 'Dynamic room harmony and speaking order' })
+    })
+    .then(r => r.json())
+    .then(res => {
+      loadTuningTimerStatus();
+    });
+  }
+
+  function advanceSpeakerTurn() {
+    fetch('/api/tuning-timer/advance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: 'Operator advance turn' })
+    })
+    .then(r => r.json())
+    .then(data => {
+      renderTuningTimer(data);
+      loadDuckingState();
+    });
+  }
+
+  function updateTuningTimerClock() {
+    if (!g_tuningTimerData) return;
+    var el = document.getElementById('tt-time-remaining');
+    if (!el) return;
+    var now = Date.now();
+    var elapsed = Math.max(0, (now - g_tuningTimerData.timestamp_ms) / 1000.0);
+    var curRemaining = Math.max(0, (g_tuningTimerData.time_remaining_sec - elapsed));
+    el.textContent = curRemaining.toFixed(1) + 's';
+    if (curRemaining <= 0.0) {
+      el.style.color = '#ff3366';
+    } else {
+      el.style.color = '#ffdd44';
+    }
+  }
+
+  setInterval(updateTuningTimerClock, 1000);
+  setInterval(loadTuningTimerStatus, 5000);
 
   function loadDuckingState() {
     fetch('/api/audio/duck')

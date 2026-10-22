@@ -19,6 +19,7 @@ import music_player_tools
 import music_playback_tools
 import langsmith_engine_tools
 import master_audio_ducking
+import agent_tuning_timer
 
 
 def _load_env():
@@ -1899,6 +1900,16 @@ def api_langchain_analysis_run():
             res = master_audio_ducking.run_langgraph_master_talk(u_inp)
         else:
             res = master_audio_ducking.get_ducking_state()
+    elif "tuning" in tool_type or "timer" in tool_type or "vote" in tool_type or "intent" in tool_type:
+        if "vote" in tool_type:
+            res = agent_tuning_timer.simulate_multi_agent_vote()
+        elif "advance" in tool_type:
+            res = agent_tuning_timer.advance_speaker_turn()
+        elif "intent" in tool_type:
+            ag = str(params.get("agent_id") or data.get("agent_id") or "primary_agent")
+            res = agent_tuning_timer.register_speaking_intent(ag)
+        else:
+            res = agent_tuning_timer.get_tuning_timer_status()
     else:
         res = langchain_separation.execute_langchain_tool(tool_type, params)
 
@@ -2324,6 +2335,65 @@ def api_langgraph_status():
     })
 
 
+# ==============================================================================
+# Rule 229: Tuning Timer System, Turn-Taking Intent, and Ranked Speaker Consensus
+# ==============================================================================
+
+@app.route("/api/tuning-timer/status", methods=["GET"])
+def api_tuning_timer_status():
+    """Rule 229: Live tuning countdown clock, speaking intent queue, and consensus ranking."""
+    return jsonify(agent_tuning_timer.get_tuning_timer_status())
+
+
+@app.route("/api/tuning-timer/intent", methods=["POST"])
+def api_tuning_timer_intent():
+    """Rule 229: Register an agent's intent to talk next ('raise hand')."""
+    data = request.json or {}
+    ag = str(data.get("agent_id") or "primary_agent")
+    urg = int(data.get("urgency", 3))
+    top = str(data.get("topic") or "general")
+    return jsonify(agent_tuning_timer.register_speaking_intent(agent_id=ag, urgency=urg, topic=top))
+
+
+@app.route("/api/tuning-timer/vote", methods=["POST"])
+def api_tuning_timer_vote():
+    """Rule 229: Cast ranked ballot ordering agents from most to least preferred speaker."""
+    data = request.json or {}
+    voter = str(data.get("voter_agent_id") or "primary_agent")
+    ranked = data.get("ranked_candidates") or []
+    reason = str(data.get("reason") or "Web dashboard vote")
+    return jsonify(agent_tuning_timer.cast_speaker_ranking_vote(voter_agent_id=voter, ranked_candidates=ranked, reason=reason))
+
+
+@app.route("/api/tuning-timer/advance", methods=["POST"])
+def api_tuning_timer_advance():
+    """Rule 229: Advance speaking turn to the next agent based on ranking and queue."""
+    data = request.json or {}
+    force_ag = data.get("force_agent_id")
+    reason = str(data.get("reason") or "Manual turn advance")
+    return jsonify(agent_tuning_timer.advance_speaker_turn(force_agent_id=force_ag, reason=reason))
+
+
+@app.route("/api/tuning-timer/simulate-vote", methods=["POST"])
+def api_tuning_timer_simulate_vote():
+    """Rule 229: Trigger full multi-agent ranked voting round across all agents."""
+    data = request.json or {}
+    top = str(data.get("topic") or "Harmonic room consensus")
+    return jsonify(agent_tuning_timer.simulate_multi_agent_vote(topic=top))
+
+
+@app.route("/api/tuning-timer/config", methods=["POST"])
+def api_tuning_timer_config():
+    """Rule 229: Configure slot duration, tuning frequency, and tempo."""
+    data = request.json or {}
+    slot = data.get("slot_duration_sec")
+    hz = data.get("tuning_frequency_hz")
+    bpm = data.get("tempo_bpm")
+    return jsonify(agent_tuning_timer.configure_tuning_timer(
+        slot_duration_sec=slot, tuning_frequency_hz=hz, tempo_bpm=bpm
+    ))
+
+
 @app.route("/separation", methods=["GET"])
 @app.route("/langchain", methods=["GET"])
 def view_langchain_separation():
@@ -2493,6 +2563,9 @@ def api_summary():
                       "/api/audio/duck/stop", "/api/audio/duck/toggle",
                       "/api/audio/duck/level", "/api/langgraph/workflow",
                       "/api/langgraph/status",
+                      "/api/tuning-timer/status", "/api/tuning-timer/intent",
+                      "/api/tuning-timer/vote", "/api/tuning-timer/advance",
+                      "/api/tuning-timer/simulate-vote", "/api/tuning-timer/config",
                       "/separation", "/langchain",
                       "/api/voice/because-im-black",
                       "/api/voice/colors-simulation", "/api/word"],

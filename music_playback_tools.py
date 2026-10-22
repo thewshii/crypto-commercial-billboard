@@ -93,9 +93,9 @@ LOG_FILE = os.path.join(BASE_DIR, "music_playback_log.jsonl")
 _LOCK = threading.Lock()
 
 VALID_STATES = {"IDLE", "PLAYING", "PAUSED", "STOPPED"}
-VALID_ACTIONS = {"play", "pause", "resume", "skip", "stop", "fade", "volume", "preempt"}
-VALID_SEGMENTS = {"music", "word", "news", "markov", "giveback"}
-VALID_TRIGGERS = {"manual", "schedule", "howl", "silence", "spike", "pulsation", "agent_decision"}
+VALID_ACTIONS = {"play", "pause", "resume", "skip", "stop", "fade", "volume", "preempt", "duck", "unduck"}
+VALID_SEGMENTS = {"music", "word", "news", "markov", "giveback", "master_voice"}
+VALID_TRIGGERS = {"manual", "schedule", "howl", "silence", "spike", "pulsation", "agent_decision", "master_talkover"}
 
 
 # ===================== 1. THE LEDGER ENGINE =====================
@@ -187,8 +187,12 @@ def rebuild_now_playing_from_tail() -> Dict[str, Any]:
             state["title"] = None
             state["last_action"] = action
             state["last_event_id"] = ev.get("event_id")
-        elif action == "volume":
+        elif action in ("volume", "duck", "unduck", "fade"):
             state["volume"] = ev.get("volume", state["volume"])
+            if action == "duck":
+                state["is_ducked"] = True
+            elif action == "unduck":
+                state["is_ducked"] = False
 
     # Compute live approximate position if playing
     if state["status"] == "PLAYING" and state.get("started_at"):
@@ -235,7 +239,7 @@ def validate_playback_transition(proposed: Dict[str, Any]) -> Dict[str, Any]:
         if cur_status not in ("PLAYING", "PAUSED"):
             legal = False
             rejection_reason = f"Cannot {action} from state '{cur_status}' (must be PLAYING or PAUSED)."
-    elif action == "volume":
+    elif action in ("volume", "duck", "unduck", "fade"):
         legal = True
 
     if not legal:
@@ -313,8 +317,8 @@ def execute_tool_transition(data: Dict[str, Any]) -> Dict[str, Any]:
         driver_res = music_player_tools.play_music(track_to_resume, volume=vol)
     elif action in ("stop", "skip"):
         music_player_tools.stop_music()
-    elif action == "volume":
-        driver_res = {"volume": vol}
+    elif action in ("volume", "duck", "unduck", "fade"):
+        driver_res = {"volume": vol, "action": action}
 
     # Record event in the ledger
     event = {

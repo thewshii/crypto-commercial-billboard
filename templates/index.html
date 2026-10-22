@@ -1884,6 +1884,24 @@
         }
         updateMusicButtonUI();
 
+        // Rule 228: Master Voice Audio Ducking Listener
+        let isMasterDucking = false;
+        function pollMasterAudioDucking() {
+            fetch('/api/audio/duck')
+                .then(r => r.json())
+                .then(d => {
+                    isMasterDucking = !!d.is_master_talking;
+                    const targetVol = isMasterDucking ? (d.duck_level || 0.18) : (d.normal_level || 1.0);
+                    ['bg-audio', 'slide-audio', 'music-stream-audio'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el && !el.paused) {
+                            el.volume = targetVol;
+                        }
+                    });
+                }).catch(() => {});
+        }
+        setInterval(pollMasterAudioDucking, 1500);
+
         // Web Audio Context for Terminal Beep
         let audioCtx = null;
         function getAudioContext() {

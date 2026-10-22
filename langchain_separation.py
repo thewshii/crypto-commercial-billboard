@@ -22,6 +22,7 @@ import network_adapter_manager
 import music_player_tools
 import music_playback_tools
 import langsmith_engine_tools
+import master_audio_ducking
 
 try:
     from pydantic import BaseModel, Field
@@ -1264,6 +1265,7 @@ LANGCHAIN_SEPARATION_TOOLS = [
     rank_and_clarify_constraints_tool,
     *music_playback_tools.MUSIC_LEDGER_TOOLS,
     *langsmith_engine_tools.LANGSMITH_TOOLS,
+    *master_audio_ducking.MASTER_DUCKING_TOOLS,
 ]
 
 
@@ -1271,7 +1273,10 @@ def list_available_analysis_tools() -> List[Dict[str, Any]]:
     """Return catalog of all available agent analysis tools."""
     tools_catalog = []
     for t in LANGCHAIN_SEPARATION_TOOLS:
-        if "langsmith" in t.name:
+        if "duck" in t.name or "langgraph" in t.name or "master_talk" in t.name:
+            cat = "master_ducking_langgraph"
+            rule = 228
+        elif "langsmith" in t.name:
             cat = "langsmith_engine"
             rule = 227
         elif "ledger" in t.name or "playback" in t.name or "track_tool" in t.name or "now_playing" in t.name:

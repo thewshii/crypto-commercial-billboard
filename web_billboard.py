@@ -18,6 +18,7 @@ import game_inventory_loop
 import music_player_tools
 import music_playback_tools
 import langsmith_engine_tools
+import master_audio_ducking
 
 
 def _load_env():
@@ -1886,6 +1887,18 @@ def api_langchain_analysis_run():
             res = {"datasets": langsmith_engine_tools.list_offline_datasets()}
         else:
             res = langsmith_engine_tools.get_project_summary()
+    elif "duck" in tool_type or "langgraph" in tool_type or "master_talk" in tool_type:
+        if "start" in tool_type:
+            res = master_audio_ducking.start_master_talk()
+        elif "stop" in tool_type:
+            res = master_audio_ducking.stop_master_talk()
+        elif "toggle" in tool_type:
+            res = master_audio_ducking.toggle_master_talk()
+        elif "workflow" in tool_type:
+            u_inp = str(params.get("input") or data.get("input") or "Master announcement")
+            res = master_audio_ducking.run_langgraph_master_talk(u_inp)
+        else:
+            res = master_audio_ducking.get_ducking_state()
     else:
         res = langchain_separation.execute_langchain_tool(tool_type, params)
 
@@ -2241,6 +2254,76 @@ def api_langsmith_datasets():
     return jsonify(langsmith_engine_tools.list_offline_datasets(dataset_name=dataset_name))
 
 
+# ==============================================================================
+# Rule 228: Master Voice Audio Ducking & LangGraph State Machine
+# ==============================================================================
+
+@app.route("/api/audio/duck", methods=["GET"])
+def api_audio_duck_state():
+    """Rule 228: Return live master voice audio ducking telemetry."""
+    return jsonify(master_audio_ducking.get_ducking_state())
+
+
+@app.route("/api/audio/duck/start", methods=["POST"])
+def api_audio_duck_start():
+    """Rule 228: Start master talkover — lowers volume of background music and other sounds."""
+    data = request.json or {}
+    src = str(data.get("master_source") or data.get("source") or "host")
+    lvl = data.get("duck_level")
+    lvl_val = float(lvl) if lvl is not None else None
+    reason = str(data.get("reason") or "Master voice speaking via API")
+    return jsonify(master_audio_ducking.start_master_talk(master_source=src, duck_level=lvl_val, reason=reason))
+
+
+@app.route("/api/audio/duck/stop", methods=["POST"])
+def api_audio_duck_stop():
+    """Rule 228: Stop master talkover — restores background sounds to normal volume (1.0)."""
+    data = request.json or {}
+    reason = str(data.get("reason") or "Master voice concluded via API")
+    return jsonify(master_audio_ducking.stop_master_talk(reason=reason))
+
+
+@app.route("/api/audio/duck/toggle", methods=["POST"])
+def api_audio_duck_toggle():
+    """Rule 228: Toggle master talkover on/off."""
+    data = request.json or {}
+    src = str(data.get("master_source") or "host")
+    return jsonify(master_audio_ducking.toggle_master_talk(master_source=src))
+
+
+@app.route("/api/audio/duck/level", methods=["POST"])
+def api_audio_duck_level():
+    """Rule 228: Set master ducking attenuation target level (0.0 to 1.0)."""
+    data = request.json or {}
+    lvl = float(data.get("duck_level", 0.18))
+    return jsonify(master_audio_ducking.set_ducking_level(lvl))
+
+
+@app.route("/api/langgraph/workflow", methods=["POST"])
+def api_langgraph_workflow_run():
+    """Rule 228: Run utterance through LangGraph state machine with automatic speaker detection & ducking."""
+    data = request.json or {}
+    inp = str(data.get("user_input") or data.get("text") or "Master speech transmission")
+    spk = str(data.get("speaker") or "master")
+    lvl = float(data.get("duck_level", 0.18))
+    tool = data.get("tool_name")
+    args = data.get("tool_args") or {}
+    return jsonify(master_audio_ducking.run_langgraph_master_talk(
+        user_input=inp, speaker=spk, duck_level=lvl, tool_name=tool, tool_args=args
+    ))
+
+
+@app.route("/api/langgraph/status", methods=["GET"])
+def api_langgraph_status():
+    """Rule 228: LangGraph availability and state machine status."""
+    return jsonify({
+        "ok": True,
+        "langgraph_available": master_audio_ducking.LANGGRAPH_AVAILABLE,
+        "rule": 228,
+        "ducking": master_audio_ducking.get_ducking_state()
+    })
+
+
 @app.route("/separation", methods=["GET"])
 @app.route("/langchain", methods=["GET"])
 def view_langchain_separation():
@@ -2406,6 +2489,10 @@ def api_summary():
                       "/api/langsmith/summary", "/api/langsmith/traces",
                       "/api/langsmith/issues", "/api/langsmith/issues/scan",
                       "/api/langsmith/datasets", "/api/langsmith/datasets/offline-examples",
+                      "/api/audio/duck", "/api/audio/duck/start",
+                      "/api/audio/duck/stop", "/api/audio/duck/toggle",
+                      "/api/audio/duck/level", "/api/langgraph/workflow",
+                      "/api/langgraph/status",
                       "/separation", "/langchain",
                       "/api/voice/because-im-black",
                       "/api/voice/colors-simulation", "/api/word"],

@@ -251,6 +251,33 @@
       <button class="btn btn-pink" style="width:100%;" onclick="sendSharedBroadcast()">BROADCAST VIA DUAL GATE</button>
       <div id="broadcast-result" class="log-box" style="margin-top:8px; display:none;"></div>
     </div>
+
+    <!-- MASTER VOICE & AUDIO DUCKING (RULE 228) -->
+    <div class="card" style="border-color:#ffcc00; box-shadow:0 0 10px rgba(255,204,0,0.15);">
+      <div style="font-weight:bold; color:#ffdd55; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+        <span>🎙️ MASTER TALKOVER &amp; DUCKING</span>
+        <span class="badge badge-gold">RULE 228</span>
+      </div>
+      <div style="font-size:0.7rem; color:#8899aa; margin-bottom:6px;">
+        Lower the volume of other sounds and background music when master speaks:
+      </div>
+      <button id="btn-master-talk" class="btn" style="border-color:#ffaa00; color:#ffdd44; width:100%; font-size:0.78rem; font-weight:bold; padding:7px; margin-bottom:8px;" onclick="toggleMasterTalk()">
+        🎙️ START MASTER TALK (DUCK SOUNDS)
+      </button>
+      <div style="display:flex; justify-content:space-between; font-size:0.72rem; margin-bottom:4px;">
+        <span>Current Vol: <strong id="val-duck-volume" style="color:#00ff88;">1.00</strong></span>
+        <span>Status: <strong id="val-duck-status" style="color:#8899aa;">IDLE (100%)</strong></span>
+      </div>
+      <div style="margin-top:4px; font-size:0.72rem; display:flex; align-items:center; justify-content:space-between; gap:6px;">
+        <span>Ducked Floor: <span id="val-duck-target">0.18</span></span>
+        <input type="range" id="range-duck-level" min="0.0" max="0.5" step="0.02" value="0.18" style="flex:1;" onchange="updateDuckLevel(this.value)">
+      </div>
+      <div style="margin-top:8px;">
+        <input id="input-langgraph-speech" type="text" value="Attention crew: Master instruction active." placeholder="Master announcement text..." style="margin-bottom:6px;">
+        <button class="btn btn-gold" style="width:100%; font-size:0.72rem;" onclick="runLangGraphWorkflow()">⚡ RUN LANGGRAPH DUCKING WORKFLOW</button>
+        <div id="langgraph-result" class="log-box" style="margin-top:6px; display:none; max-height:140px;"></div>
+      </div>
+    </div>
   </div>
 
   <!-- PANE 2: TOPOLOGY & DEGREES MATRIX (RULE 221) -->
@@ -418,6 +445,85 @@
       }).catch(console.error);
 
     loadLangSmithData();
+    loadDuckingState();
+  }
+
+  function loadDuckingState() {
+    fetch('/api/audio/duck')
+      .then(r => r.json())
+      .then(d => {
+        renderDuckingUI(d);
+      }).catch(console.error);
+  }
+
+  function renderDuckingUI(d) {
+    var btn = document.getElementById('btn-master-talk');
+    var vol = document.getElementById('val-duck-volume');
+    var stat = document.getElementById('val-duck-status');
+    var tgt = document.getElementById('val-duck-target');
+    if (!btn) return;
+
+    vol.textContent = (d.current_volume !== undefined ? d.current_volume : 1.0).toFixed(2);
+    tgt.textContent = (d.duck_level !== undefined ? d.duck_level : 0.18).toFixed(2);
+
+    if (d.is_master_talking) {
+      btn.textContent = '🛑 STOP MASTER TALK (RESTORE SOUNDS)';
+      btn.style.borderColor = '#ff3366';
+      btn.style.color = '#ff6688';
+      stat.textContent = 'DUCKED (' + Math.round(d.current_volume * 100) + '%)';
+      stat.style.color = '#ffaa00';
+    } else {
+      btn.textContent = '🎙️ START MASTER TALK (DUCK SOUNDS)';
+      btn.style.borderColor = '#ffaa00';
+      btn.style.color = '#ffdd44';
+      stat.textContent = 'IDLE (100%)';
+      stat.style.color = '#8899aa';
+    }
+  }
+
+  function toggleMasterTalk() {
+    fetch('/api/audio/duck/toggle', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+      .then(r => r.json())
+      .then(d => {
+        renderDuckingUI(d);
+      });
+  }
+
+  function updateDuckLevel(lvl) {
+    fetch('/api/audio/duck/level', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ duck_level: parseFloat(lvl) })
+    })
+    .then(r => r.json())
+    .then(d => {
+      renderDuckingUI(d);
+    });
+  }
+
+  function runLangGraphWorkflow() {
+    var text = document.getElementById('input-langgraph-speech').value;
+    var box = document.getElementById('langgraph-result');
+    box.style.display = 'block';
+    box.textContent = 'Executing LangGraph state graph workflow...';
+
+    fetch('/api/langgraph/workflow', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_input: text,
+        speaker: 'master',
+        duck_level: parseFloat(document.getElementById('range-duck-level').value)
+      })
+    })
+    .then(r => r.json())
+    .then(res => {
+      box.textContent = JSON.stringify(res, null, 2);
+      loadDuckingState();
+    })
+    .catch(err => {
+      box.textContent = 'LangGraph error: ' + err;
+    });
   }
 
   var g_langsmithIssues = [];

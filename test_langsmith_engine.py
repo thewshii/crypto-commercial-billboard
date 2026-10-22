@@ -172,8 +172,8 @@ class TestLangSmithEngineSuite(unittest.TestCase):
         with open("word_segment.py", "r", encoding="utf-8") as f:
             content = f.read()
         found = [int(m) for m in re.findall(r'\"(\d+)\.\s', content)]
-        self.assertEqual(max(found), 227)
-        missing = [i for i in range(1, 228) if i not in found]
+        self.assertGreaterEqual(max(found), 227)
+        missing = [i for i in range(1, max(found) + 1) if i not in found]
         self.assertEqual(missing, [], f"Missing contiguous rules: {missing}")
 
 

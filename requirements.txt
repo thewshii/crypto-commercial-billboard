@@ -29,3 +29,5 @@ boto3>=1.34.0
 # LangChain Multi-Agent Degrees of Separation & Tooling (Rule 221)
 langchain>=1.4.0
 langchain-core>=1.6.0
+langsmith>=0.14.0
+langgraph>=1.2.0

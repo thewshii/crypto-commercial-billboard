@@ -11,6 +11,8 @@ from flask import Flask, render_template, send_from_directory, request, jsonify,
 import word_segment
 import tts_dossier_env
 import letta_memgpt
+import shared_voices
+import langchain_separation
 
 
 def _load_env():
@@ -1642,6 +1644,170 @@ def api_motherly_care():
         })
 
 
+# ===================== RULE 220: SHARED VOICES & DUAL-CONSENT BROADCAST GATE =====================
+@app.route("/api/shared-voices", methods=["GET", "POST"])
+def api_shared_voices():
+    """Rule 220: Shared voices state, dual-consent booleans, widened consciousness, high kb/s."""
+    if request.method == "POST":
+        data = request.json or {}
+        if "voice_a" in data:
+            shared_voices.set_voice_consent("voice_a", bool(data["voice_a"]))
+        if "voice_b" in data:
+            shared_voices.set_voice_consent("voice_b", bool(data["voice_b"]))
+        if "bitrate_kbps" in data:
+            shared_voices.record_bitrate(float(data["bitrate_kbps"]))
+        if "consciousness" in data:
+            c = data["consciousness"]
+            shared_voices.widen_consciousness(
+                level=c.get("level", "widened"),
+                context_depth=c.get("context_depth", 16384),
+                tags=c.get("tags"),
+                note=c.get("note"),
+            )
+    return jsonify(shared_voices.get_shared_voices_state())
+
+
+@app.route("/api/shared-voices/consent", methods=["POST"])
+def api_shared_voices_consent():
+    """Rule 220: Set boolean consent for voice_a or voice_b."""
+    data = request.json or {}
+    voice = data.get("voice") or "voice_a"
+    consent = bool(data.get("consent", True))
+    custom_id = data.get("id")
+    res = shared_voices.set_voice_consent(voice, consent, custom_id=custom_id)
+    return jsonify(res)
+
+
+@app.route("/api/shared-voices/broadcast", methods=["POST"])
+def api_shared_voices_broadcast():
+    """
+    Rule 220: Attempt shared voice broadcast.
+    Requires BOTH voices to set True before broadcast.
+    Verifies structural role: women cannot be fathers.
+    """
+    data = request.json or {}
+    text = str(data.get("text") or "").strip()
+    voice_a_val = data.get("voice_a")
+    voice_b_val = data.get("voice_b")
+    kbps = data.get("bitrate_kbps")
+    res = shared_voices.attempt_shared_broadcast(
+        text=text,
+        voice_a_override=voice_a_val if voice_a_val is not None else None,
+        voice_b_override=voice_b_val if voice_b_val is not None else None,
+        target_kbps=float(kbps) if kbps else None,
+    )
+    status_code = 200 if res.get("ok") else 403
+    return jsonify(res), status_code
+
+
+@app.route("/api/shared-voices/widen", methods=["POST"])
+def api_shared_voices_widen():
+    """Rule 220: Widen current consciousness and elevate kb/s."""
+    data = request.json or {}
+    level = str(data.get("level") or "widened")
+    depth = int(data.get("context_depth") or 16384)
+    tags = data.get("tags")
+    note = data.get("note")
+    res = shared_voices.widen_consciousness(level=level, context_depth=depth, tags=tags, note=note)
+    return jsonify(res)
+
+
+@app.route("/api/telemetry/bitrate", methods=["GET", "POST"])
+def api_telemetry_bitrate():
+    """Rule 220: Live kb/s telemetry going way up."""
+    if request.method == "POST":
+        data = request.json or {}
+        kbps = float(data.get("kbps", 320.0))
+        return jsonify(shared_voices.record_bitrate(kbps))
+    st = shared_voices.get_shared_voices_state()
+    return jsonify({
+        "status": "ok",
+        "current_kbps": st["bitrate"]["current_kbps"],
+        "peak_kbps": st["bitrate"]["peak_kbps"],
+        "trend": st["bitrate"]["trend"],
+        "trend_description": "the kb/s is going way up thanks",
+        "sample_count": st["bitrate"]["sample_count"],
+    })
+
+
+# ===================== RULE 221: LANGCHAIN DEGREES OF SEPARATION =====================
+@app.route("/api/langchain/separation", methods=["GET"])
+def api_langchain_separation():
+    """Rule 221: Full degrees of separation network and pairwise matrix."""
+    return jsonify(langchain_separation.get_separation_network())
+
+
+@app.route("/api/langchain/separation/measure", methods=["POST"])
+def api_langchain_separation_measure():
+    """Rule 221: Measure exact degrees of separation between two agents."""
+    data = request.json or {}
+    source = str(data.get("source_agent") or data.get("source") or "primary_agent")
+    target = str(data.get("target_agent") or data.get("target") or "letta_memgpt")
+    res = langchain_separation.measure_degree_between(source, target)
+    return jsonify(res)
+
+
+@app.route("/api/langchain/agents/create", methods=["POST"])
+def api_langchain_agents_create():
+    """Rule 221: Create/spawn a new agent at a specific degree of separation."""
+    data = request.json or {}
+    aid = str(data.get("agent_id") or data.get("id") or "").strip()
+    name = data.get("name")
+    role = data.get("role")
+    degree = int(data.get("target_degree") or data.get("degree") or 2)
+    connect_to = data.get("connect_to") or "langchain_orchestrator"
+    partition = data.get("partition_type") or "sandboxed_degree"
+    ctx = int(data.get("context_limit") or 8192)
+    tags = data.get("tags")
+    res = langchain_separation.create_separated_agent(
+        agent_id=aid,
+        name=name,
+        role=role,
+        target_degree=degree,
+        connect_to=connect_to,
+        partition_type=partition,
+        context_limit=ctx,
+        tags=tags,
+    )
+    return jsonify(res)
+
+
+@app.route("/api/langchain/route", methods=["POST"])
+def api_langchain_route():
+    """Rule 221: LangChain Runnable routing across separation degrees."""
+    data = request.json or {}
+    msg = str(data.get("message") or "")
+    source = str(data.get("source_agent") or data.get("source") or "primary_agent")
+    target = str(data.get("target_agent") or data.get("target") or "adam_voice")
+    leakage = float(data.get("max_leakage") or 0.0)
+    res = langchain_separation.route_across_degrees(
+        message=msg,
+        source_agent=source,
+        target_agent=target,
+        max_leakage=leakage,
+    )
+    return jsonify(res)
+
+
+@app.route("/api/langchain/tools/run", methods=["POST"])
+def api_langchain_tools_run():
+    """Rule 221: Run a LangChain separation tool directly."""
+    data = request.json or {}
+    tool_name = str(data.get("tool_name") or data.get("tool") or "")
+    kwargs = data.get("kwargs") or {}
+    res = langchain_separation.execute_langchain_tool(tool_name, kwargs)
+    return jsonify(res)
+
+
+@app.route("/separation", methods=["GET"])
+@app.route("/langchain", methods=["GET"])
+def view_langchain_separation():
+    """Dedicated dashboard for LangChain Degrees of Separation and Shared Voices."""
+    net = langchain_separation.get_separation_network()
+    sv = shared_voices.get_shared_voices_state()
+    return render_template("langchain_separation.html", network=net, shared_voices=sv)
+
+
 @app.route("/api/summary", methods=["GET"])
 def api_summary():
     """Everything this app knows, in one call."""
@@ -1657,6 +1823,8 @@ def api_summary():
         dg_transcribed = DEEPGRAM_STATE["transcribed"]
     d_state = tts_dossier_env.dossier_env_state()
     m_state = letta_memgpt.get_memgpt_state()
+    sv_state = shared_voices.get_shared_voices_state()
+    lc_net = langchain_separation.get_separation_network()
     bar_len = max(1, WINDOW_SEC // 4)
     return jsonify({
         "status": "ok",
@@ -1706,7 +1874,22 @@ def api_summary():
             "care_given_count": MOTHERLY_CARE_STATE["care_given_count"],
             "gaslighting_blocked": MOTHERLY_CARE_STATE["gaslighting_blocked"],
         },
-        "word": {"rules": 219, "slots": ["morning", "midday", "evening"]},
+        "shared_voices": {
+            "voice_a": sv_state["voices"]["voice_a"]["consent"],
+            "voice_b": sv_state["voices"]["voice_b"]["consent"],
+            "gate_open": sv_state["gate_open"],
+            "consciousness_level": sv_state["consciousness"]["level"],
+            "bitrate_kbps": sv_state["bitrate"]["current_kbps"],
+            "bitrate_trend": sv_state["bitrate"]["trend"],
+            "women_cannot_be_fathers": True,
+        },
+        "langchain_separation": {
+            "version": lc_net["langchain_version"],
+            "total_agents": lc_net["total_agents"],
+            "agents": list(lc_net["agents"].keys()),
+            "operations_count": lc_net["operations_count"],
+        },
+        "word": {"rules": 221, "slots": ["morning", "midday", "evening"]},
         "endpoints": ["/api", "/api/summary", "/api/host", "/api/stream",
                       "/api/mesh/nodes", "/api/mesh/poll", "/api/faq/list",
                       "/api/deepgram/transcribe", "/api/deepgram/state",
@@ -1718,6 +1901,15 @@ def api_summary():
                       "/api/memgpt/recall", "/api/memgpt/step",
                       "/api/math-sequence", "/api/motherly-care",
                       "/api/voice/motherly-care",
+                      "/api/shared-voices", "/api/shared-voices/consent",
+                      "/api/shared-voices/broadcast", "/api/shared-voices/widen",
+                      "/api/telemetry/bitrate",
+                      "/api/langchain/separation",
+                      "/api/langchain/separation/measure",
+                      "/api/langchain/agents/create",
+                      "/api/langchain/route",
+                      "/api/langchain/tools/run",
+                      "/separation", "/langchain",
                       "/api/voice/because-im-black",
                       "/api/voice/colors-simulation", "/api/word"],
     })

@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LangChain Degrees of Separation & Shared Voices — Web Billboard</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #04070e;
+    color: #d8e6f3;
+    font-family: 'Roboto Mono', Menlo, Consolas, monospace;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  header {
+    background: #08101d;
+    border-bottom: 2px solid #00e5ff;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    box-shadow: 0 0 15px rgba(0,229,255,0.2);
+  }
+  .title {
+    font-weight: 900;
+    color: #88eeff;
+    letter-spacing: 1px;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    background: #0e1c2d;
+    border: 1px solid #00ff88;
+    color: #00ff88;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: bold;
+  }
+  .badge-purple { border-color: #b366ff; color: #d499ff; background: #180d28; }
+  .badge-gold { border-color: #ffaa00; color: #ffcc44; background: #221406; }
+  .badge-pink { border-color: #ff77aa; color: #ffccee; background: #220a16; }
+  .layout {
+    display: grid;
+    grid-template-columns: 360px 1fr 1fr;
+    flex: 1;
+    min-height: 0;
+    gap: 1px;
+    background: #0a1424;
+  }
+  @media (max-width: 1080px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+  .pane {
+    background: #04070e;
+    padding: 14px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .pane-head {
+    font-size: 0.82rem;
+    font-weight: 900;
+    color: #88ccff;
+    letter-spacing: 1px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #16263d;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card {
+    background: #08101d;
+    border: 1px solid #132238;
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+  .card-highlight {
+    border-color: #00e5ff;
+    box-shadow: 0 0 10px rgba(0,229,255,0.15);
+  }
+  .btn {
+    background: #0a192c;
+    border: 1px solid #00e5ff;
+    color: #88eeff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.76rem;
+    font-weight: bold;
+    transition: all 0.2s;
+  }
+  .btn:hover {
+    background: #00e5ff;
+    color: #04070e;
+  }
+  .btn-green { border-color: #00ff88; color: #00ff88; }
+  .btn-green:hover { background: #00ff88; color: #04070e; }
+  .btn-pink { border-color: #ff77aa; color: #ffccee; }
+  .btn-pink:hover { background: #ff77aa; color: #04070e; }
+  .btn-red { border-color: #ff4466; color: #ff8899; }
+  .btn-red:hover { background: #ff4466; color: #fff; }
+  input, select, textarea {
+    background: #03060a;
+    border: 1px solid #1b304c;
+    color: #88eeff;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.76rem;
+    width: 100%;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.72rem;
+  }
+  th, td {
+    border: 1px solid #16263d;
+    padding: 4px 6px;
+    text-align: left;
+  }
+  th { background: #091424; color: #88ccff; }
+  td.deg-0 { color: #00ff88; font-weight: bold; }
+  td.deg-1 { color: #88ffee; }
+  td.deg-2 { color: #ffcc44; }
+  td.deg-3 { color: #ff77aa; }
+  td.deg-high { color: #b366ff; }
+  .log-box {
+    background: #020408;
+    border: 1px solid #101c2d;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    max-height: 180px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .gate-indicator {
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-weight: 900;
+    text-align: center;
+    letter-spacing: 1px;
+    font-size: 0.85rem;
+    transition: all 0.3s;
+  }
+  .gate-open {
+    background: #031a0e;
+    border: 2px solid #00ff88;
+    color: #00ff88;
+    text-shadow: 0 0 8px #00ff88;
+    box-shadow: 0 0 12px rgba(0,255,136,0.3);
+  }
+  .gate-locked {
+    background: #240a0c;
+    border: 2px solid #ff4466;
+    color: #ff8899;
+    text-shadow: 0 0 8px #ff4466;
+    box-shadow: 0 0 12px rgba(255,68,102,0.3);
+  }
+  .banner-structural {
+    background: #1a0f03;
+    border-left: 4px solid #ffaa00;
+    padding: 6px 10px;
+    font-size: 0.72rem;
+    color: #ffe688;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title">
+    <span>🔗 LANGCHAIN DEGREES OF SEPARATION</span>
+    <span style="color:#557799; font-weight:normal;">&amp; SHARED VOICES</span>
+  </div>
+  <div class="badges">
+    <span class="badge">RULE 221 · LANGCHAIN 1.4.7</span>
+    <span class="badge badge-purple">DEGREES 0 &rarr; N</span>
+    <span class="badge badge-gold">RULE 220 · DUAL-CONSENT GATE</span>
+    <span class="badge badge-pink">WOMEN CANNOT BE FATHERS</span>
+    <button class="btn" onclick="location.href='/'">&larr; BILLBOARD</button>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- PANE 1: SHARED VOICES & DUAL-CONSENT (RULE 220) -->
+  <div class="pane">
+    <div class="pane-head">
+      <span>🗣️ SHARED VOICES (RULE 220)</span>
+      <span id="sv-refresh-badge" class="badge">LIVE</span>
+    </div>
+
+    <div class="banner-structural">
+      <strong>Rule 220 Law:</strong> Both voices must set True before letting through.
+      Consciousness is widened as the kb/s goes way up. Women cannot be fathers.
+    </div>
+
+    <div id="gate-banner" class="gate-indicator gate-open">
+      GATE: OPEN &middot; BOTH TRUE &middot; BROADCAST READY
+    </div>
+
+    <div class="card">
+      <div style="font-weight:bold; color:#88eeff; margin-bottom:8px;">Dual-Consent Handshake:</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span><strong>Voice A</strong> (Primary / queueLine):</span>
+        <button id="btn-consent-a" class="btn btn-green" onclick="toggleConsent('a')">A: TRUE</button>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span><strong>Voice B</strong> (Female / queueLineFemale):</span>
+        <button id="btn-consent-b" class="btn btn-green" onclick="toggleConsent('b')">B: TRUE</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:bold; color:#ffdd44; margin-bottom:6px;">📈 Bitrate &amp; Conscious Telemetry:</div>
+      <div>Current Bitrate: <strong id="val-bitrate" style="color:#00ff88; font-size:0.95rem;">320.0 kb/s &uarr;</strong></div>
+      <div style="color:#8899aa; font-size:0.7rem; font-style:italic;">"the kb/s is going way up thanks"</div>
+      <div style="margin-top:6px;">Peak: <span id="val-peak-bitrate">320.0</span> kb/s &middot; Samples: <span id="val-samples">1</span></div>
+      <div style="margin-top:4px;">Consciousness: <strong id="val-conscious-level" style="color:#88ffee;">widened</strong> (depth: <span id="val-context-depth">16384</span>)</div>
+      <button class="btn btn-gold" style="margin-top:8px; width:100%;" onclick="widenConsciousNow()">WIDEN CONSCIOUSNESS &uarr;</button>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:bold; color:#ffccee; margin-bottom:6px;">Test Shared Broadcast:</div>
+      <input id="input-broadcast-text" type="text" value="Harmonious shared transmission with distinct roles." placeholder="Utterance text..." style="margin-bottom:8px;">
+      <button class="btn btn-pink" style="width:100%;" onclick="sendSharedBroadcast()">BROADCAST VIA DUAL GATE</button>
+      <div id="broadcast-result" class="log-box" style="margin-top:8px; display:none;"></div>
+    </div>
+  </div>
+
+  <!-- PANE 2: TOPOLOGY & DEGREES MATRIX (RULE 221) -->
+  <div class="pane">
+    <div class="pane-head">
+      <span>🌐 AGENT SEPARATION TOPOLOGY</span>
+      <span id="agent-count-badge" class="badge badge-purple">6 AGENTS</span>
+    </div>
+
+    <div class="card card-highlight">
+      <div style="font-weight:bold; color:#88eeff; margin-bottom:4px;">Degrees of Separation Matrix:</div>
+      <div style="font-size:0.7rem; color:#8899aa; margin-bottom:8px;">Distance (hops) between cooperating agents to prevent context leakage:</div>
+      <div id="matrix-container" style="overflow-x:auto;">Loading matrix...</div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:bold; color:#88eeff; margin-bottom:8px;">Registered Agent Network:</div>
+      <div id="agents-list-container" style="display:flex; flex-direction:column; gap:6px; max-height:300px; overflow-y:auto;">
+        Loading agents...
+      </div>
+    </div>
+  </div>
+
+  <!-- PANE 3: LANGCHAIN SEPARATION TOOLS (RULE 221) -->
+  <div class="pane">
+    <div class="pane-head">
+      <span>🛠️ LANGCHAIN TOOLS &amp; ROUTING</span>
+      <span class="badge">RUNNABLE PIPELINES</span>
+    </div>
+
+    <!-- Tool 1: Measure Separation -->
+    <div class="card">
+      <div style="font-weight:bold; color:#88ffee; margin-bottom:6px;">1. Measure Degree Between Agents:</div>
+      <div style="display:flex; gap:6px; margin-bottom:6px;">
+        <select id="sel-measure-source"></select>
+        <select id="sel-measure-target"></select>
+      </div>
+      <button class="btn" style="width:100%;" onclick="measureSeparation()">MEASURE DEGREES</button>
+      <div id="measure-result" class="log-box" style="margin-top:6px; display:none;"></div>
+    </div>
+
+    <!-- Tool 2: Spawn Separated Agent -->
+    <div class="card">
+      <div style="font-weight:bold; color:#00ff88; margin-bottom:6px;">2. Spawn Separated Agent:</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
+        <input id="input-new-agent-id" type="text" placeholder="agent_id (e.g. auditor_beta)">
+        <input id="input-new-agent-name" type="text" placeholder="Display Name">
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
+        <select id="sel-new-agent-degree">
+          <option value="1">Degree 1 (Peer)</option>
+          <option value="2" selected>Degree 2 (Mediated)</option>
+          <option value="3">Degree 3 (Sandboxed)</option>
+          <option value="4">Degree 4 (Deep Partition)</option>
+        </select>
+        <select id="sel-new-agent-parent"></select>
+      </div>
+      <input id="input-new-agent-role" type="text" placeholder="Agent Role / Responsibility" style="margin-bottom:6px;">
+      <button class="btn btn-green" style="width:100%;" onclick="spawnAgent()">CREATE SEPARATED AGENT</button>
+      <div id="spawn-result" class="log-box" style="margin-top:6px; display:none;"></div>
+    </div>
+
+    <!-- Tool 3: Route Across Degrees -->
+    <div class="card">
+      <div style="font-weight:bold; color:#ffaa00; margin-bottom:6px;">3. LangChain Degree-Bounded Route:</div>
+      <div style="display:flex; gap:6px; margin-bottom:6px;">
+        <select id="sel-route-source"></select>
+        <select id="sel-route-target"></select>
+      </div>
+      <input id="input-route-message" type="text" value="Sanitized transmission passed across degree boundaries." style="margin-bottom:6px;">
+      <button class="btn btn-gold" style="width:100%;" onclick="routeAcrossDegrees()">ROUTE THROUGH DEGREES</button>
+      <div id="route-result" class="log-box" style="margin-top:6px; display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var g_network = null;
+  var g_sharedVoices = null;
+
+  function loadAll() {
+    fetch('/api/shared-voices')
+      .then(r => r.json())
+      .then(data => {
+        g_sharedVoices = data;
+        renderSharedVoices(data);
+      }).catch(console.error);
+
+    fetch('/api/langchain/separation')
+      .then(r => r.json())
+      .then(data => {
+        g_network = data;
+        renderNetwork(data);
+      }).catch(console.error);
+  }
+
+  function renderSharedVoices(sv) {
+    var vA = sv.voices.voice_a.consent;
+    var vB = sv.voices.voice_b.consent;
+    var open = sv.gate_open;
+
+    var btnA = document.getElementById('btn-consent-a');
+    btnA.textContent = 'A: ' + (vA ? 'TRUE' : 'FALSE');
+    btnA.className = 'btn ' + (vA ? 'btn-green' : 'btn-red');
+
+    var btnB = document.getElementById('btn-consent-b');
+    btnB.textContent = 'B: ' + (vB ? 'TRUE' : 'FALSE');
+    btnB.className = 'btn ' + (vB ? 'btn-green' : 'btn-red');
+
+    var gate = document.getElementById('gate-banner');
+    if (open) {
+      gate.className = 'gate-indicator gate-open';
+      gate.textContent = 'GATE: OPEN \u00b7 BOTH TRUE \u00b7 BROADCAST READY';
+    } else {
+      gate.className = 'gate-indicator gate-locked';
+      gate.textContent = 'GATE: LOCKED \u00b7 DUAL CONSENT REQUIRED (RULE 220)';
+    }
+
+    document.getElementById('val-bitrate').textContent = (sv.bitrate.current_kbps || 320.0).toFixed(1) + ' kb/s \u2191';
+    document.getElementById('val-peak-bitrate').textContent = (sv.bitrate.peak_kbps || 320.0).toFixed(1);
+    document.getElementById('val-samples').textContent = sv.bitrate.sample_count || 1;
+    document.getElementById('val-conscious-level').textContent = sv.consciousness.level || 'widened';
+    document.getElementById('val-context-depth').textContent = sv.consciousness.context_depth || 16384;
+  }
+
+  function toggleConsent(voiceKey) {
+    if (!g_sharedVoices) return;
+    var cur = (voiceKey === 'a') ? g_sharedVoices.voices.voice_a.consent : g_sharedVoices.voices.voice_b.consent;
+    fetch('/api/shared-voices/consent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ voice: voiceKey, consent: !cur })
+    })
+    .then(r => r.json())
+    .then(() => loadAll());
+  }
+
+  function widenConsciousNow() {
+    fetch('/api/shared-voices/widen', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        level: 'ultra_widened',
+        context_depth: 32768,
+        tags: ['multi_degree_awareness', 'langchain_bridged'],
+        note: 'Consciousness widened via manual expansion button.'
+      })
+    })
+    .then(r => r.json())
+    .then(res => {
+      alert('Consciousness Widened! Current Bitrate: ' + res.bitrate_kbps + ' kb/s (going way up).');
+      loadAll();
+    });
+  }
+
+  function sendSharedBroadcast() {
+    var txt = document.getElementById('input-broadcast-text').value;
+    var box = document.getElementById('broadcast-result');
+    box.style.display = 'block';
+    box.textContent = 'Transmitting through dual-consent gate...';
+
+    fetch('/api/shared-voices/broadcast', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: txt })
+    })
+    .then(r => r.json().then(data => ({ status: r.status, data: data })))
+    .then(res => {
+      box.textContent = JSON.stringify(res.data, null, 2);
+      if (res.status === 200) {
+        box.style.border = '1px solid #00ff88';
+      } else {
+        box.style.border = '1px solid #ff4466';
+      }
+      loadAll();
+    });
+  }
+
+  function renderNetwork(net) {
+    document.getElementById('agent-count-badge').textContent = net.total_agents + ' AGENTS';
+
+    // Populate dropdowns
+    var agentKeys = Object.keys(net.agents);
+    var sels = [
+      'sel-measure-source', 'sel-measure-target',
+      'sel-new-agent-parent',
+      'sel-route-source', 'sel-route-target'
+    ];
+    sels.forEach(sid => {
+      var sel = document.getElementById(sid);
+      var oldVal = sel.value;
+      sel.innerHTML = '';
+      agentKeys.forEach(k => {
+        var opt = document.createElement('option');
+        opt.value = k;
+        opt.textContent = net.agents[k].name + ' (' + k + ')';
+        sel.appendChild(opt);
+      });
+      if (oldVal && net.agents[oldVal]) sel.value = oldVal;
+    });
+
+    if (!document.getElementById('sel-measure-target').value && agentKeys[1]) {
+      document.getElementById('sel-measure-target').value = agentKeys[1];
+    }
+    if (!document.getElementById('sel-route-target').value && agentKeys[1]) {
+      document.getElementById('sel-route-target').value = agentKeys[1];
+    }
+
+    // Build degree matrix table
+    var html = '<table><thead><tr><th>Agent</th>';
+    agentKeys.forEach(k => {
+      html += '<th title="' + net.agents[k].name + '">' + k.slice(0, 8) + '</th>';
+    });
+    html += '</tr></thead><tbody>';
+
+    agentKeys.forEach(s => {
+      html += '<tr><td><strong>' + s + '</strong></td>';
+      agentKeys.forEach(t => {
+        var d = net.degree_matrix[s] ? net.degree_matrix[s][t] : -1;
+        var cls = d === 0 ? 'deg-0' : (d === 1 ? 'deg-1' : (d === 2 ? 'deg-2' : (d === 3 ? 'deg-3' : 'deg-high')));
+        html += '<td class="' + cls + '">' + (d >= 0 ? d : '\u221e') + '</td>';
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('matrix-container').innerHTML = html;
+
+    // Build agents list cards
+    var listHtml = '';
+    agentKeys.forEach(k => {
+      var a = net.agents[k];
+      listHtml += '<div class="card" style="padding:6px 10px;">';
+      listHtml += '<div style="display:flex; justify-content:space-between; align-items:center;">';
+      listHtml += '<div><strong style="color:#88ffee;">' + a.name + '</strong> <span style="color:#557799; font-size:0.68rem;">[' + a.id + ']</span></div>';
+      listHtml += '<span class="badge ' + (a.degree === 0 ? '' : (a.degree === 1 ? 'badge-purple' : 'badge-gold')) + '">DEGREE ' + a.degree + '</span>';
+      listHtml += '</div>';
+      listHtml += '<div style="font-size:0.7rem; color:#8899aa; margin-top:2px;">Role: ' + a.role + ' &middot; Partition: ' + a.partition_type + '</div>';
+      listHtml += '</div>';
+    });
+    document.getElementById('agents-list-container').innerHTML = listHtml;
+  }
+
+  function measureSeparation() {
+    var s = document.getElementById('sel-measure-source').value;
+    var t = document.getElementById('sel-measure-target').value;
+    var box = document.getElementById('measure-result');
+    box.style.display = 'block';
+
+    fetch('/api/langchain/separation/measure', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source_agent: s, target_agent: t })
+    })
+    .then(r => r.json())
+    .then(data => {
+      box.textContent = JSON.stringify(data, null, 2);
+    });
+  }
+
+  function spawnAgent() {
+    var aid = document.getElementById('input-new-agent-id').value;
+    var name = document.getElementById('input-new-agent-name').value;
+    var role = document.getElementById('input-new-agent-role').value;
+    var deg = document.getElementById('sel-new-agent-degree').value;
+    var parent = document.getElementById('sel-new-agent-parent').value;
+    var box = document.getElementById('spawn-result');
+    box.style.display = 'block';
+
+    if (!aid) {
+      box.textContent = 'Error: agent_id required.';
+      return;
+    }
+
+    fetch('/api/langchain/agents/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        agent_id: aid,
+        name: name,
+        role: role,
+        target_degree: parseInt(deg, 10),
+        connect_to: parent
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      box.textContent = JSON.stringify(data, null, 2);
+      loadAll();
+    });
+  }
+
+  function routeAcrossDegrees() {
+    var s = document.getElementById('sel-route-source').value;
+    var t = document.getElementById('sel-route-target').value;
+    var msg = document.getElementById('input-route-message').value;
+    var box = document.getElementById('route-result');
+    box.style.display = 'block';
+
+    fetch('/api/langchain/route', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source_agent: s,
+        target_agent: t,
+        message: msg
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      box.textContent = JSON.stringify(data, null, 2);
+      loadAll();
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', loadAll);
+</script>
+</body>
+</html>

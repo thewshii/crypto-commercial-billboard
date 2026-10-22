@@ -21,6 +21,8 @@ regime_tape.jsonl
 regime_log.txt
 guardian_state.json
 memgpt_state.json
+shared_voices_state.json
+langchain_separation_state.json
 letta/
 
 # Scratch files

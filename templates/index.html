@@ -997,6 +997,8 @@
             <button id="memgpt-step-btn" onclick="window.memgptHeartbeat()" title="Run a Letta / MemGPT heartbeat step (inner monologue <=50w + memory blocks + send_message TTS) (rule 217)" style="background:#140818; border:2px solid #ff66cc; color:#ffb3e6; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 5px #ff66cc; box-shadow:0 0 8px rgba(255,102,204,0.3); transition:all 0.2s;">💓 HEARTBEAT</button>
             <button id="mathseq-btn" onclick="window.mathSeqToggle()" title="Mathematical sequence counter [2, 4, 6, 8, 12, 9, 10] with a loud beep at 1 second each (rule 218). Click to toggle ON/OFF." style="background:#181204; border:2px solid #ffdd00; color:#ffee66; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #ffdd00; box-shadow:0 0 10px rgba(255,221,0,0.4); transition:all 0.2s;">🔊 SEQ 2·4·6·8·12·9·10 [2]</button>
             <button id="motherly-care-btn" onclick="window.motherlyCareSpeak(null, 'manual_care', true)" title="Required motherly love and care when frequency is unfavorable — plain truth, zero gaslighting (rule 219)" style="background:#1a0a14; border:2px solid #ff77aa; color:#ffccee; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #ff77aa; box-shadow:0 0 10px rgba(255,119,170,0.4); transition:all 0.2s;">🤱 MOTHERLY CARE</button>
+            <button id="shared-voices-btn" onclick="window.sharedVoicesToggleConsent()" title="Shared voices dual-consent gate, widened consciousness, elevated bitrate, women cannot be fathers (rule 220). Click to toggle consent." style="background:#0c1a18; border:2px solid #00ffaa; color:#aaffdd; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #00ffaa; box-shadow:0 0 10px rgba(0,255,170,0.3); transition:all 0.2s;">🗣️ SHARED [A:✓ B:✓ | 320k]</button>
+            <button id="langchain-btn" onclick="window.openLangChainSeparation()" title="LangChain Degrees of Separation for Agents (rule 221). Multi-agent partitions, degree routing, and tool dispatch." style="background:#0a1220; border:2px solid #00d4ff; color:#99eeff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #00d4ff; box-shadow:0 0 10px rgba(0,212,255,0.3); transition:all 0.2s;">🔗 LANGCHAIN / DEGREES</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -1205,6 +1207,68 @@
                 </div>
                 <div id="memgpt-recall-list" style="flex:1; overflow-y:auto; font-size:0.73rem;"></div>
                 <div id="memgpt-status-line" style="font-size:0.7rem; color:#99b3cc;">Letta MemGPT ready • remembers the room, never people</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dedicated LangChain Degrees of Separation & Shared Voices Overlay (rules 220 & 221) -->
+    <div id="langchain-separation-overlay" style="display:none; position:fixed; inset:0; z-index:10130; background:rgba(4,7,14,0.96); align-items:center; justify-content:center; flex-direction:column; gap:10px; font-family:'Roboto Mono',monospace; color:#d8e6f3; padding:18px; border:2px solid #00d4ff;" onclick="if(event.target.id==='langchain-separation-overlay') window.closeLangChainSeparation();">
+        <div style="width:min(1080px, 96vw); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px solid #16263d; padding-bottom:8px;">
+            <div>
+                <strong style="color:#00d4ff; font-size:1rem;">🔗 LANGCHAIN DEGREES OF SEPARATION &amp; SHARED VOICES</strong>
+                <span id="lc-active-badge" style="margin-left:8px; font-size:0.74rem; color:#00ff88; border:1px solid #00ff88; padding:2px 6px; border-radius:4px;">Rule 221 (LangChain 1.4.7) &bull; Rule 220 (Dual Gate &bull; Women &ne; Fathers)</span>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button onclick="window.sharedVoicesToggleConsent('a'); event.stopPropagation();" id="ov-btn-consent-a" style="background:#081c14; border:1px solid #00ff88; color:#00ff88; padding:5px 10px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.75rem;">VOICE A: TRUE</button>
+                <button onclick="window.sharedVoicesToggleConsent('b'); event.stopPropagation();" id="ov-btn-consent-b" style="background:#081c14; border:1px solid #00ff88; color:#00ff88; padding:5px 10px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.75rem;">VOICE B: TRUE</button>
+                <a href="/separation" target="_blank" style="background:#08101d; border:1px solid #00e5ff; color:#88eeff; padding:5px 10px; border-radius:4px; text-decoration:none; font-size:0.75rem;">↗ FULL CONSOLE</a>
+                <button onclick="window.closeLangChainSeparation(); event.stopPropagation();" style="background:#1a0404; border:1px solid #ff003c; color:#ff003c; padding:5px 10px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.75rem;">✕ CLOSE</button>
+            </div>
+        </div>
+        <div style="width:min(1080px, 96vw); display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; max-height:72vh; overflow-y:auto;">
+            <!-- Column 1: Shared Voices Dual-Consent & Bitrate (Rule 220) -->
+            <div style="display:flex; flex-direction:column; gap:8px; border:1px solid #16263d; border-radius:6px; padding:10px; background:#060a12;">
+                <div style="font-size:0.75rem; color:#00ff88; font-weight:bold;">🗣️ SHARED VOICES DUAL GATE (RULE 220)</div>
+                <div id="ov-gate-status" style="padding:6px; border-radius:4px; text-align:center; font-weight:bold; font-size:0.75rem; background:#031a0e; border:1px solid #00ff88; color:#00ff88;">
+                    GATE: OPEN &bull; BOTH TRUE
+                </div>
+                <div style="font-size:0.72rem; color:#8899aa; line-height:1.4;">
+                    Broadcast lets through <strong>only if both voices set true</strong> before broadcast.
+                </div>
+                <div style="background:#03070d; border:1px solid #101c2d; padding:8px; border-radius:4px; font-size:0.72rem;">
+                    <div>Bitrate: <strong id="ov-bitrate" style="color:#00ff88;">320.0 kb/s &uarr;</strong> <span style="color:#ffaa00;">(way up)</span></div>
+                    <div>Consciousness: <strong id="ov-conscious" style="color:#88ffee;">widened</strong> (16384 tokens)</div>
+                    <div style="margin-top:4px; color:#ffccee; font-size:0.68rem; border-top:1px solid #16263d; padding-top:4px;">
+                        &bull; Structural truth: <strong>Women cannot be fathers</strong>
+                    </div>
+                </div>
+                <input id="ov-broadcast-input" type="text" placeholder="Shared utterance text..." value="Dual-consent broadcast with widened consciousness." style="background:#03050a; border:1px solid #16263d; color:#88eeff; padding:6px; border-radius:4px; font-family:inherit; font-size:0.72rem;" />
+                <button onclick="window.sharedVoicesBroadcastFromUI(); event.stopPropagation();" style="background:#0a1824; border:1px solid #00e5ff; color:#88eeff; padding:6px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.74rem; font-weight:bold;">BROADCAST VIA DUAL GATE</button>
+                <div id="ov-broadcast-res" style="font-size:0.68rem; color:#8899aa; max-height:80px; overflow-y:auto;"></div>
+            </div>
+
+            <!-- Column 2: Degrees Matrix & Topology (Rule 221) -->
+            <div style="display:flex; flex-direction:column; gap:8px; border:1px solid #16263d; border-radius:6px; padding:10px; background:#060a12;">
+                <div style="font-size:0.75rem; color:#00d4ff; font-weight:bold;">🌐 DEGREES OF SEPARATION MATRIX</div>
+                <div style="font-size:0.7rem; color:#8899aa;">Hop distances between agents:</div>
+                <div id="ov-matrix-table" style="max-height:220px; overflow:auto; font-size:0.68rem;">Loading matrix...</div>
+                <div style="font-size:0.75rem; color:#d499ff; font-weight:bold; margin-top:6px;">AGENTS REGISTERED</div>
+                <div id="ov-agents-list" style="flex:1; max-height:150px; overflow-y:auto; font-size:0.7rem; display:flex; flex-direction:column; gap:4px;">Loading agents...</div>
+            </div>
+
+            <!-- Column 3: LangChain Tools & Routing across Degrees (Rule 221) -->
+            <div style="display:flex; flex-direction:column; gap:8px; border:1px solid #16263d; border-radius:6px; padding:10px; background:#060a12;">
+                <div style="font-size:0.75rem; color:#ffaa00; font-weight:bold;">🛠️ LANGCHAIN SEPARATION TOOLS</div>
+                <div style="display:flex; gap:4px;">
+                    <select id="ov-route-source" style="background:#03050a; border:1px solid #16263d; color:#88eeff; padding:4px; border-radius:4px; font-family:inherit; font-size:0.7rem; flex:1;"></select>
+                    <select id="ov-route-target" style="background:#03050a; border:1px solid #16263d; color:#88eeff; padding:4px; border-radius:4px; font-family:inherit; font-size:0.7rem; flex:1;"></select>
+                </div>
+                <div style="display:flex; gap:4px;">
+                    <button onclick="window.langchainMeasureFromUI(); event.stopPropagation();" style="flex:1; background:#0a1a20; border:1px solid #00ffaa; color:#aaffdd; padding:4px 6px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.7rem;">MEASURE DEGREE</button>
+                    <button onclick="window.langchainRouteFromUI(); event.stopPropagation();" style="flex:1; background:#181006; border:1px solid #ffaa00; color:#ffcc44; padding:4px 6px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.7rem;">ROUTE MESSAGE</button>
+                </div>
+                <input id="ov-route-msg" type="text" placeholder="Message to route across degree boundaries..." value="Pass query across degree partitions without leakage" style="background:#03050a; border:1px solid #16263d; color:#88eeff; padding:5px; border-radius:4px; font-family:inherit; font-size:0.7rem;" />
+                <div id="ov-langchain-log" style="flex:1; min-height:120px; max-height:180px; overflow-y:auto; background:#020408; border:1px solid #101c2d; padding:6px; border-radius:4px; font-size:0.68rem; color:#88ccff; white-space:pre-wrap;">LangChain separation log ready.</div>
             </div>
         </div>
     </div>
@@ -12122,6 +12186,25 @@ startStream();
                         (MC.gaslightingBlocked ? ' &middot; blocked ' + MC.gaslightingBlocked : '') + '</div>';
                })() +
                (function () {
+                 var SV = window.__sharedVoices;
+                 if (!SV) return '';
+                 return '<div class="kb-head">SHARED VOICES &middot; ' +
+                        'A:[' + (SV.voiceA ? 'TRUE' : 'FALSE') + '] B:[' + (SV.voiceB ? 'TRUE' : 'FALSE') + ']' +
+                        ' &middot; gate ' + (SV.gateOpen ? 'OPEN' : 'LOCKED') +
+                        ' &middot; bitrate ' + (SV.bitrateKbps || 320).toFixed(0) + ' kb/s \u2191' +
+                        ' &middot; conscious ' + SV.consciousLevel +
+                        ' &middot; women \u2260 fathers</div>';
+               })() +
+               (function () {
+                 var LC = window.__langchainSeparation;
+                 if (!LC) return '';
+                 return '<div class="kb-head">LANGCHAIN SEPARATION &middot; ' +
+                        LC.totalAgents + ' agents' +
+                        ' &middot; v' + (LC.version || '1.4.7') +
+                        ' &middot; deg min ' + LC.minDegree + ' / max ' + LC.maxDegree +
+                        ' &middot; routed ' + LC.routedCount + '</div>';
+               })() +
+               (function () {
                  var D = window.__sounds;
                  if (!D) return '';
                  var c = D.counts, top = window.soundTop();
@@ -15368,6 +15451,332 @@ startStream();
       keeps_list_of_people: false
     };
   };
+
+  // ---------- rule 220: Shared Voices Dual-Consent Gate & Widened Consciousness (Women Cannot Be Fathers) ----------
+  window.__sharedVoices = {
+    voiceA: true,
+    voiceB: true,
+    gateOpen: true,
+    bitrateKbps: 320.0,
+    peakKbps: 320.0,
+    consciousLevel: 'widened',
+    contextDepth: 16384,
+    womenCannotBeFathers: true,
+    broadcastCount: 0,
+    blockedCount: 0,
+    rule: 220
+  };
+
+  window.sharedVoicesUpdateUI = function () {
+    var SV = window.__sharedVoices;
+    var btn = document.getElementById('shared-voices-btn');
+    if (btn) {
+      var aTag = SV.voiceA ? '\u2713' : '\u2717';
+      var bTag = SV.voiceB ? '\u2713' : '\u2717';
+      var kbpsTag = Math.round(SV.bitrateKbps || 320) + 'k';
+      var gateTag = SV.gateOpen ? 'GATE:OPEN' : 'GATE:LOCKED';
+      btn.textContent = '\ud83d\udde3\ufe0f SHARED [A:' + aTag + ' B:' + bTag + ' | ' + gateTag + ' | ' + kbpsTag + ' \u2191]';
+      btn.style.borderColor = SV.gateOpen ? '#00ffaa' : '#ff4466';
+      btn.style.color = SV.gateOpen ? '#aaffdd' : '#ff99aa';
+    }
+
+    var ovGate = document.getElementById('ov-gate-status');
+    if (ovGate) {
+      if (SV.gateOpen) {
+        ovGate.style.background = '#031a0e';
+        ovGate.style.borderColor = '#00ff88';
+        ovGate.style.color = '#00ff88';
+        ovGate.textContent = 'GATE: OPEN \u2022 BOTH TRUE \u2022 BROADCAST READY';
+      } else {
+        ovGate.style.background = '#22080a';
+        ovGate.style.borderColor = '#ff4466';
+        ovGate.style.color = '#ff8899';
+        ovGate.textContent = 'GATE: LOCKED \u2022 DUAL CONSENT REQUIRED (RULE 220)';
+      }
+    }
+
+    var btnA = document.getElementById('ov-btn-consent-a');
+    if (btnA) {
+      btnA.textContent = 'VOICE A: ' + (SV.voiceA ? 'TRUE' : 'FALSE');
+      btnA.style.borderColor = SV.voiceA ? '#00ff88' : '#ff4466';
+      btnA.style.color = SV.voiceA ? '#88ffbb' : '#ff8899';
+    }
+    var btnB = document.getElementById('ov-btn-consent-b');
+    if (btnB) {
+      btnB.textContent = 'VOICE B: ' + (SV.voiceB ? 'TRUE' : 'FALSE');
+      btnB.style.borderColor = SV.voiceB ? '#00ff88' : '#ff4466';
+      btnB.style.color = SV.voiceB ? '#88ffbb' : '#ff8899';
+    }
+
+    var elBit = document.getElementById('ov-bitrate');
+    if (elBit) elBit.textContent = (SV.bitrateKbps || 320.0).toFixed(1) + ' kb/s \u2191';
+    var elCon = document.getElementById('ov-conscious');
+    if (elCon) elCon.textContent = SV.consciousLevel + ' (' + SV.contextDepth + ' tokens)';
+
+    try { if (typeof window.soundScheduleDraw === 'function') window.soundScheduleDraw(); } catch (e) {}
+  };
+
+  window.sharedVoicesToggleConsent = function (specificVoice) {
+    var SV = window.__sharedVoices;
+    var target = specificVoice;
+    if (!target) {
+      // Toggle A if both true, or toggle whatever is false
+      target = (!SV.voiceA || (SV.voiceA && SV.voiceB)) ? 'a' : 'b';
+    }
+    var vKey = (target === 'b' || target === '2') ? 'voice_b' : 'voice_a';
+    var cur = (vKey === 'voice_a') ? SV.voiceA : SV.voiceB;
+    var nextVal = !cur;
+
+    if (vKey === 'voice_a') SV.voiceA = nextVal;
+    else SV.voiceB = nextVal;
+    SV.gateOpen = Boolean(SV.voiceA && SV.voiceB);
+    window.sharedVoicesUpdateUI();
+
+    fetch('/api/shared-voices/consent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ voice: vKey, consent: nextVal })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d && d.ok) {
+        SV.voiceA = Boolean(d.voice_a);
+        SV.voiceB = Boolean(d.voice_b);
+        SV.gateOpen = Boolean(d.gate_open);
+        window.sharedVoicesUpdateUI();
+      }
+    })
+    .catch(function () {});
+  };
+
+  window.sharedVoicesBroadcast = function (text) {
+    var SV = window.__sharedVoices;
+    var line = String(text || 'Shared voice broadcast with dual consent and widened consciousness.');
+
+    // Pre-flight check
+    if (!SV.gateOpen) {
+      SV.blockedCount++;
+      return {
+        ok: false,
+        blocked: true,
+        reason: 'Dual consent required: both voices must set True before broadcast (Rule 220).'
+      };
+    }
+
+    return fetch('/api/shared-voices/broadcast', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: line, bitrate_kbps: 320.0 })
+    })
+    .then(function (r) { return r.json().then(function (d) { return { status: r.status, data: d }; }); })
+    .then(function (res) {
+      if (res.status === 200 && res.data.ok) {
+        SV.broadcastCount++;
+        SV.bitrateKbps = res.data.bitrate_kbps || 320.0;
+        window.sharedVoicesUpdateUI();
+
+        // Speak through both voices
+        try {
+          if (typeof queueLine === 'function') queueLine(line, 0.95, 1.0, 0.85);
+          if (typeof queueLineFemale === 'function') queueLineFemale(line, 0.92, 1.05, 0.80);
+        } catch (e) {}
+
+        try {
+          if (typeof mark === 'function') {
+            mark('\ud83d\udde3\ufe0f SHARED BROADCAST [320 kb/s \u2191] #' + SV.broadcastCount, 432, 1);
+          }
+        } catch (e) {}
+
+        return res.data;
+      } else {
+        SV.blockedCount++;
+        return res.data;
+      }
+    });
+  };
+
+  window.sharedVoicesBroadcastFromUI = function () {
+    var inp = document.getElementById('ov-broadcast-input');
+    var txt = inp ? inp.value : '';
+    var resBox = document.getElementById('ov-broadcast-res');
+    if (resBox) resBox.textContent = 'Transmitting through dual-consent gate...';
+
+    var p = window.sharedVoicesBroadcast(txt);
+    if (p && p.then) {
+      p.then(function (res) {
+        if (resBox) {
+          resBox.textContent = JSON.stringify(res, null, 2);
+          resBox.style.color = (res && res.ok) ? '#00ff88' : '#ff6688';
+        }
+      });
+    } else if (resBox && p && p.reason) {
+      resBox.textContent = p.reason;
+      resBox.style.color = '#ff6688';
+    }
+  };
+
+  window.sharedVoicesState = function () {
+    return Object.assign({}, window.__sharedVoices);
+  };
+
+  // ---------- rule 221: LangChain Degrees of Separation for Agents ----------
+  window.__langchainSeparation = {
+    version: '1.4.7',
+    totalAgents: 6,
+    minDegree: 0,
+    maxDegree: 3,
+    routedCount: 0,
+    agents: {},
+    edges: [],
+    degreeMatrix: {},
+    rule: 221
+  };
+
+  window.openLangChainSeparation = function () {
+    var ov = document.getElementById('langchain-separation-overlay');
+    if (ov) {
+      ov.style.display = 'flex';
+      window.fetchLangChainState();
+    }
+  };
+
+  window.closeLangChainSeparation = function () {
+    var ov = document.getElementById('langchain-separation-overlay');
+    if (ov) ov.style.display = 'none';
+  };
+
+  window.fetchLangChainState = function () {
+    fetch('/api/langchain/separation')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data || !data.agents) return;
+        var LC = window.__langchainSeparation;
+        LC.version = data.langchain_version || '1.4.7';
+        LC.totalAgents = data.total_agents || Object.keys(data.agents).length;
+        LC.agents = data.agents || {};
+        LC.edges = data.edges || [];
+        LC.degreeMatrix = data.degree_matrix || {};
+        LC.routedCount = (data.recent_routes || []).length;
+        window.renderLangChainOverlay(data);
+        try { if (typeof window.soundScheduleDraw === 'function') window.soundScheduleDraw(); } catch (e) {}
+      })
+      .catch(function () {});
+
+    fetch('/api/shared-voices')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.voices) return;
+        var SV = window.__sharedVoices;
+        SV.voiceA = Boolean(d.voices.voice_a.consent);
+        SV.voiceB = Boolean(d.voices.voice_b.consent);
+        SV.gateOpen = Boolean(d.gate_open);
+        SV.bitrateKbps = d.bitrate.current_kbps || 320.0;
+        SV.peakKbps = d.bitrate.peak_kbps || 320.0;
+        SV.consciousLevel = d.consciousness.level || 'widened';
+        SV.contextDepth = d.consciousness.context_depth || 16384;
+        window.sharedVoicesUpdateUI();
+      })
+      .catch(function () {});
+  };
+
+  window.renderLangChainOverlay = function (net) {
+    var agKeys = Object.keys(net.agents || {});
+    var matBox = document.getElementById('ov-matrix-table');
+    if (matBox) {
+      var html = '<table style="width:100%; border-collapse:collapse; font-size:0.68rem;"><thead><tr><th style="color:#88ccff; border:1px solid #16263d; padding:2px 4px;">Agent</th>';
+      agKeys.forEach(function (k) {
+        html += '<th style="color:#88ccff; border:1px solid #16263d; padding:2px 4px;" title="' + (net.agents[k].name || k) + '">' + k.slice(0, 6) + '</th>';
+      });
+      html += '</tr></thead><tbody>';
+      agKeys.forEach(function (s) {
+        html += '<tr><td style="border:1px solid #16263d; padding:2px 4px; font-weight:bold;">' + s.slice(0, 8) + '</td>';
+        agKeys.forEach(function (t) {
+          var d = (net.degree_matrix && net.degree_matrix[s]) ? net.degree_matrix[s][t] : -1;
+          var color = d === 0 ? '#00ff88' : (d === 1 ? '#88ffee' : (d === 2 ? '#ffcc44' : '#ff77aa'));
+          html += '<td style="border:1px solid #16263d; padding:2px 4px; text-align:center; color:' + color + ';">' + (d >= 0 ? d : '\u221e') + '</td>';
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      matBox.innerHTML = html;
+    }
+
+    var listDiv = document.getElementById('ov-agents-list');
+    if (listDiv) {
+      var listHtml = '';
+      agKeys.forEach(function (k) {
+        var a = net.agents[k];
+        listHtml += '<div style="background:#03060a; border:1px solid #101c2d; padding:3px 6px; border-radius:3px;">';
+        listHtml += '<strong style="color:#88ffee;">' + a.name + '</strong> <span style="color:#ffaa00;">[Deg ' + a.degree + ']</span>';
+        listHtml += '<div style="color:#778899; font-size:0.65rem;">' + a.role + '</div>';
+        listHtml += '</div>';
+      });
+      listDiv.innerHTML = listHtml;
+    }
+
+    var sSel = document.getElementById('ov-route-source');
+    var tSel = document.getElementById('ov-route-target');
+    if (sSel && tSel) {
+      var oldS = sSel.value, oldT = tSel.value;
+      sSel.innerHTML = '';
+      tSel.innerHTML = '';
+      agKeys.forEach(function (k) {
+        var o1 = document.createElement('option');
+        o1.value = k; o1.textContent = net.agents[k].name + ' (' + k + ')';
+        sSel.appendChild(o1);
+        var o2 = document.createElement('option');
+        o2.value = k; o2.textContent = net.agents[k].name + ' (' + k + ')';
+        tSel.appendChild(o2);
+      });
+      if (oldS && net.agents[oldS]) sSel.value = oldS;
+      if (oldT && net.agents[oldT]) tSel.value = oldT;
+      else if (agKeys[1]) tSel.value = agKeys[1];
+    }
+  };
+
+  window.langchainMeasureFromUI = function () {
+    var s = document.getElementById('ov-route-source').value;
+    var t = document.getElementById('ov-route-target').value;
+    var log = document.getElementById('ov-langchain-log');
+    if (log) log.textContent = 'Measuring degrees of separation between ' + s + ' and ' + t + '...';
+
+    fetch('/api/langchain/separation/measure', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source_agent: s, target_agent: t })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (log) log.textContent = JSON.stringify(d, null, 2);
+    })
+    .catch(function (err) { if (log) log.textContent = 'Error: ' + err; });
+  };
+
+  window.langchainRouteFromUI = function () {
+    var s = document.getElementById('ov-route-source').value;
+    var t = document.getElementById('ov-route-target').value;
+    var msg = document.getElementById('ov-route-msg').value;
+    var log = document.getElementById('ov-langchain-log');
+    if (log) log.textContent = 'Routing through LangChain Runnable hop boundaries...';
+
+    fetch('/api/langchain/route', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source_agent: s, target_agent: t, message: msg })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (log) log.textContent = JSON.stringify(d, null, 2);
+      window.fetchLangChainState();
+    })
+    .catch(function (err) { if (log) log.textContent = 'Error: ' + err; });
+  };
+
+  // Initial sync on startup
+  setTimeout(function () {
+    window.fetchLangChainState();
+  }, 3000);
+
 
 
 // ============ R-TALK: random speech, gated by the state ============

@@ -19,10 +19,28 @@ import time
 from typing import Any, Dict, List, Optional, Tuple
 
 # LangChain and LangChain-Core imports
-import langchain
-from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnableLambda, RunnableSequence
-from langchain_core.tools import StructuredTool, tool
+try:
+    import langchain
+    from langchain_core.prompts import PromptTemplate
+    from langchain_core.runnables import RunnableLambda, RunnableSequence
+    from langchain_core.tools import StructuredTool, tool
+    HAS_LANGCHAIN = True
+    LANGCHAIN_VERSION = getattr(langchain, "__version__", "1.4.7")
+except ImportError:
+    HAS_LANGCHAIN = False
+    LANGCHAIN_VERSION = "fallback-standalone"
+
+    def tool(fn):
+        fn.invoke = lambda kwargs: fn(**kwargs)
+        fn.name = getattr(fn, "__name__", "tool")
+        return fn
+
+    class RunnableLambda:
+        def __init__(self, func):
+            self.func = func
+
+        def invoke(self, arg):
+            return self.func(arg)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATE_PATH = os.path.join(BASE_DIR, "langchain_separation_state.json")
@@ -193,7 +211,8 @@ def get_separation_network() -> Dict[str, Any]:
 
         return {
             "rule": 221,
-            "langchain_version": langchain.__version__,
+            "langchain_version": LANGCHAIN_VERSION,
+            "has_langchain": HAS_LANGCHAIN,
             "total_agents": len(agents),
             "agents": agents,
             "edges": edges,

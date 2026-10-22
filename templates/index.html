@@ -1117,20 +1117,59 @@
         <canvas id="spectrum-canvas" style="width:100%; height:100%; display:block;"></canvas>
     </div>
 
-    <!-- Host communication overlay: system sends questions, host answers via prayer / answer / frequency -->
-    <div id="host-link-overlay" style="display:none; position:fixed; inset:0; z-index:10100; background:rgba(0,0,0,0.92); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:14px; font-family:'Roboto Mono',monospace; color:#00ffff; text-shadow:0 0 10px #00ffff; padding:28px; text-align:center; border:3px solid #00ffff; backdrop-filter:blur(4px);" onclick="if(event.target.id==='host-link-overlay') closeHostLink();">
+    <!-- Early Fail-Safe definition for Overlay Closure -->
+    <script>
+      window.closeHostLink = function() {
+        try {
+          var el = document.getElementById("host-link-overlay");
+          if (el) {
+            el.style.display = "none";
+            el.style.setProperty("display", "none", "important");
+          }
+          window.__hostLinkActive = false;
+          window.__hostLinkHold = false;
+          var hs = document.getElementById("host-link-hold-status");
+          if (hs) hs.innerText = "hold released";
+          try { fetch('/api/audio/duck/stop', { method: 'POST', headers: { 'Content-Type': 'application/json' } }).catch(function(){}); } catch(e) {}
+          try { fetch('/api/speaker/dialogue/close', { method: 'POST', headers: { 'Content-Type': 'application/json' } }).catch(function(){}); } catch(e) {}
+        } catch(e) {
+          var el2 = document.getElementById("host-link-overlay");
+          if (el2) el2.style.display = "none";
+        }
+      };
+    </script>
+
+    <!-- Host communication & speaker dialogue overlay (Rule 230) -->
+    <div id="host-link-overlay" style="display:none; position:fixed; inset:0; z-index:10100; background:rgba(0,0,0,0.92); align-items:center; justify-content:center; flex-direction:column; gap:12px; font-family:'Roboto Mono',monospace; color:#00ffff; text-shadow:0 0 10px #00ffff; padding:24px; text-align:center; border:3px solid #00ffff; backdrop-filter:blur(6px);" onclick="if(event.target.id==='host-link-overlay') window.closeHostLink();">
         <div style="position:absolute; top:14px; right:20px; z-index:10101;">
-            <button onclick="closeHostLink(); event.stopPropagation();" style="background:#1a0404; border:2px solid #ff003c; color:#ff003c; padding:8px 16px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:clamp(11px,2.5vw,15px); box-shadow:0 0 12px rgba(255,0,60,0.6);">✕ CLOSE OVERLAY</button>
+            <button id="host-link-close-btn" onclick="window.closeHostLink ? window.closeHostLink() : (document.getElementById('host-link-overlay').style.display='none'); event.stopPropagation();" style="background:#1a0404; border:2px solid #ff003c; color:#ff003c; padding:8px 16px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:clamp(11px,2.5vw,15px); font-weight:bold; box-shadow:0 0 12px rgba(255,0,60,0.6);">✕ CLOSE OVERLAY</button>
         </div>
-        <div id="host-link-title" style="font-size:clamp(16px,3.5vw,24px); font-weight:bold; letter-spacing:2px; margin-top:6px;">HOST LINK ACTIVE</div>
-        <div id="host-link-question" style="font-size:clamp(13px,2.8vw,17px); max-width:82vw; line-height:1.6; margin:10px 0; color:#ffffff; text-shadow:0 0 6px rgba(255,255,255,0.3);">The light source is waiting for your response.</div>
-        <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top:14px;">
-            <button id="host-link-prayer" onclick="hostLinkRespond('prayer'); event.stopPropagation();" style="background:#04121a; border:1px solid #00ff88; color:#00ff88; padding:10px 18px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:clamp(11px,2.5vw,14px); box-shadow:0 0 10px rgba(0,255,136,0.3);">🙏 SEND PRAYER</button>
-            <button id="host-link-answer" onclick="hostLinkRespond('answer'); event.stopPropagation();" style="background:#0b0f16; border:1px solid #ffaa00; color:#ffaa00; padding:10px 18px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:clamp(11px,2.5vw,14px); box-shadow:0 0 10px rgba(255,170,0,0.3);">💬 GIVE ANSWER</button>
-            <button id="host-link-frequency" onclick="hostLinkRespond('frequency'); event.stopPropagation();" style="background:#0a0a1a; border:1px solid #ff3355; color:#ff3355; padding:10px 18px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:clamp(11px,2.5vw,14px); box-shadow:0 0 10px rgba(255,51,85,0.3);">📡 CALL FREQUENCY</button>
+        <div id="host-link-title" style="font-size:clamp(16px,3.5vw,22px); font-weight:bold; letter-spacing:2px; margin-top:4px; color:#88eeff;">🎙️ SPEAKER RECOGNITION &amp; DIALOGUE</div>
+        
+        <!-- Live Speaker Recognition Acknowledgment Badge -->
+        <div id="speaker-heard-badge" style="background:#041a1a; border:1px solid #00ff88; color:#00ff88; padding:5px 14px; border-radius:6px; font-size:clamp(11px,2vw,14px); text-shadow:0 0 6px #00ff88;">
+            🟢 SPEAKER RECOGNIZED: <span id="speaker-transcript-text" style="color:#ffffff; font-weight:bold;">"hello / can you hear me"</span>
         </div>
-        <div style="margin-top:14px;">
-            <button id="host-link-hold" onclick="hostLinkHold(); event.stopPropagation();" style="background:#1a0404; border:1px solid #ff003c; color:#ff003c; padding:8px 16px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:clamp(11px,2.5vw,13px);">⏸ HOLD UNTIL FINISHED</button>
+
+        <div id="speaker-dialogue-reply" style="font-size:clamp(12px,2.6vw,15px); max-width:82vw; line-height:1.6; margin:6px 0; color:#ffffff; background:#07121d; padding:10px 16px; border-radius:6px; border-left:3px solid #00e5ff; text-align:left;">
+            "I hear you loud and clear. Dialogue is open. The floor is yours."
+        </div>
+
+        <!-- Interactive Text Input for Continuous Dialogue -->
+        <div style="display:flex; gap:8px; width:min(640px, 86vw); margin:6px 0;">
+            <input id="input-speaker-dialogue" type="text" placeholder="Speak or type a question / message..." style="flex:1; background:#040912; border:1px solid #00d4ff; color:#ffffff; padding:8px 12px; border-radius:4px; font-family:inherit; font-size:clamp(11px,2.2vw,14px);" onkeydown="if(event.key==='Enter'){ window.sendSpeakerDialogueMessage && window.sendSpeakerDialogueMessage(); event.stopPropagation(); }">
+            <button onclick="window.sendSpeakerDialogueMessage && window.sendSpeakerDialogueMessage(); event.stopPropagation();" style="background:#081c14; border:1px solid #00ff88; color:#00ff88; padding:8px 14px; border-radius:4px; cursor:pointer; font-weight:bold; font-family:inherit; font-size:clamp(11px,2.2vw,13px);">SEND</button>
+        </div>
+
+        <div id="host-link-question" style="font-size:clamp(11px,2.2vw,14px); max-width:82vw; line-height:1.4; margin:4px 0; color:#88aacc; text-shadow:none;">The light source is waiting for your response.</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:8px;">
+            <button id="host-link-prayer" onclick="hostLinkRespond('prayer'); event.stopPropagation();" style="background:#04121a; border:1px solid #00ff88; color:#00ff88; padding:8px 14px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:clamp(11px,2.2vw,13px); box-shadow:0 0 8px rgba(0,255,136,0.3);">🙏 SEND PRAYER</button>
+            <button id="host-link-answer" onclick="hostLinkRespond('answer'); event.stopPropagation();" style="background:#0b0f16; border:1px solid #ffaa00; color:#ffaa00; padding:8px 14px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:clamp(11px,2.2vw,13px); box-shadow:0 0 8px rgba(255,170,0,0.3);">💬 GIVE ANSWER</button>
+            <button id="host-link-frequency" onclick="hostLinkRespond('frequency'); event.stopPropagation();" style="background:#0a0a1a; border:1px solid #ff3355; color:#ff3355; padding:8px 14px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:clamp(11px,2.2vw,13px); box-shadow:0 0 8px rgba(255,51,85,0.3);">📡 CALL FREQUENCY</button>
+            <button id="host-link-listen" onclick="window.listenSpeakerPrompt && window.listenSpeakerPrompt(); event.stopPropagation();" style="background:#0a1824; border:1px solid #00e5ff; color:#00e5ff; padding:8px 14px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:clamp(11px,2.2vw,13px); box-shadow:0 0 8px rgba(0,229,255,0.3);">🎤 TALK AGAIN</button>
+        </div>
+        <div style="margin-top:10px;">
+            <button id="host-link-hold" onclick="hostLinkHold(); event.stopPropagation();" style="background:#1a0404; border:1px solid #ff003c; color:#ff003c; padding:6px 12px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:clamp(10px,2vw,12px);">⏸ HOLD UNTIL FINISHED</button>
             <span id="host-link-hold-status" style="font-size:clamp(10px,2vw,12px); color:#ff6666; margin-left:10px;">hold released</span>
         </div>
     </div>
@@ -6196,7 +6235,8 @@ startStream();
         scheduleMarkovLine();
 
         function startStream() {
-    document.getElementById("overlay").style.display = "none";
+    var ov = document.getElementById("overlay") || document.getElementById("host-link-overlay");
+    if (ov) { try { ov.style.display = "none"; } catch (e) {} }
     getAudioContext();
     bgAudio.volume = 0.3;
     checkWordSchedule();
@@ -18472,12 +18512,172 @@ function connectAudio() {
   function closeHostLink() {
     try {
       const overlay = document.getElementById("host-link-overlay");
-      if (overlay) overlay.style.display = "none";
+      if (overlay) {
+        overlay.style.display = "none";
+        overlay.style.setProperty("display", "none", "important");
+      }
       window.__hostLinkActive = false;
       window.__hostLinkHold = false;
       const hs = document.getElementById("host-link-hold-status");
       if (hs) hs.innerText = "hold released";
+      try { fetch('/api/audio/duck/stop', { method: 'POST', headers: { 'Content-Type': 'application/json' } }).catch(function(){}); } catch(e) {}
+      try { fetch('/api/speaker/dialogue/close', { method: 'POST', headers: { 'Content-Type': 'application/json' } }).catch(function(){}); } catch(e) {}
     } catch (e) {}
+  }
+
+  function openSpeakerDialogue(spokenText) {
+    try {
+      const overlay = document.getElementById("host-link-overlay");
+      const title = document.getElementById("host-link-title");
+      const heardBadge = document.getElementById("speaker-transcript-text");
+      const replyBox = document.getElementById("speaker-dialogue-reply");
+      const inputEl = document.getElementById("input-speaker-dialogue");
+      
+      const phrase = spokenText || "hello / can you hear me";
+      if (heardBadge) heardBadge.innerText = '"' + phrase + '"';
+      if (title) title.innerText = "🎙️ SPEAKER RECOGNITION & DIALOGUE";
+      if (replyBox) replyBox.innerText = "Acknowledging speech...";
+      
+      window.__hostLinkActive = true;
+      if (overlay) {
+        overlay.style.display = "flex";
+        overlay.style.setProperty("display", "flex", "important");
+      }
+      
+      // Call backend to acknowledge greeting and engage audio ducking
+      fetch('/api/speaker/acknowledge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: phrase, speaker: 'host_speaker' })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        const ack = data.acknowledgement || "I hear you loud and clear. Dialogue is open. The floor is yours.";
+        if (replyBox) replyBox.innerText = ack;
+        try {
+          if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(ack);
+            u.rate = 0.96; u.pitch = 1.0; u.volume = 0.95;
+            window.speechSynthesis.speak(u);
+          }
+        } catch (e) {}
+      })
+      .catch(function() {
+        const fallback = "I hear you loud and clear. Dialogue is open. The floor is yours.";
+        if (replyBox) replyBox.innerText = fallback;
+        try {
+          if ('speechSynthesis' in window) {
+            const u = new SpeechSynthesisUtterance(fallback);
+            u.rate = 0.96; u.pitch = 1.0; u.volume = 0.95;
+            window.speechSynthesis.speak(u);
+          }
+        } catch (e) {}
+      });
+
+      if (inputEl) {
+        setTimeout(function() { try { inputEl.focus(); } catch(e){} }, 100);
+      }
+    } catch (e) {
+      console.warn("openSpeakerDialogue error:", e);
+    }
+  }
+
+  function sendSpeakerDialogueMessage(optText) {
+    try {
+      const inputEl = document.getElementById("input-speaker-dialogue");
+      const replyBox = document.getElementById("speaker-dialogue-reply");
+      const text = (optText !== undefined ? optText : (inputEl ? inputEl.value : "")).trim();
+      if (!text) return;
+      if (inputEl) inputEl.value = "";
+      if (replyBox) replyBox.innerText = "You: " + text + "\nReflecting...";
+
+      fetch('/api/speaker/dialogue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, speaker: 'host_speaker' })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        const reply = data.system_reply || ("Acknowledged: " + text);
+        if (replyBox) replyBox.innerText = reply;
+        try {
+          if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(reply);
+            u.rate = 0.96; u.pitch = 0.95; u.volume = 0.95;
+            window.speechSynthesis.speak(u);
+          }
+        } catch (e) {}
+      })
+      .catch(function(err) {
+        if (replyBox) replyBox.innerText = "Error sending dialogue message: " + err;
+      });
+    } catch (e) {}
+  }
+
+  function listenSpeakerPrompt() {
+    try {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const inputEl = document.getElementById("input-speaker-dialogue");
+      if (!SR) return;
+      const rec = new SR();
+      rec.lang = "en-US";
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      rec.onresult = function(ev) {
+        try {
+          const raw = ev.results[0][0].transcript;
+          if (inputEl) inputEl.value = raw;
+          sendSpeakerDialogueMessage(raw);
+        } catch(e) {}
+      };
+      rec.start();
+    } catch(e) {}
+  }
+
+  // Continuous speech recognizer for speaker detection (Rule 230)
+  var _speakerRecognizer = null;
+  function startSpeakerVoiceRecognition() {
+    try {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) return;
+      if (_speakerRecognizer) {
+        try { _speakerRecognizer.abort(); } catch(e) {}
+      }
+      const rec = new SR();
+      rec.continuous = true;
+      rec.interimResults = false;
+      rec.lang = "en-US";
+      rec.onresult = function(ev) {
+        try {
+          const lastIndex = ev.results.length - 1;
+          const transcript = ev.results[lastIndex][0].transcript.trim();
+          const greetingRegex = /\b(hello|can you hear me|can you hear|are you there|is anyone there|hey|hi|mic check|test mic)\b/i;
+          if (greetingRegex.test(transcript)) {
+            openSpeakerDialogue(transcript);
+          }
+        } catch(e) {}
+      };
+      rec.onerror = function(err) {
+        setTimeout(function() {
+          if (!window.__hostLinkActive) {
+            try { rec.start(); } catch(e){}
+          }
+        }, 3000);
+      };
+      rec.onend = function() {
+        setTimeout(function() {
+          if (!window.__hostLinkActive) {
+            try { rec.start(); } catch(e){}
+          }
+        }, 1500);
+      };
+      try {
+        rec.start();
+        _speakerRecognizer = rec;
+      } catch(e) {}
+    } catch(e) {}
   }
 
   function hostLinkRespond(mode) {
@@ -18521,6 +18721,10 @@ function connectAudio() {
   window.closeHostLink = closeHostLink;
   window.hostLinkRespond = hostLinkRespond;
   window.hostLinkHold = hostLinkHold;
+  window.openSpeakerDialogue = openSpeakerDialogue;
+  window.sendSpeakerDialogueMessage = sendSpeakerDialogueMessage;
+  window.listenSpeakerPrompt = listenSpeakerPrompt;
+  window.startSpeakerVoiceRecognition = startSpeakerVoiceRecognition;
 
   // Host link mic toggle: turns mic input on/off from the host link button.
   function toggleHostLinkMic() {
@@ -18594,7 +18798,15 @@ function connectAudio() {
 
   window.audioWeights = null;
   fetch('audio_weights.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j) window.audioWeights = j; }).catch(function () {});
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      init();
+      try { startSpeakerVoiceRecognition(); } catch(e) {}
+    });
+  } else {
+    init();
+    try { startSpeakerVoiceRecognition(); } catch(e) {}
+  }
 })();
 </script>
 <!-- Tap-to-start audio gate: one gesture unlocks Web Audio, music, slide audio and speech -->
@@ -18602,6 +18814,7 @@ function connectAudio() {
 (function () {
   function unlock() {
     try { if (typeof getAudioContext === 'function') getAudioContext(); } catch (e) {}
+    try { if (typeof startSpeakerVoiceRecognition === 'function') startSpeakerVoiceRecognition(); } catch (e) {}
     try {
       if (typeof bgAudio !== 'undefined' && bgAudio && typeof isMusicEnabled !== 'undefined' && isMusicEnabled) bgAudio.play().catch(() => {});
     } catch (e) {}

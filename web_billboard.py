@@ -20,6 +20,7 @@ import music_playback_tools
 import langsmith_engine_tools
 import master_audio_ducking
 import agent_tuning_timer
+import speaker_recognition_tools
 
 
 def _load_env():
@@ -913,6 +914,42 @@ def get_word_history():
         "status": "ok",
         "history": word_segment.load_word_logs()
     })
+
+
+# ==============================================================================
+# Rule 230: Speaker Recognition, Acknowledgment & Interactive Dialogue
+# ==============================================================================
+
+@app.route("/api/speaker/acknowledge", methods=["POST"])
+def api_speaker_acknowledge():
+    """Rule 230: Acknowledge spoken speaker greetings (hello / can you hear me) and open dialogue."""
+    data = request.json or {}
+    raw_text = str(data.get("text") or data.get("phrase") or "").strip()
+    speaker = str(data.get("speaker") or "host_speaker").strip()
+    res = speaker_recognition_tools.acknowledge_speaker(text=raw_text, speaker=speaker)
+    return jsonify(res)
+
+
+@app.route("/api/speaker/dialogue", methods=["GET", "POST"])
+def api_speaker_dialogue():
+    """Rule 230: Interactive conversation exchange during open speaker dialogue."""
+    if request.method == "POST":
+        data = request.json or {}
+        user_msg = str(data.get("message") or data.get("text") or "").strip()
+        speaker = str(data.get("speaker") or "host_speaker").strip()
+        res = speaker_recognition_tools.exchange_speaker_dialogue(message=user_msg, speaker=speaker)
+        return jsonify(res)
+
+    return jsonify(speaker_recognition_tools.get_speaker_dialogue_state())
+
+
+@app.route("/api/speaker/dialogue/close", methods=["POST"])
+def api_speaker_dialogue_close():
+    """Rule 230: Close speaker dialogue and restore full volume."""
+    data = request.json or {}
+    reason = str(data.get("reason") or "User closed dialogue")
+    res = speaker_recognition_tools.close_speaker_dialogue(reason=reason)
+    return jsonify(res)
 
 @app.route("/api/speak", methods=["POST"])
 def speak():
@@ -2566,6 +2603,8 @@ def api_summary():
                       "/api/tuning-timer/status", "/api/tuning-timer/intent",
                       "/api/tuning-timer/vote", "/api/tuning-timer/advance",
                       "/api/tuning-timer/simulate-vote", "/api/tuning-timer/config",
+                      "/api/speaker/acknowledge", "/api/speaker/dialogue",
+                      "/api/speaker/dialogue/close",
                       "/separation", "/langchain",
                       "/api/voice/because-im-black",
                       "/api/voice/colors-simulation", "/api/word"],

@@ -335,6 +335,17 @@ def configure_tuning_timer(
     return get_tuning_timer_status()
 
 
+def reset_tuning_timer_state() -> None:
+    """Reset timer intent queue, ballot box, and consensus for test and lifecycle isolation."""
+    with _LOCK:
+        _TIMER_STATE["speaking_intent_queue"] = []
+        _TIMER_STATE["ballot_box"] = {}
+        _TIMER_STATE["consensus_ranking"] = []
+        _TIMER_STATE["turn_history"] = []
+        _TIMER_STATE["current_speaker"] = "primary_agent"
+        _TIMER_STATE["slot_started_at_ms"] = _now_ms()
+
+
 # ============================================================================
 # 2. LANGCHAIN STRUCTURED TOOLS (RULE 229)
 # ============================================================================

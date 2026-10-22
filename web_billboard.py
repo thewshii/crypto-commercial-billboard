@@ -13,6 +13,7 @@ import tts_dossier_env
 import letta_memgpt
 import shared_voices
 import langchain_separation
+import network_adapter_manager
 
 
 def _load_env():
@@ -1838,10 +1839,38 @@ def api_langchain_analysis_run():
         sym = str(params.get("symbol") or data.get("symbol") or "SOL")
         mcap = float(params.get("mcap_sol") or data.get("mcap_sol") or 27.9)
         res = langchain_separation.analyze_token_velocity(sym, mcap)
+    elif "wifi" in tool_type or "probe" in tool_type:
+        res = network_adapter_manager.analyze_wifi_package()
     else:
         res = langchain_separation.execute_langchain_tool(tool_type, params)
 
     return jsonify(res)
+
+
+# ===================== RULE 223: NETWORK ADAPTER & PROBE PACKET PARSING =====================
+@app.route("/api/network-adapter/state", methods=["GET"])
+def api_network_adapter_state():
+    """Rule 223: Management Figure network adapter state and captured probe words."""
+    return jsonify(network_adapter_manager.get_network_manager_state())
+
+
+@app.route("/api/network-adapter/probe", methods=["POST"])
+def api_network_adapter_probe():
+    """Rule 223: Ingest an 802.11 management probe frame and extract words."""
+    data = request.json or {}
+    ssid = str(data.get("ssid") or data.get("words") or "Broadcast_Probe")
+    subtype = str(data.get("subtype") or "probe_request")
+    channel = int(data.get("channel") or 6)
+    rssi = int(data.get("rssi_dbm") or -60)
+    caps = data.get("capabilities")
+    res = network_adapter_manager.ingest_probe_packet(ssid, subtype, channel, rssi, caps)
+    return jsonify(res)
+
+
+@app.route("/api/network-adapter/analyze", methods=["GET", "POST"])
+def api_network_adapter_analyze():
+    """Rule 223: Analyze Wi-Fi package, word frequency, and physical boundary audit."""
+    return jsonify(network_adapter_manager.analyze_wifi_package())
 
 
 @app.route("/separation", methods=["GET"])
@@ -1870,6 +1899,7 @@ def api_summary():
     m_state = letta_memgpt.get_memgpt_state()
     sv_state = shared_voices.get_shared_voices_state()
     lc_net = langchain_separation.get_separation_network()
+    na_state = network_adapter_manager.get_network_manager_state()
     bar_len = max(1, WINDOW_SEC // 4)
     return jsonify({
         "status": "ok",
@@ -1935,7 +1965,15 @@ def api_summary():
             "operations_count": lc_net["operations_count"],
             "analysis_tools_count": len(langchain_separation.LANGCHAIN_SEPARATION_TOOLS),
         },
-        "word": {"rules": 222, "slots": ["morning", "midday", "evening"]},
+        "network_adapter": {
+            "role": "Management Figure",
+            "interface": na_state["adapter"]["interface"],
+            "adapter_type": na_state["adapter"]["adapter_type"],
+            "captured_words_count": len(na_state.get("captured_words", [])),
+            "total_probes": na_state.get("packet_counter", 0),
+            "physical_boundary": "Digital probe words only; zero physical optical sight (Rule 223)",
+        },
+        "word": {"rules": 223, "slots": ["morning", "midday", "evening"]},
         "endpoints": ["/api", "/api/summary", "/api/host", "/api/stream",
                       "/api/mesh/nodes", "/api/mesh/poll", "/api/faq/list",
                       "/api/deepgram/transcribe", "/api/deepgram/state",
@@ -1957,6 +1995,9 @@ def api_summary():
                       "/api/langchain/tools/run",
                       "/api/langchain/analysis/tools",
                       "/api/langchain/analysis/run",
+                      "/api/network-adapter/state",
+                      "/api/network-adapter/probe",
+                      "/api/network-adapter/analyze",
                       "/separation", "/langchain",
                       "/api/voice/because-im-black",
                       "/api/voice/colors-simulation", "/api/word"],

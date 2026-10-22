@@ -18,6 +18,7 @@ import re
 import threading
 import time
 from typing import Any, Dict, List, Optional, Tuple
+import network_adapter_manager
 
 # LangChain and LangChain-Core imports
 try:
@@ -788,6 +789,12 @@ def analyze_token_velocity_tool(symbol: str = "SOL", mcap_sol: float = 27.9) -> 
     return json.dumps(analyze_token_velocity(symbol, mcap_sol))
 
 
+@tool
+def analyze_wifi_probes_tool() -> str:
+    """Rule 223 Tool: Analyze 802.11 management probe packets, words on the wire, and adapter state."""
+    return json.dumps(network_adapter_manager.analyze_wifi_package())
+
+
 LANGCHAIN_SEPARATION_TOOLS = [
     measure_agent_separation_tool,
     create_separated_agent_tool,
@@ -799,6 +806,7 @@ LANGCHAIN_SEPARATION_TOOLS = [
     analyze_frequency_spectrum_tool,
     analyze_multi_degree_consensus_tool,
     analyze_token_velocity_tool,
+    analyze_wifi_probes_tool,
 ]
 
 

@@ -318,6 +318,23 @@
       <button class="btn btn-gold" style="width:100%;" onclick="routeAcrossDegrees()">ROUTE THROUGH DEGREES</button>
       <div id="route-result" class="log-box" style="margin-top:6px; display:none;"></div>
     </div>
+
+    <!-- Tool 4: Agent Analysis Toolkit (Rule 222) -->
+    <div class="card" style="border-color:#b366ff; box-shadow:0 0 10px rgba(179,102,255,0.2);">
+      <div style="font-weight:bold; color:#d499ff; margin-bottom:6px; display:flex; justify-content:space-between;">
+        <span>4. Multi-Agent Analysis Suite:</span>
+        <span class="badge badge-purple">RULE 222</span>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
+        <button class="btn" style="border-color:#b366ff; color:#d499ff; font-size:0.7rem; padding:4px 6px;" onclick="runAnalysis('topology')">📊 TOPOLOGY</button>
+        <button class="btn" style="border-color:#ff77aa; color:#ffccee; font-size:0.7rem; padding:4px 6px;" onclick="runAnalysis('leakage')">🛡️ LEAK AUDIT</button>
+        <button class="btn" style="border-color:#00ff88; color:#00ff88; font-size:0.7rem; padding:4px 6px;" onclick="runAnalysis('consensus')">🧠 CONSENSUS</button>
+        <button class="btn" style="border-color:#ffaa00; color:#ffcc44; font-size:0.7rem; padding:4px 6px;" onclick="runAnalysis('hawkes')">⚡ HAWKES</button>
+        <button class="btn" style="border-color:#00e5ff; color:#88eeff; font-size:0.7rem; padding:4px 6px;" onclick="runAnalysis('spectrum')">🎵 SPECTRUM</button>
+        <button class="btn" style="border-color:#ffee66; color:#ffee66; font-size:0.7rem; padding:4px 6px;" onclick="runAnalysis('token')">🪙 TOKEN VEL</button>
+      </div>
+      <div id="analysis-result" class="log-box" style="margin-top:6px; display:none; max-height:220px; color:#cce6ff;"></div>
+    </div>
   </div>
 </div>
 
@@ -556,6 +573,32 @@
     .then(data => {
       box.textContent = JSON.stringify(data, null, 2);
       loadAll();
+    });
+  }
+
+  function runAnalysis(toolType) {
+    var box = document.getElementById('analysis-result');
+    box.style.display = 'block';
+    box.textContent = 'Running analysis: ' + toolType + '...';
+
+    var payload = { tool: toolType, params: {} };
+    if (toolType === 'leakage') {
+      payload.params = { text: document.getElementById('input-route-message').value };
+    } else if (toolType === 'consensus') {
+      payload.params = { topic: 'multi-agent separation harmony' };
+    }
+
+    fetch('/api/langchain/analysis/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(data => {
+      box.textContent = JSON.stringify(data, null, 2);
+    })
+    .catch(err => {
+      box.textContent = 'Error running analysis: ' + err;
     });
   }
 

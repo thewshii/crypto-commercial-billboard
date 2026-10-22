@@ -1268,6 +1268,15 @@
                     <button onclick="window.langchainRouteFromUI(); event.stopPropagation();" style="flex:1; background:#181006; border:1px solid #ffaa00; color:#ffcc44; padding:4px 6px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.7rem;">ROUTE MESSAGE</button>
                 </div>
                 <input id="ov-route-msg" type="text" placeholder="Message to route across degree boundaries..." value="Pass query across degree partitions without leakage" style="background:#03050a; border:1px solid #16263d; color:#88eeff; padding:5px; border-radius:4px; font-family:inherit; font-size:0.7rem;" />
+                <div style="font-size:0.7rem; color:#d499ff; font-weight:bold; margin-top:2px;">🔬 MULTI-AGENT ANALYSIS (RULE 222):</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px;">
+                    <button onclick="window.runAnalysisFromUI('topology'); event.stopPropagation();" style="background:#140824; border:1px solid #b366ff; color:#e0b3ff; padding:3px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:0.65rem;">📊 TOPOLOGY</button>
+                    <button onclick="window.runAnalysisFromUI('leakage'); event.stopPropagation();" style="background:#200a14; border:1px solid #ff77aa; color:#ffccee; padding:3px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:0.65rem;">🛡️ LEAKS</button>
+                    <button onclick="window.runAnalysisFromUI('consensus'); event.stopPropagation();" style="background:#081810; border:1px solid #00ff88; color:#88ffbb; padding:3px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:0.65rem;">🧠 CONSENSUS</button>
+                    <button onclick="window.runAnalysisFromUI('hawkes'); event.stopPropagation();" style="background:#1a1204; border:1px solid #ffaa00; color:#ffdd66; padding:3px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:0.65rem;">⚡ HAWKES</button>
+                    <button onclick="window.runAnalysisFromUI('spectrum'); event.stopPropagation();" style="background:#08141c; border:1px solid #00e5ff; color:#88eeff; padding:3px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:0.65rem;">🎵 SPECTRUM</button>
+                    <button onclick="window.runAnalysisFromUI('token'); event.stopPropagation();" style="background:#181808; border:1px solid #ffee44; color:#ffff88; padding:3px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:0.65rem;">🪙 TOKEN VEL</button>
+                </div>
                 <div id="ov-langchain-log" style="flex:1; min-height:120px; max-height:180px; overflow-y:auto; background:#020408; border:1px solid #101c2d; padding:6px; border-radius:4px; font-size:0.68rem; color:#88ccff; white-space:pre-wrap;">LangChain separation log ready.</div>
             </div>
         </div>
@@ -15770,6 +15779,30 @@ startStream();
       window.fetchLangChainState();
     })
     .catch(function (err) { if (log) log.textContent = 'Error: ' + err; });
+  };
+
+  window.runAnalysisFromUI = function (toolType) {
+    var log = document.getElementById('ov-langchain-log');
+    if (log) log.textContent = 'Running analysis tool: ' + toolType + '...';
+
+    var payload = { tool: toolType, params: {} };
+    if (toolType === 'leakage') {
+      var msgInp = document.getElementById('ov-route-msg');
+      payload.params = { text: msgInp ? msgInp.value : '' };
+    } else if (toolType === 'consensus') {
+      payload.params = { topic: 'system separation & stability' };
+    }
+
+    fetch('/api/langchain/analysis/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (log) log.textContent = JSON.stringify(d, null, 2);
+    })
+    .catch(function (err) { if (log) log.textContent = 'Error running analysis: ' + err; });
   };
 
   // Initial sync on startup

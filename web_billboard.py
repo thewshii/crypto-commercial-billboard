@@ -1799,6 +1799,51 @@ def api_langchain_tools_run():
     return jsonify(res)
 
 
+# ===================== RULE 222: AGENT ANALYSIS TOOLKIT =====================
+@app.route("/api/langchain/analysis/tools", methods=["GET"])
+def api_langchain_analysis_tools():
+    """Rule 222: List catalog of all available multi-agent analysis tools."""
+    return jsonify({
+        "status": "ok",
+        "rule": 222,
+        "tools": langchain_separation.list_available_analysis_tools(),
+    })
+
+
+@app.route("/api/langchain/analysis/run", methods=["POST"])
+def api_langchain_analysis_run():
+    """Rule 222: Run an agent analysis tool by name."""
+    data = request.json or {}
+    tool_type = str(data.get("tool") or data.get("tool_name") or "topology").lower().replace("analyze_", "").replace("_tool", "")
+    params = data.get("params") or data.get("kwargs") or {}
+
+    if "topolog" in tool_type:
+        res = langchain_separation.analyze_degrees_topology()
+    elif "leak" in tool_type or "context" in tool_type:
+        text = str(params.get("text") or data.get("text") or "")
+        res = langchain_separation.analyze_context_leakage(text)
+    elif "hawkes" in tool_type or "regime" in tool_type or "tension" in tool_type:
+        s = float(params.get("hawkes_score") or data.get("hawkes_score") or 100.0)
+        e = float(params.get("eta") or data.get("eta") or 0.67)
+        r = float(params.get("rsi") or data.get("rsi") or 50.0)
+        res = langchain_separation.analyze_hawkes_regime(s, e, r)
+    elif "freq" in tool_type or "spectrum" in tool_type:
+        hz = float(params.get("hz") or data.get("hz") or 432.0)
+        kbps = float(params.get("bandwidth_kbps") or data.get("bandwidth_kbps") or 320.0)
+        res = langchain_separation.analyze_frequency_spectrum(hz, kbps)
+    elif "consensus" in tool_type or "multi_degree" in tool_type:
+        topic = str(params.get("topic") or data.get("topic") or "room stability")
+        res = langchain_separation.analyze_multi_degree_consensus(topic)
+    elif "token" in tool_type or "volatilit" in tool_type:
+        sym = str(params.get("symbol") or data.get("symbol") or "SOL")
+        mcap = float(params.get("mcap_sol") or data.get("mcap_sol") or 27.9)
+        res = langchain_separation.analyze_token_velocity(sym, mcap)
+    else:
+        res = langchain_separation.execute_langchain_tool(tool_type, params)
+
+    return jsonify(res)
+
+
 @app.route("/separation", methods=["GET"])
 @app.route("/langchain", methods=["GET"])
 def view_langchain_separation():
@@ -1888,8 +1933,9 @@ def api_summary():
             "total_agents": lc_net["total_agents"],
             "agents": list(lc_net["agents"].keys()),
             "operations_count": lc_net["operations_count"],
+            "analysis_tools_count": len(langchain_separation.LANGCHAIN_SEPARATION_TOOLS),
         },
-        "word": {"rules": 221, "slots": ["morning", "midday", "evening"]},
+        "word": {"rules": 222, "slots": ["morning", "midday", "evening"]},
         "endpoints": ["/api", "/api/summary", "/api/host", "/api/stream",
                       "/api/mesh/nodes", "/api/mesh/poll", "/api/faq/list",
                       "/api/deepgram/transcribe", "/api/deepgram/state",
@@ -1909,6 +1955,8 @@ def api_summary():
                       "/api/langchain/agents/create",
                       "/api/langchain/route",
                       "/api/langchain/tools/run",
+                      "/api/langchain/analysis/tools",
+                      "/api/langchain/analysis/run",
                       "/separation", "/langchain",
                       "/api/voice/because-im-black",
                       "/api/voice/colors-simulation", "/api/word"],

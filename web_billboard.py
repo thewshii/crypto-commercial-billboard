@@ -1853,6 +1853,19 @@ def api_langchain_analysis_run():
         else:
             trk = str(params.get("track") or "commercial_soundtrack")
             res = music_player_tools.play_music(trk)
+    elif "paradox" in tool_type or "tension" in tool_type or "dialect" in tool_type:
+        inp = str(params.get("input") or params.get("text") or data.get("input") or "Make it significantly longer while cutting word count in half")
+        if "dialect" in tool_type:
+            res = langchain_separation.run_dialectical_chain(inp)
+        elif "route" in tool_type:
+            res = langchain_separation.route_through_paradox_router(inp)
+        elif "valid" in tool_type:
+            cand = str(params.get("output") or params.get("candidate") or "")
+            res = langchain_separation.validate_constraint_satisfaction(inp, cand)
+        elif "clarif" in tool_type or "rank" in tool_type:
+            res = langchain_separation.rank_and_clarify_constraints(inp)
+        else:
+            res = langchain_separation.detect_paradox_tension(inp)
     else:
         res = langchain_separation.execute_langchain_tool(tool_type, params)
 
@@ -1992,6 +2005,51 @@ def api_music_guide():
     return jsonify(music_player_tools.get_music_guide())
 
 
+# ===================== RULE 225: PARADOX DETECTION & DIALECTICAL TENSION =====================
+@app.route("/api/langchain/paradox/detect", methods=["POST"])
+def api_langchain_paradox_detect():
+    """Rule 225: Pattern 1 - Evaluation gate detecting internal contradiction."""
+    data = request.json or {}
+    inp = str(data.get("input") or data.get("text") or "").strip()
+    return jsonify(langchain_separation.detect_paradox_tension(inp))
+
+
+@app.route("/api/langchain/paradox/route", methods=["POST"])
+def api_langchain_paradox_route():
+    """Rule 225: Pattern 1 - Route via RunnableBranch to clarification or standard chain."""
+    data = request.json or {}
+    inp = str(data.get("input") or data.get("text") or "").strip()
+    return jsonify(langchain_separation.route_through_paradox_router(inp))
+
+
+@app.route("/api/langchain/paradox/dialectical", methods=["POST"])
+def api_langchain_paradox_dialectical():
+    """Rule 225: Pattern 2 - Thesis–Antithesis–Synthesis via RunnableParallel."""
+    data = request.json or {}
+    inp = str(data.get("input") or data.get("text") or "").strip()
+    ca = data.get("constraint_a")
+    cb = data.get("constraint_b")
+    return jsonify(langchain_separation.run_dialectical_chain(inp, ca, cb))
+
+
+@app.route("/api/langchain/paradox/validate", methods=["POST"])
+def api_langchain_paradox_validate():
+    """Rule 225: Pattern 3 - Critique & Revision Loop surfacing irreconcilable paradoxes."""
+    data = request.json or {}
+    inp = str(data.get("input") or data.get("text") or "").strip()
+    cand = str(data.get("output") or data.get("candidate") or "").strip()
+    retries = int(data.get("max_retries", 3))
+    return jsonify(langchain_separation.validate_constraint_satisfaction(inp, cand, max_retries=retries))
+
+
+@app.route("/api/langchain/paradox/clarify", methods=["POST"])
+def api_langchain_paradox_clarify():
+    """Rule 225: Pattern 4 - Human-in-the-Loop interactive constraint ranking."""
+    data = request.json or {}
+    inp = str(data.get("input") or data.get("text") or "").strip()
+    return jsonify(langchain_separation.rank_and_clarify_constraints(inp))
+
+
 @app.route("/separation", methods=["GET"])
 @app.route("/langchain", methods=["GET"])
 def view_langchain_separation():
@@ -2098,7 +2156,17 @@ def api_summary():
             "available_tracks": music_player_tools.list_available_music_tracks(limit=1).get("total_tracks", 0),
             "synthesis_styles": ["432hz_ambient", "reggae_dub", "8bit_chiptune", "lofi_calm"],
         },
-        "word": {"rules": 224, "slots": ["morning", "midday", "evening"]},
+        "paradox_router": {
+            "rule": 225,
+            "patterns": [
+                "1. Paradox Detection & Semantic Router (RunnableBranch)",
+                "2. Thesis–Antithesis–Synthesis Dialectical Chain (RunnableParallel)",
+                "3. Constraint-Satisfaction Validation (Critique & Revision Loop)",
+                "4. Interactive Clarification & Constraint Ranking (Human-in-the-Loop)",
+            ],
+            "total_tools": len(langchain_separation.LANGCHAIN_SEPARATION_TOOLS),
+        },
+        "word": {"rules": 225, "slots": ["morning", "midday", "evening"]},
         "endpoints": ["/api", "/api/summary", "/api/host", "/api/stream",
                       "/api/mesh/nodes", "/api/mesh/poll", "/api/faq/list",
                       "/api/deepgram/transcribe", "/api/deepgram/state",
@@ -2120,6 +2188,11 @@ def api_summary():
                       "/api/langchain/tools/run",
                       "/api/langchain/analysis/tools",
                       "/api/langchain/analysis/run",
+                      "/api/langchain/paradox/detect",
+                      "/api/langchain/paradox/route",
+                      "/api/langchain/paradox/dialectical",
+                      "/api/langchain/paradox/validate",
+                      "/api/langchain/paradox/clarify",
                       "/api/network-adapter/state",
                       "/api/network-adapter/probe",
                       "/api/network-adapter/analyze",

@@ -1280,6 +1280,7 @@
                     <button onclick="window.runAnalysisFromUI('token'); event.stopPropagation();" style="background:#181808; border:1px solid #ffee44; color:#ffff88; padding:3px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:0.65rem;">🪙 TOKEN VEL</button>
                     <button onclick="window.runAnalysisFromUI('wifi'); event.stopPropagation();" style="background:#041c14; border:1px solid #00ffaa; color:#aaffdd; padding:3px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:0.65rem; grid-column:span 3;">📡 802.11 PROBE PACKET WORDS (RULE 223)</button>
                     <button onclick="window.runAnalysisFromUI('compose'); event.stopPropagation();" style="background:#200828; border:1px solid #e066ff; color:#f0b3ff; padding:3px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:0.65rem; grid-column:span 3;">🎵 PROCEDURAL 432Hz HARMONIC SYNTH (RULE 224)</button>
+                    <button onclick="window.runAnalysisFromUI('paradox'); event.stopPropagation();" style="background:#28081c; border:1px solid #ff4488; color:#ffb3cc; padding:3px; border-radius:3px; cursor:pointer; font-family:inherit; font-size:0.65rem; grid-column:span 3;">⚖️ PARADOX ROUTER &amp; TENSION EVAL (RULE 225)</button>
                 </div>
                 <div id="ov-langchain-log" style="flex:1; min-height:120px; max-height:180px; overflow-y:auto; background:#020408; border:1px solid #101c2d; padding:6px; border-radius:4px; font-size:0.68rem; color:#88ccff; white-space:pre-wrap;">LangChain separation log ready.</div>
             </div>
@@ -15847,6 +15848,9 @@ startStream();
       payload.params = { text: msgInp ? msgInp.value : '' };
     } else if (toolType === 'consensus') {
       payload.params = { topic: 'system separation & stability' };
+    } else if (toolType === 'paradox' || toolType === 'dialectical') {
+      var msgInp2 = document.getElementById('ov-route-msg');
+      payload.params = { input: msgInp2 && msgInp2.value ? msgInp2.value : 'Make it significantly longer while cutting word count in half' };
     }
 
     fetch('/api/langchain/analysis/run', {

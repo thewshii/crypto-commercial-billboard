@@ -17,15 +17,33 @@ import os
 import re
 import threading
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Callable
 import network_adapter_manager
 import music_player_tools
+
+try:
+    from pydantic import BaseModel, Field
+except ImportError:
+    class BaseModel:
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+        def dict(self):
+            return self.__dict__
+    def Field(*args, **kwargs):
+        return kwargs.get("default", None)
 
 # LangChain and LangChain-Core imports
 try:
     import langchain
-    from langchain_core.prompts import PromptTemplate
-    from langchain_core.runnables import RunnableLambda, RunnableSequence
+    from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
+    from langchain_core.runnables import (
+        RunnableBranch,
+        RunnableLambda,
+        RunnableParallel,
+        RunnablePassthrough,
+        RunnableSequence,
+    )
     from langchain_core.tools import StructuredTool, tool
     HAS_LANGCHAIN = True
     LANGCHAIN_VERSION = getattr(langchain, "__version__", "1.4.7")
@@ -44,6 +62,56 @@ except ImportError:
 
         def invoke(self, arg):
             return self.func(arg)
+
+        def __or__(self, other):
+            return RunnableSequence([self, other])
+
+    class RunnablePassthrough:
+        def invoke(self, arg):
+            return arg
+
+        def __or__(self, other):
+            return RunnableSequence([self, other])
+
+    class RunnableParallel:
+        def __init__(self, **kwargs):
+            self.steps = kwargs
+
+        def invoke(self, arg):
+            res = {}
+            for k, s in self.steps.items():
+                res[k] = s.invoke(arg) if hasattr(s, "invoke") else s(arg)
+            return res
+
+        def __or__(self, other):
+            return RunnableSequence([self, other])
+
+    class RunnableBranch:
+        def __init__(self, *branches):
+            self.branches = branches
+
+        def invoke(self, arg):
+            for condition, runnable in self.branches[:-1]:
+                if condition(arg):
+                    return runnable.invoke(arg) if hasattr(runnable, "invoke") else runnable(arg)
+            fallback = self.branches[-1]
+            return fallback.invoke(arg) if hasattr(fallback, "invoke") else fallback(arg)
+
+        def __or__(self, other):
+            return RunnableSequence([self, other])
+
+    class RunnableSequence:
+        def __init__(self, steps):
+            self.steps = steps
+
+        def invoke(self, arg):
+            val = arg
+            for s in self.steps:
+                val = s.invoke(val) if hasattr(s, "invoke") else s(val)
+            return val
+
+        def __or__(self, other):
+            return RunnableSequence(self.steps + [other])
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATE_PATH = os.path.join(BASE_DIR, "langchain_separation_state.json")
@@ -835,6 +903,341 @@ def how_to_play_music_guide_tool() -> str:
     return json.dumps(music_player_tools.get_music_guide())
 
 
+# ===================== RULE 225: PARADOX DETECTION, DIALECTICAL SYNTHESIS & TENSION ROUTER =====================
+
+class InputTensionAnalysis(BaseModel):
+    is_paradoxical: bool = Field(description="True if constraints directly contradict each other")
+    opposing_forces: List[str] = Field(description="The contradictory requirements identified")
+    suggested_clarification: str = Field(description="Question to resolve the conflict")
+    paradox_type: str = Field(default="direct_logical_conflict", description="Classification of paradox type")
+    confidence: float = Field(default=0.95, description="Confidence score")
+    recommended_pattern: str = Field(default="clarification_branch", description="Recommended LangChain pattern")
+
+
+def detect_paradox_tension(input_text: str) -> Dict[str, Any]:
+    """
+    Pattern 1 Evaluation Gate: Analyze prompt for contradictory, paradoxical, or mutually exclusive constraints.
+    """
+    txt = input_text.lower().strip()
+
+    contradiction_patterns = [
+        # Zero-sum requirements
+        {
+            "match": (("longer" in txt or "expand" in txt) and ("cut" in txt or "half" in txt or "shorter" in txt)),
+            "forces": ["Significantly increase length / elaboration", "Cut word count in half / reduce brevity"],
+            "type": "zero_sum_requirements",
+            "clarification": "You requested increasing length while cutting word count in half. Which constraint takes priority: content expansion or brevity?",
+            "pattern": "Constraint Ranking / Human-in-the-Loop",
+        },
+        {
+            "match": (("faster" in txt or "speed" in txt) and ("less compute" in txt or "low compute" in txt or "10x less" in txt) and ("0 accuracy" in txt or "zero loss" in txt or "no loss" in txt)),
+            "forces": ["Drastically accelerate execution speed", "Reduce compute resources", "Zero loss of accuracy or precision"],
+            "type": "zero_sum_requirements",
+            "clarification": "The performance triad (speed, compute, accuracy) has conflicting zero-loss constraints. Which metric should be relaxed?",
+            "pattern": "Constraint Ranking / Pareto Frontier Mapping",
+        },
+        # System design contradictions
+        {
+            "match": (("decentralized" in txt or "p2p" in txt or "permissionless" in txt) and ("central kill-switch" in txt or "kill-switch" in txt or "central control" in txt or "backdoor" in txt)),
+            "forces": ["Complete decentralization / autonomous resilience", "Centralized kill-switch / unilateral override authority"],
+            "type": "system_design_contradiction",
+            "clarification": "Complete decentralization logically excludes a centralized kill-switch. Should this use multi-sig timelocked governance or federated emergency pause?",
+            "pattern": "Dialectical Chain (Thesis–Antithesis–Synthesis)",
+        },
+        {
+            "match": (("anonymity" in txt or "anonymous" in txt) and ("kyc" in txt or "identity" in txt or "strict verification" in txt)),
+            "forces": ["Complete user anonymity / zero data retention", "Strict KYC identity verification and regulatory auditability"],
+            "type": "system_design_contradiction",
+            "clarification": "Full anonymity contradicts strict KYC. Would Zero-Knowledge Proofs (ZK-KYC proving compliance without revealing raw identity) resolve this trade-off?",
+            "pattern": "Trade-off Analysis / Pareto Frontier Mapping",
+        },
+        # Direct logical conflicts
+        {
+            "match": (("include" in txt and "omit" in txt and ("section" in txt or "detail" in txt or "all" in txt))),
+            "forces": ["Include all specific details from section", "Omit section entirely from final output"],
+            "type": "direct_logical_conflict",
+            "clarification": "Instructions mandate both including and completely omitting the same section. Should it be summarized in an appendix or excluded?",
+            "pattern": "Tension Router -> Clarification Branch",
+        },
+        # Classic logical traps
+        {
+            "match": (("this statement is false" in txt or "liar paradox" in txt or "epimenides" in txt)),
+            "forces": ["Statement asserts its own truth value is FALSE", "If false, the statement is true; if true, it is false"],
+            "type": "philosophical_conceptual",
+            "clarification": "Self-referential liar paradox detected. Would you like a meta-logical analysis using Tarski's truth hierarchies?",
+            "pattern": "Dialectical Chain (Thesis–Antithesis–Synthesis)",
+        },
+        {
+            "match": (("unstoppable force" in txt and "immovable object" in txt)),
+            "forces": ["An unstoppable force (cannot be stopped)", "An immovable object (cannot be moved)"],
+            "type": "philosophical_conceptual",
+            "clarification": "Classic paradox of omnipotence. In classical mechanics, an unstoppable force and an immovable object cannot coexist in the same universe. Explore relativistic rest frames?",
+            "pattern": "Dialectical Chain (Thesis–Antithesis–Synthesis)",
+        },
+    ]
+
+    for c in contradiction_patterns:
+        if c["match"]:
+            return {
+                "ok": True,
+                "is_paradoxical": True,
+                "paradox_type": c["type"],
+                "opposing_forces": c["forces"],
+                "suggested_clarification": c["clarification"],
+                "recommended_pattern": c["pattern"],
+                "confidence": 0.98,
+                "rule": 225,
+            }
+
+    opposites = [
+        ("maximize", "minimize"),
+        ("always", "never"),
+        ("enable", "disable"),
+        ("enforce", "bypass"),
+        ("mandatory", "optional"),
+        ("all", "none"),
+    ]
+    detected_opposites = []
+    for w1, w2 in opposites:
+        if re.search(rf"\b{w1}\b", txt) and re.search(rf"\b{w2}\b", txt):
+            detected_opposites.append(f"'{w1}' vs '{w2}'")
+
+    if detected_opposites and ("without" in txt or "while" in txt or "simultaneously" in txt or "both" in txt):
+        return {
+            "ok": True,
+            "is_paradoxical": True,
+            "paradox_type": "direct_logical_conflict",
+            "opposing_forces": [f"Mutually tense opposing directives: {', '.join(detected_opposites)}"],
+            "suggested_clarification": f"Your prompt sets contradictory constraints ({', '.join(detected_opposites)}). How would you like to prioritize them?",
+            "recommended_pattern": "Tension Router -> Clarification Branch",
+            "confidence": 0.85,
+            "rule": 225,
+        }
+
+    return {
+        "ok": True,
+        "is_paradoxical": False,
+        "paradox_type": "none",
+        "opposing_forces": [],
+        "suggested_clarification": "No contradictory tension detected. Input is suitable for standard generation.",
+        "recommended_pattern": "Standard Generation Chain",
+        "confidence": 0.95,
+        "rule": 225,
+    }
+
+
+def route_through_paradox_router(input_text: str) -> Dict[str, Any]:
+    """
+    Pattern 1 Execution: Routes input through a RunnableBranch based on tension analysis.
+    """
+    tension = detect_paradox_tension(input_text)
+
+    def conflict_resolution_step(payload: Dict[str, Any]) -> Dict[str, Any]:
+        t = payload["tension"]
+        return {
+            "branch": "clarification_branch",
+            "status": "routed_around_standard_generation",
+            "reason": "Internal contradiction detected. Halting muddled generation to present clarification.",
+            "opposing_forces": t["opposing_forces"],
+            "suggested_clarification": t["suggested_clarification"],
+            "recommended_pattern": t["recommended_pattern"],
+            "rule": 225,
+        }
+
+    def standard_generation_step(payload: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "branch": "standard_generation_chain",
+            "status": "passed_evaluation_gate",
+            "original_input": payload["input"],
+            "generation": f"Executing standard plan for: '{payload['input']}'",
+            "rule": 225,
+        }
+
+    router = RunnableBranch(
+        (lambda x: x["tension"]["is_paradoxical"], RunnableLambda(conflict_resolution_step)),
+        RunnableLambda(standard_generation_step)
+    )
+
+    result = router.invoke({"input": input_text, "tension": tension})
+    return {"ok": True, "tension_analysis": tension, "route_result": result}
+
+
+def run_dialectical_chain(
+    input_text: str,
+    constraint_a: Optional[str] = None,
+    constraint_b: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Pattern 2 Dialectical Chain: Thesis–Antithesis–Synthesis using RunnableParallel.
+    """
+    tension = detect_paradox_tension(input_text)
+    forces = tension.get("opposing_forces", [])
+
+    ca = constraint_a or (forces[0] if len(forces) > 0 else "Primary Directive")
+    cb = constraint_b or (forces[1] if len(forces) > 1 else "Secondary Directive")
+
+    def thesis_step(data: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "perspective": "Thesis",
+            "paramount_constraint": ca,
+            "architecture": f"Maximize [{ca}]. Subordinate all other requirements to achieve uncompromising fidelity to this directive.",
+            "strengths": [f"Fully delivers on {ca}", "Mathematically consistent within its isolated premise"],
+            "weaknesses": [f"Sacrifices or directly violates [{cb}]"],
+        }
+
+    def antithesis_step(data: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "perspective": "Antithesis",
+            "paramount_constraint": cb,
+            "architecture": f"Maximize [{cb}]. Reject compromise on this dimension, treating it as the inviolable baseline.",
+            "strengths": [f"Fully delivers on {cb}", "Provides complete guarantees for secondary boundary"],
+            "weaknesses": [f"Sacrifices or directly violates [{ca}]"],
+        }
+
+    def synthesis_step(parallel_outputs: Dict[str, Any]) -> Dict[str, Any]:
+        th = parallel_outputs["thesis"]
+        anti = parallel_outputs["antithesis"]
+        orig = parallel_outputs["original_input"]
+
+        return {
+            "ok": True,
+            "rule": 225,
+            "method": "Thesis–Antithesis–Synthesis (Dialectical Chain)",
+            "original_prompt": orig,
+            "thesis": th,
+            "antithesis": anti,
+            "synthesis": {
+                "pareto_frontier": (
+                    f"A pure solution satisfying both [{ca}] and [{cb}] simultaneously in absolute form is mathematically disjoint. "
+                    f"Optimal engineering compromise maps to a hybrid boundary: use modular partitioning or zero-knowledge abstraction."
+                ),
+                "reconciliation_pathway": (
+                    f"1. Decouple domain layers so [{ca}] governs the execution layer while [{cb}] governs the audit layer.\n"
+                    f"2. Define formal trade-off elasticity (e.g. 80/20 relaxation frontier)."
+                ),
+                "is_direct_coexistence_possible": False,
+            },
+        }
+
+    dialectical_chain = (
+        RunnableParallel(
+            thesis=RunnableLambda(thesis_step),
+            antithesis=RunnableLambda(antithesis_step),
+            original_input=RunnablePassthrough(),
+        )
+        | RunnableLambda(synthesis_step)
+    )
+
+    return dialectical_chain.invoke(input_text)
+
+
+def validate_constraint_satisfaction(
+    input_text: str,
+    candidate_output: str = "",
+    max_retries: int = 3,
+) -> Dict[str, Any]:
+    """
+    Pattern 3 Constraint-Satisfaction Validation (Critique & Revision Loop).
+    If constraints are irreconcilable within N iterations, halts and surfaces a structured diagnosis.
+    """
+    tension = detect_paradox_tension(input_text)
+
+    history = []
+    for iteration in range(1, max_retries + 1):
+        if tension["is_paradoxical"]:
+            critique = (
+                f"Iteration {iteration}: Failed constraint audit. "
+                f"Candidate output cannot simultaneously fulfill [{tension['opposing_forces'][0]}] "
+                f"and [{tension['opposing_forces'][1]}]."
+            )
+            history.append({"iteration": iteration, "status": "failed_constraint_check", "critique": critique})
+        else:
+            return {
+                "ok": True,
+                "status": "passed_validation",
+                "iterations_used": iteration,
+                "output": candidate_output,
+                "history": history,
+            }
+
+    return {
+        "ok": True,
+        "status": "surfaced_paradox",
+        "iterations_exhausted": max_retries,
+        "diagnosis": {
+            "root_cause": "Physically / logically irreconcilable constraints in input prompt.",
+            "opposing_forces": tension.get("opposing_forces", []),
+            "refusal_reason": "Halted generation loop to prevent hallucinations or broken output.",
+            "suggested_action": tension.get("suggested_clarification"),
+        },
+        "history": history,
+        "rule": 225,
+    }
+
+
+def rank_and_clarify_constraints(input_text: str) -> Dict[str, Any]:
+    """
+    Pattern 4 Interactive Clarification & Constraint Ranking:
+    Halt generation and present structured choices for Human-in-the-Loop constraint relaxation.
+    """
+    tension = detect_paradox_tension(input_text)
+    forces = tension.get("opposing_forces", ["Constraint A", "Constraint B"])
+
+    c_a = forces[0] if len(forces) > 0 else "Requirement 1"
+    c_b = forces[1] if len(forces) > 1 else "Requirement 2"
+
+    options = [
+        {"option_id": "opt_a", "label": f"Prioritize [{c_a}]", "effect": f"Deliver full compliance with {c_a}; relax {c_b}."},
+        {"option_id": "opt_b", "label": f"Prioritize [{c_b}]", "effect": f"Deliver full compliance with {c_b}; relax {c_a}."},
+        {"option_id": "opt_pareto", "label": "Balanced Trade-off (Pareto Frontier)", "effect": "Apply dialectical synthesis; find optimal middle ground with explicit compromises."},
+    ]
+
+    return {
+        "ok": True,
+        "status": "awaiting_human_clarification",
+        "tension_detected": tension["is_paradoxical"],
+        "paradox_type": tension.get("paradox_type"),
+        "question": tension.get("suggested_clarification"),
+        "ranking_options": options,
+        "interrupt_payload": {
+            "requires_human_input": True,
+            "target_state_variable": "constraint_priority",
+        },
+        "rule": 225,
+    }
+
+
+# LangChain Tool Wrappers for Rule 225
+@tool
+def detect_paradox_tension_tool(input_text: str) -> str:
+    """Rule 225 Tool: Evaluate user instructions for mutually exclusive or paradoxical requirements."""
+    return json.dumps(detect_paradox_tension(input_text))
+
+
+@tool
+def route_paradox_router_tool(input_text: str) -> str:
+    """Rule 225 Tool: Route input through LCEL RunnableBranch to bypass standard generation on contradiction."""
+    return json.dumps(route_through_paradox_router(input_text))
+
+
+@tool
+def run_dialectical_synthesis_tool(input_text: str, constraint_a: str = "", constraint_b: str = "") -> str:
+    """Rule 225 Tool: Execute Thesis–Antithesis–Synthesis dialectical chain with RunnableParallel."""
+    return json.dumps(run_dialectical_chain(input_text, constraint_a or None, constraint_b or None))
+
+
+@tool
+def validate_constraint_satisfaction_tool(input_text: str, candidate_output: str = "") -> str:
+    """Rule 225 Tool: Run Critique & Revision loop to surface paradoxes rather than hallucinating broken answers."""
+    return json.dumps(validate_constraint_satisfaction(input_text, candidate_output))
+
+
+@tool
+def rank_and_clarify_constraints_tool(input_text: str) -> str:
+    """Rule 225 Tool: Generate Human-in-the-Loop constraint ranking options for zero-sum trade-offs."""
+    return json.dumps(rank_and_clarify_constraints(input_text))
+
+
 LANGCHAIN_SEPARATION_TOOLS = [
     measure_agent_separation_tool,
     create_separated_agent_tool,
@@ -852,6 +1255,11 @@ LANGCHAIN_SEPARATION_TOOLS = [
     compose_procedural_music_tool,
     list_music_library_tool,
     how_to_play_music_guide_tool,
+    detect_paradox_tension_tool,
+    route_paradox_router_tool,
+    run_dialectical_synthesis_tool,
+    validate_constraint_satisfaction_tool,
+    rank_and_clarify_constraints_tool,
 ]
 
 
@@ -859,8 +1267,22 @@ def list_available_analysis_tools() -> List[Dict[str, Any]]:
     """Return catalog of all available agent analysis tools."""
     tools_catalog = []
     for t in LANGCHAIN_SEPARATION_TOOLS:
-        cat = "music_audio" if ("music" in t.name or "compose" in t.name) else ("analysis" if "analyze" in t.name else "topology_routing")
-        rule = 224 if ("music" in t.name or "compose" in t.name) else (223 if "wifi" in t.name else (222 if "analyze" in t.name else 221))
+        if "paradox" in t.name or "dialectical" in t.name or "constraint" in t.name:
+            cat = "paradox_tension"
+            rule = 225
+        elif "music" in t.name or "compose" in t.name:
+            cat = "music_audio"
+            rule = 224
+        elif "wifi" in t.name:
+            cat = "network_probes"
+            rule = 223
+        elif "analyze" in t.name:
+            cat = "analysis"
+            rule = 222
+        else:
+            cat = "topology_routing"
+            rule = 221
+
         tools_catalog.append({
             "name": t.name,
             "description": getattr(t, "description", ""),

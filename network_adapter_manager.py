@@ -93,36 +93,75 @@ DEFAULT_PROBE_FRAMES = [
 
 
 def detect_system_interfaces() -> List[Dict[str, Any]]:
-    """Detect available local network interfaces on the host operating system."""
-    interfaces = []
-    try:
-        # Check standard sysfs class net if readable
-        net_dir = "/sys/class/net"
-        if os.path.exists(net_dir) and os.path.isdir(net_dir):
+    """Detect available local network interfaces on the host operating system, including hotplugged adapters."""
+    interfaces: List[Dict[str, Any]] = []
+    seen: set = set()
+
+    # 1. Check live system commands: ip link / ifconfig (primary on Termux / Linux)
+    for cmd in [["ip", "-o", "link", "show"], ["ifconfig"], ["ip", "link"]]:
+        try:
+            res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=2)
+            if res.returncode == 0 and res.stdout:
+                matches = re.findall(r"^(\d+:\s+)?([a-zA-Z0-9_\.\-]+)[:\s]", res.stdout, re.MULTILINE)
+                for prefix, iface in matches:
+                    if iface and iface not in seen:
+                        seen.add(iface)
+                        is_wl = iface.startswith("wlan") or "wl" in iface
+                        is_cell = "rmnet" in iface or "ccmni" in iface
+                        is_eth_usb = "usb" in iface or "eth" in iface or "rndis" in iface
+                        typ = (
+                            "wireless_adapter" if is_wl
+                            else ("cellular_adapter" if is_cell
+                            else ("usb_ethernet_adapter" if is_eth_usb
+                            else ("loopback" if iface == "lo" else "network_interface")))
+                        )
+                        # Determine if UP / RUNNING in output block
+                        is_up = f"{iface}: flags=" in res.stdout or "UP" in res.stdout
+                        interfaces.append({
+                            "name": iface,
+                            "is_wireless": is_wl,
+                            "status": "up" if is_up else "down",
+                            "type": typ,
+                            "hotplugged": iface not in ("lo", "rmnet_data7"),
+                        })
+                if interfaces:
+                    break
+        except Exception:
+            pass
+
+    # 2. Check standard sysfs class net if readable
+    net_dir = "/sys/class/net"
+    if os.path.exists(net_dir) and os.path.isdir(net_dir):
+        try:
             for iface in os.listdir(net_dir):
-                is_up = False
-                oper_path = os.path.join(net_dir, iface, "operstate")
-                if os.path.exists(oper_path):
-                    try:
-                        with open(oper_path, "r") as f:
-                            is_up = f.read().strip() == "up"
-                    except Exception:
-                        pass
-                interfaces.append({
-                    "name": iface,
-                    "is_wireless": iface.startswith("wlan") or "wl" in iface,
-                    "status": "up" if is_up else "down",
-                    "type": "wireless_adapter" if (iface.startswith("wlan") or "wl" in iface) else "network_interface",
-                })
-    except Exception:
-        pass
+                if iface not in seen:
+                    seen.add(iface)
+                    is_up = False
+                    oper_path = os.path.join(net_dir, iface, "operstate")
+                    if os.path.exists(oper_path):
+                        try:
+                            with open(oper_path, "r") as f:
+                                is_up = f.read().strip() == "up"
+                        except Exception:
+                            pass
+                    is_wl = iface.startswith("wlan") or "wl" in iface
+                    is_eth_usb = "usb" in iface or "eth" in iface or "rndis" in iface
+                    interfaces.append({
+                        "name": iface,
+                        "is_wireless": is_wl,
+                        "status": "up" if is_up else "down",
+                        "type": "wireless_adapter" if is_wl else ("usb_ethernet_adapter" if is_eth_usb else "network_interface"),
+                        "hotplugged": iface not in ("lo", "rmnet_data7"),
+                    })
+        except Exception:
+            pass
 
     if not interfaces:
-        # Fallback to standard detected interface inventory
+        # Fallback inventory
         interfaces = [
-            {"name": "wlan0", "is_wireless": True, "status": "up", "type": "wireless_adapter"},
-            {"name": "rmnet_data7", "is_wireless": False, "status": "up", "type": "cellular_adapter"},
-            {"name": "lo", "is_wireless": False, "status": "up", "type": "loopback"},
+            {"name": "wlan0", "is_wireless": True, "status": "up", "type": "wireless_adapter", "hotplugged": False},
+            {"name": "rmnet_data7", "is_wireless": False, "status": "up", "type": "cellular_adapter", "hotplugged": False},
+            {"name": "lo", "is_wireless": False, "status": "up", "type": "loopback", "hotplugged": False},
         ]
     return interfaces
 
@@ -272,11 +311,16 @@ def analyze_wifi_package() -> Dict[str, Any]:
             word_tokens.extend(re.split(r"[_\-\s]+", w))
         word_freq = dict(collections.Counter(word_tokens).most_common(12))
 
+        detected_ifaces = detect_system_interfaces()
+
         return {
             "ok": True,
             "tool": "analyze_wifi_package",
             "rule": 223,
             "role": "Management Figure",
+            "active_adapter": state.get("adapter", {}),
+            "detected_interfaces": detected_ifaces,
+            "hotplugged_adapters_found": [i["name"] for i in detected_ifaces if i.get("hotplugged")],
             "total_frames_analyzed": len(pkts),
             "average_rssi_dbm": avg_rssi,
             "signal_quality": "EXCELLENT" if avg_rssi > -60 else ("GOOD" if avg_rssi > -75 else "WEAK"),
@@ -291,7 +335,8 @@ def analyze_wifi_package() -> Dict[str, Any]:
                 "no_gaslighting": True,
             },
             "recommendation_to_agents": (
-                f"Management Figure parsed {len(pkts)} probe frames. "
+                f"Management Figure parsed {len(pkts)} probe frames across interfaces "
+                f"({', '.join(i['name'] for i in detected_ifaces)}). "
                 f"Active SSIDs on the wire: {', '.join(words[:4])}. "
                 f"Signal strength is {avg_rssi} dBm. Context verified free of optical illusions."
             ),

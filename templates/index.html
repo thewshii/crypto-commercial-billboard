@@ -15808,6 +15808,7 @@ startStream();
   };
 
   window.inspectWifiProbes = function () {
+    try { if (typeof window.soundBeep === 'function') window.soundBeep('receipt'); } catch (e) {}
     window.openLangChainSeparation();
     setTimeout(function () {
       window.runAnalysisFromUI('wifi');

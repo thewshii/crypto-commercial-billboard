@@ -27,6 +27,7 @@ import agent_tuning_timer
 import speaker_recognition_tools
 import rdp_screen_manager
 import game_inventory_loop
+import esp32_spatial_receiver
 
 try:
     from pydantic import BaseModel, Field
@@ -1274,6 +1275,7 @@ LANGCHAIN_SEPARATION_TOOLS = [
     *speaker_recognition_tools.SPEAKER_DIALOGUE_TOOLS,
     *rdp_screen_manager.RDP_SCREEN_TOOLS,
     *game_inventory_loop.GAME_INVENTORY_TOOLS,
+    *esp32_spatial_receiver.ESP32_SPATIAL_TOOLS,
 ]
 
 
@@ -1281,7 +1283,10 @@ def list_available_analysis_tools() -> List[Dict[str, Any]]:
     """Return catalog of all available agent analysis tools."""
     tools_catalog = []
     for t in LANGCHAIN_SEPARATION_TOOLS:
-        if "inventory" in t.name or "drop_game" in t.name or "pickup_game" in t.name or "label_game" in t.name or "loop_tick" in t.name or "find_game" in t.name:
+        if "spatial" in t.name or "esp32" in t.name:
+            cat = "esp32_spatial_tracking"
+            rule = 233
+        elif "inventory" in t.name or "drop_game" in t.name or "pickup_game" in t.name or "label_game" in t.name or "loop_tick" in t.name or "find_game" in t.name:
             cat = "game_inventory_mcp"
             rule = 232
         elif "rdp" in t.name or "screen_status" in t.name or "screen_visibility" in t.name:

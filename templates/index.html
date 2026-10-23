@@ -1003,6 +1003,7 @@
             <button id="music-btn" onclick="window.openMusicModal()" title="Music Player &amp; Procedural Synthesizer (Rule 224). Play soundtrack or synthesize 432Hz ambient, reggae, 8-bit chiptune." style="background:#180824; border:2px solid #d466ff; color:#f0b3ff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #d466ff; box-shadow:0 0 10px rgba(212,102,255,0.3); transition:all 0.2s;">🎵 MUSIC / SYNTH</button>
             <button id="rdp-screen-btn" onclick="window.acknowledgeRdpScreen()" oncontextmenu="window.openRdpScreenModal(); return false;" title="Acknowledge the game can see your computer screen with RDP (Rule 231). Click to acknowledge screen seen; right-click for RDP telemetry overlay." style="background:#071824; border:2px solid #00d4ff; color:#88eeff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #00d4ff; box-shadow:0 0 10px rgba(0,212,255,0.3); transition:all 0.2s;">🖥️ ACK RDP SCREEN</button>
             <button id="inventory-mcp-btn" onclick="window.openGameInventoryMCPModal()" title="In-Game Matrix Inventory Loop &amp; Model Context Protocol (MCP) Server for LLM with LangChain Tools (Rule 232)." style="background:#1a1004; border:2px solid #ffaa00; color:#ffdd88; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #ffaa00; box-shadow:0 0 10px rgba(255,170,0,0.3); transition:all 0.2s;">📦 INVENTORY MCP</button>
+            <button id="esp32-spatial-btn" onclick="window.openEsp32SpatialModal()" title="ESP32 Mobile Spatial Tracking Over Local Wi-Fi with Static IP &amp; Stationary Terminal Socket Receiver (Rule 233)." style="background:#071424; border:2px solid #00aaff; color:#88d4ff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #00aaff; box-shadow:0 0 10px rgba(0,170,255,0.3); transition:all 0.2s;">🛰️ ESP32 SPATIAL</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -1319,6 +1320,99 @@
                     <div id="mcp-discussion-feed" style="max-height:130px; overflow-y:auto; font-size:0.72rem; color:#d8e6f3; display:flex; flex-direction:column; gap:4px; margin-top:4px;">
                         No discussions yet.
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dedicated ESP32 Mobile Spatial Tracking & Stationary Socket Receiver Overlay (Rule 233) -->
+    <div id="esp32-spatial-overlay" style="display:none; position:fixed; inset:0; z-index:10117; background:rgba(3,7,14,0.96); align-items:center; justify-content:center; flex-direction:column; gap:12px; font-family:'Roboto Mono',monospace; color:#88d4ff; padding:20px; border:2px solid #00aaff; backdrop-filter:blur(6px);" onclick="if(event.target.id==='esp32-spatial-overlay') window.closeEsp32SpatialModal();">
+        <div style="width:min(940px, 95vw); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px solid #16304a; padding-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <strong style="color:#00aaff; font-size:1.1rem; text-shadow:0 0 8px #00aaff;">🛰️ ESP32 MOBILE SPATIAL TRACKING RECEIVER</strong>
+                <span id="esp32-socket-status-badge" style="font-size:0.75rem; color:#00ff88; border:1px solid #00ff88; background:#041812; padding:3px 8px; border-radius:4px; text-shadow:0 0 6px #00ff88;">🟢 UDP :8888 LISTENING [192.168.1.150]</span>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button onclick="window.refreshEsp32Spatial(); event.stopPropagation();" style="background:#072030; border:1px solid #00aaff; color:#88d4ff; padding:6px 14px; border-radius:4px; cursor:pointer; font-family:inherit; font-weight:bold; font-size:0.78rem; box-shadow:0 0 8px rgba(0,170,255,0.3);">🔄 REFRESH</button>
+                <button onclick="window.calibrateEsp32Spatial(); event.stopPropagation();" style="background:#071f1a; border:1px solid #00ff88; color:#00ff88; padding:6px 14px; border-radius:4px; cursor:pointer; font-family:inherit; font-weight:bold; font-size:0.78rem; box-shadow:0 0 8px rgba(0,255,136,0.3);">🎯 ZERO CALIBRATE</button>
+                <button onclick="window.simulateEsp32Impact(); event.stopPropagation();" style="background:#2b1204; border:1px solid #ff6600; color:#ffaa88; padding:6px 12px; border-radius:4px; cursor:pointer; font-family:inherit; font-weight:bold; font-size:0.78rem;">💥 SIMULATE DROP</button>
+                <button onclick="window.closeEsp32SpatialModal(); event.stopPropagation();" style="background:#1a0404; border:1px solid #ff003c; color:#ff003c; padding:6px 12px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.78rem;">✕ CLOSE</button>
+            </div>
+        </div>
+
+        <!-- Telemetry & Kinematics Grid -->
+        <div style="width:min(940px, 95vw); display:grid; grid-template-columns:1fr 1fr; gap:14px; font-size:0.8rem; max-height:calc(85vh - 70px); overflow-y:auto;">
+            <!-- Left: Attitude & 3D Coordinates -->
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <!-- Attitude Horizon Canvas -->
+                <div style="background:#040c18; border:1px solid #16304a; border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px; align-items:center;">
+                    <div style="width:100%; display:flex; justify-content:space-between; color:#00ffff; font-weight:bold; font-size:0.75rem;">
+                        <span>📐 3D ATTITUDE (GIMBAL / HORIZON)</span>
+                        <span id="esp32-attitude-angles" style="color:#00ff88;">R: 0.0° | P: 0.0° | Y: 0.0°</span>
+                    </div>
+                    <canvas id="esp32-spatial-canvas" width="400" height="180" style="width:100%; height:auto; max-height:180px; background:#02060e; border:1px solid #00aaff; border-radius:4px; box-shadow:0 0 10px rgba(0,170,255,0.2);"></canvas>
+                </div>
+
+                <!-- 3D Position Coordinates -->
+                <div style="background:#040c18; border:1px solid #16304a; border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px;">
+                    <div style="color:#00ffff; font-weight:bold; border-bottom:1px solid #16304a; padding-bottom:4px; display:flex; justify-content:space-between;">
+                        <span>📍 RELATIVE 3D COORDINATES</span>
+                        <span id="esp32-motion-badge" style="background:#0c2a1c; color:#00ff88; border:1px solid #00ff88; font-size:0.7rem; padding:1px 6px; border-radius:3px;">STATIONARY</span>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; text-align:center; margin-top:4px;">
+                        <div style="background:#061424; padding:6px; border-radius:4px; border:1px solid #1a3c5a;">
+                            <div style="color:#8899aa; font-size:0.68rem;">X (LATERAL)</div>
+                            <div id="esp32-pos-x" style="color:#00ff88; font-size:1.1rem; font-weight:bold;">+0.00 m</div>
+                        </div>
+                        <div style="background:#061424; padding:6px; border-radius:4px; border:1px solid #1a3c5a;">
+                            <div style="color:#8899aa; font-size:0.68rem;">Y (LONGITUDINAL)</div>
+                            <div id="esp32-pos-y" style="color:#00ff88; font-size:1.1rem; font-weight:bold;">+0.00 m</div>
+                        </div>
+                        <div style="background:#061424; padding:6px; border-radius:4px; border:1px solid #1a3c5a;">
+                            <div style="color:#8899aa; font-size:0.68rem;">Z (VERTICAL / ELEV)</div>
+                            <div id="esp32-pos-z" style="color:#00d4ff; font-size:1.1rem; font-weight:bold;">+0.95 m</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.74rem; color:#88aacc; margin-top:4px;">
+                        <span>Linear Velocity: <span id="esp32-vel" style="color:#fff;">(0.00, 0.00, 0.00) m/s</span></span>
+                        <span>Total Accel: <span id="esp32-accel-total" style="color:#fff;">9.81 m/s²</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Network Link, Hardware Telemetry & Simulator -->
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <!-- Stationary Socket Connection Telemetry -->
+                <div style="background:#040c18; border:1px solid #16304a; border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px;">
+                    <div style="color:#00ffff; font-weight:bold; border-bottom:1px solid #16304a; padding-bottom:4px;">
+                        📡 SOCKET &amp; STATIC IP NETWORK LINK
+                    </div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:#8899aa;">Stationary Socket:</span><span id="esp32-socket-endpoint" style="color:#ffffff;">0.0.0.0:8888 (UDP)</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:#8899aa;">Expected Static IP:</span><span id="esp32-static-ip" style="color:#00ff88; font-weight:bold;">192.168.1.150</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:#8899aa;">Active Client Connection:</span><span id="esp32-client-info" style="color:#ffffff;">Waiting for packets...</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:#8899aa;">Packets Ingested:</span><span id="esp32-packet-count" style="color:#ffdd00; font-weight:bold;">0</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:#8899aa;">Mobile Battery / RSSI:</span><span><span id="esp32-battery" style="color:#00ff88;">3.95 V</span> • <span id="esp32-rssi" style="color:#00d4ff;">-55 dBm</span></span></div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:#8899aa;">Inventory Loop Link:</span><span style="color:#00ff88;">✅ Synchronized (Rule 232 Drop Audit)</span></div>
+                </div>
+
+                <!-- Packet Injection & Simulator Form -->
+                <div style="background:#040c18; border:1px solid #16304a; border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px;">
+                    <div style="color:#00ffff; font-weight:bold; font-size:0.75rem;">🧪 SPATIAL PACKET SIMULATOR &amp; INJECTOR</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                        <input id="sim-pos-x" type="number" step="0.1" value="0.7" placeholder="X (m)" style="background:#071424; border:1px solid #1a3c5a; color:#fff; padding:4px 6px; border-radius:4px; font-family:inherit; font-size:0.72rem;">
+                        <input id="sim-pos-y" type="number" step="0.1" value="1.4" placeholder="Y (m)" style="background:#071424; border:1px solid #1a3c5a; color:#fff; padding:4px 6px; border-radius:4px; font-family:inherit; font-size:0.72rem;">
+                        <input id="sim-pos-z" type="number" step="0.1" value="0.8" placeholder="Z (m)" style="background:#071424; border:1px solid #1a3c5a; color:#fff; padding:4px 6px; border-radius:4px; font-family:inherit; font-size:0.72rem;">
+                        <select id="sim-motion-state" style="background:#071424; border:1px solid #1a3c5a; color:#fff; padding:4px 6px; border-radius:4px; font-family:inherit; font-size:0.72rem;">
+                            <option value="CARRIED">CARRIED</option>
+                            <option value="MOVING">MOVING</option>
+                            <option value="STATIONARY">STATIONARY</option>
+                            <option value="IMPACT">IMPACT (DROP)</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; gap:6px; margin-top:4px;">
+                        <button onclick="window.injectCustomSpatialPacket();" style="flex:1; background:#0d243a; border:1px solid #00aaff; color:#88d4ff; padding:5px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.72rem; font-weight:bold;">TRANSMIT TEST PACKET</button>
+                    </div>
+                    <div id="sim-inject-status" style="font-size:0.7rem; color:#88ffbb; margin-top:2px;">Stationary terminal ready for real-time ESP32 UDP packets.</div>
                 </div>
             </div>
         </div>
@@ -19414,6 +19508,282 @@ function connectAudio() {
   window.triggerMcpRelabel = triggerMcpRelabel;
   window.updateMcpPreset = updateMcpPreset;
   window.executeMcpRequest = executeMcpRequest;
+
+  // ==========================================================================
+  // Rule 233: ESP32 Mobile Spatial Tracking & Stationary Socket Receiver Logic
+  // ==========================================================================
+  function openEsp32SpatialModal() {
+    const ov = document.getElementById("esp32-spatial-overlay");
+    if (ov) {
+      ov.style.display = "flex";
+      ov.style.setProperty("display", "flex", "important");
+    }
+    refreshEsp32Spatial();
+  }
+
+  function closeEsp32SpatialModal() {
+    const ov = document.getElementById("esp32-spatial-overlay");
+    if (ov) {
+      ov.style.display = "none";
+      ov.style.setProperty("display", "none", "important");
+    }
+  }
+
+  function refreshEsp32Spatial() {
+    fetch('/api/spatial/status')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        // 1. Socket & Network Status
+        const badge = document.getElementById("esp32-socket-status-badge");
+        if (badge) {
+          if (data.receiver_active) {
+            badge.innerText = "🟢 UDP :" + data.listen_port + " LISTENING [" + data.expected_static_ip + "]";
+            badge.style.color = "#00ff88";
+            badge.style.borderColor = "#00ff88";
+          } else {
+            badge.innerText = "🔴 UDP RECEIVER INACTIVE";
+            badge.style.color = "#ff4444";
+            badge.style.borderColor = "#ff4444";
+          }
+        }
+
+        const endpointEl = document.getElementById("esp32-socket-endpoint");
+        if (endpointEl) endpointEl.innerText = data.listen_host + ":" + data.listen_port + " (" + data.protocol + ")";
+        const staticEl = document.getElementById("esp32-static-ip");
+        if (staticEl) staticEl.innerText = data.expected_static_ip;
+        const clientEl = document.getElementById("esp32-client-info");
+        if (clientEl) clientEl.innerText = data.connected_client || "Waiting for packets...";
+        const pktsEl = document.getElementById("esp32-packet-count");
+        if (pktsEl) pktsEl.innerText = data.total_packets_received;
+
+        // 2. Kinematics & Coordinates
+        const tel = data.telemetry || {};
+        const pos = tel.position || {};
+        const orient = tel.orientation || {};
+        const vel = tel.velocity || {};
+        const acc = tel.accel || {};
+
+        const posXEl = document.getElementById("esp32-pos-x");
+        if (posXEl) posXEl.innerText = (pos.x >= 0 ? "+" : "") + Number(pos.x || 0).toFixed(2) + " m";
+        const posYEl = document.getElementById("esp32-pos-y");
+        if (posYEl) posYEl.innerText = (pos.y >= 0 ? "+" : "") + Number(pos.y || 0).toFixed(2) + " m";
+        const posZEl = document.getElementById("esp32-pos-z");
+        if (posZEl) posZEl.innerText = (pos.z >= 0 ? "+" : "") + Number(pos.z || 0).toFixed(2) + " m";
+
+        const velEl = document.getElementById("esp32-vel");
+        if (velEl) velEl.innerText = "(" + Number(vel.x || 0).toFixed(2) + ", " + Number(vel.y || 0).toFixed(2) + ", " + Number(vel.z || 0).toFixed(2) + ") m/s";
+
+        const accTot = Math.sqrt((acc.x||0)*(acc.x||0) + (acc.y||0)*(acc.y||0) + (acc.z||9.81)*(acc.z||9.81));
+        const accEl = document.getElementById("esp32-accel-total");
+        if (accEl) accEl.innerText = accTot.toFixed(2) + " m/s²";
+
+        const attEl = document.getElementById("esp32-attitude-angles");
+        if (attEl) attEl.innerText = "R: " + Number(orient.roll || 0).toFixed(1) + "° | P: " + Number(orient.pitch || 0).toFixed(1) + "° | Y: " + Number(orient.yaw || 0).toFixed(1) + "°";
+
+        const stateBadge = document.getElementById("esp32-motion-badge");
+        if (stateBadge) {
+          const st = tel.motion_state || "STATIONARY";
+          stateBadge.innerText = st;
+          if (st === "IMPACT" || tel.impact_detected) {
+            stateBadge.style.color = "#ff3300";
+            stateBadge.style.borderColor = "#ff3300";
+            stateBadge.style.background = "#2b0d04";
+          } else if (st === "MOVING" || st === "CARRIED") {
+            stateBadge.style.color = "#00d4ff";
+            stateBadge.style.borderColor = "#00d4ff";
+            stateBadge.style.background = "#071c2b";
+          } else {
+            stateBadge.style.color = "#00ff88";
+            stateBadge.style.borderColor = "#00ff88";
+            stateBadge.style.background = "#0c2a1c";
+          }
+        }
+
+        const battEl = document.getElementById("esp32-battery");
+        if (battEl) battEl.innerText = Number(tel.battery_v || 3.95).toFixed(2) + " V";
+        const rssiEl = document.getElementById("esp32-rssi");
+        if (rssiEl) rssiEl.innerText = (tel.rssi_dbm || -55) + " dBm";
+
+        // 3. Draw Attitude Horizon
+        drawEsp32AttitudeHorizon(orient.roll || 0, orient.pitch || 0, orient.yaw || 0);
+      })
+      .catch(function (e) {
+        console.warn("refreshEsp32Spatial error:", e);
+      });
+  }
+
+  function calibrateEsp32Spatial() {
+    fetch('/api/spatial/calibrate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ zero_position: true, zero_orientation: true })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      refreshEsp32Spatial();
+      const statusEl = document.getElementById("sim-inject-status");
+      if (statusEl) statusEl.innerText = "✅ Origin zero-calibrated successfully.";
+    })
+    .catch(function (e) {
+      console.warn("calibrateEsp32Spatial error:", e);
+    });
+  }
+
+  function simulateEsp32Impact() {
+    fetch('/api/spatial/simulate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        static_ip: '192.168.1.150',
+        pos_x: 0.15,
+        pos_y: 0.22,
+        pos_z: 0.05,
+        motion_state: 'IMPACT',
+        impact: true
+      })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      refreshEsp32Spatial();
+      const statusEl = document.getElementById("sim-inject-status");
+      if (statusEl) statusEl.innerText = "💥 High-G drop impact packet simulated & integrated with Inventory Loop!";
+      try {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance("ESP32 spatial impact detected. Item drop recorded in inventory.");
+          u.rate = 0.96; window.speechSynthesis.speak(u);
+        }
+      } catch (e) {}
+    })
+    .catch(function (e) {
+      console.warn("simulateEsp32Impact error:", e);
+    });
+  }
+
+  function injectCustomSpatialPacket() {
+    const xVal = parseFloat(document.getElementById("sim-pos-x").value) || 0.0;
+    const yVal = parseFloat(document.getElementById("sim-pos-y").value) || 0.0;
+    const zVal = parseFloat(document.getElementById("sim-pos-z").value) || 0.0;
+    const mState = document.getElementById("sim-motion-state").value || "CARRIED";
+
+    fetch('/api/spatial/simulate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        static_ip: '192.168.1.150',
+        pos_x: xVal,
+        pos_y: yVal,
+        pos_z: zVal,
+        motion_state: mState,
+        impact: (mState === 'IMPACT')
+      })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      refreshEsp32Spatial();
+      const statusEl = document.getElementById("sim-inject-status");
+      if (statusEl) statusEl.innerText = "Transmitted packet at (" + xVal + ", " + yVal + ", " + zVal + ")m [" + mState + "].";
+    })
+    .catch(function (e) {
+      console.warn("injectCustomSpatialPacket error:", e);
+    });
+  }
+
+  function drawEsp32AttitudeHorizon(rollDeg, pitchDeg, yawDeg) {
+    const cvs = document.getElementById("esp32-spatial-canvas");
+    if (!cvs || !cvs.getContext) return;
+    const ctx = cvs.getContext("2d");
+    const w = cvs.width;
+    const h = cvs.height;
+    const cx = w / 2;
+    const cy = h / 2;
+
+    ctx.save();
+    ctx.clearRect(0, 0, w, h);
+
+    // Dark space background
+    ctx.fillStyle = "#020712";
+    ctx.fillRect(0, 0, w, h);
+
+    // Artificial horizon pitch shift & roll rotation
+    const pitchPx = (pitchDeg / 45.0) * (h / 3);
+    const rollRad = (rollDeg * Math.PI) / 180.0;
+
+    ctx.translate(cx, cy + pitchPx);
+    ctx.rotate(rollRad);
+
+    // Sky gradient
+    const skyGrad = ctx.createLinearGradient(0, -h, 0, 0);
+    skyGrad.addColorStop(0, "#071c36");
+    skyGrad.addColorStop(1, "#0f3a69");
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(-w * 1.5, -h * 2, w * 3, h * 2);
+
+    // Ground gradient
+    const gndGrad = ctx.createLinearGradient(0, 0, 0, h);
+    gndGrad.addColorStop(0, "#2b1406");
+    gndGrad.addColorStop(1, "#0d0602");
+    ctx.fillStyle = gndGrad;
+    ctx.fillRect(-w * 1.5, 0, w * 3, h * 2);
+
+    // Horizon line
+    ctx.strokeStyle = "#00ff88";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-w, 0);
+    ctx.lineTo(w, 0);
+    ctx.stroke();
+
+    // Pitch ladder rungs
+    ctx.strokeStyle = "rgba(0, 212, 255, 0.6)";
+    ctx.lineWidth = 1;
+    for (let p = -30; p <= 30; p += 10) {
+      if (p === 0) continue;
+      const rungY = -(p / 45.0) * (h / 3);
+      const rungW = Math.abs(p) === 10 ? 30 : 50;
+      ctx.beginPath();
+      ctx.moveTo(-rungW, rungY);
+      ctx.lineTo(rungW, rungY);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+
+    // Fixed aircraft symbol / reticle in center
+    ctx.strokeStyle = "#ffdd00";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx - 35, cy); ctx.lineTo(cx - 10, cy);
+    ctx.moveTo(cx + 10, cy); ctx.lineTo(cx + 35, cy);
+    ctx.moveTo(cx, cy - 8); ctx.lineTo(cx, cy + 8);
+    ctx.stroke();
+
+    // Outer attitude border ring
+    ctx.strokeStyle = "rgba(0, 170, 255, 0.4)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.min(w, h) * 0.44, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Compass heading strip at bottom
+    ctx.fillStyle = "#020712";
+    ctx.fillRect(0, h - 20, w, 20);
+    ctx.strokeStyle = "#16304a";
+    ctx.beginPath(); ctx.moveTo(0, h - 20); ctx.lineTo(w, h - 20); ctx.stroke();
+    ctx.font = "10px 'Roboto Mono', monospace";
+    ctx.fillStyle = "#00d4ff";
+    ctx.textAlign = "center";
+    ctx.fillText("HDG (YAW): " + Number(yawDeg).toFixed(1) + "°", cx, h - 6);
+  }
+
+  window.openEsp32SpatialModal = openEsp32SpatialModal;
+  window.closeEsp32SpatialModal = closeEsp32SpatialModal;
+  window.refreshEsp32Spatial = refreshEsp32Spatial;
+  window.calibrateEsp32Spatial = calibrateEsp32Spatial;
+  window.simulateEsp32Impact = simulateEsp32Impact;
+  window.injectCustomSpatialPacket = injectCustomSpatialPacket;
+  window.drawEsp32AttitudeHorizon = drawEsp32AttitudeHorizon;
+
 
 
   // Host link mic toggle: turns mic input on/off from the host link button.

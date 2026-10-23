@@ -104,6 +104,7 @@ class MatrixGameInventory:
     def get_inventory_summary(self) -> Dict[str, Any]:
         """Perform a complete inventory audit of all items and locations."""
         with _INV_LOCK:
+            self.state = self.load_state()
             return {
                 "on_person_count": len(self.state.get("on_person", [])),
                 "on_person": self.state.get("on_person", []),

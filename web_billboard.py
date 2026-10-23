@@ -23,6 +23,7 @@ import master_audio_ducking
 import agent_tuning_timer
 import speaker_recognition_tools
 import rdp_screen_manager
+import esp32_spatial_receiver
 
 
 def _load_env():
@@ -2145,6 +2146,69 @@ def api_mcp_inventory_tick():
     return jsonify(res)
 
 
+# ==============================================================================
+# Rule 233: ESP32 Mobile Spatial Tracking & Stationary Terminal Socket Receiver
+# ==============================================================================
+
+@app.route("/api/spatial/status", methods=["GET"])
+def api_spatial_status():
+    """Rule 233: Live ESP32 spatial tracking telemetry and receiver socket status."""
+    return jsonify(esp32_spatial_receiver.get_spatial_tracking_status())
+
+
+@app.route("/api/spatial/simulate", methods=["POST"])
+def api_spatial_simulate():
+    """Rule 233: Ingest or simulate an ESP32 mobile spatial tracking packet."""
+    data = request.json or {}
+    static_ip = str(data.get("static_ip") or "192.168.1.150").strip()
+    pos_x = float(data.get("pos_x") or data.get("x") or 0.5)
+    pos_y = float(data.get("pos_y") or data.get("y") or 1.2)
+    pos_z = float(data.get("pos_z") or data.get("z") or 0.95)
+    roll = float(data.get("roll") or 0.0)
+    pitch = float(data.get("pitch") or 0.0)
+    yaw = float(data.get("yaw") or 90.0)
+    motion_state = str(data.get("motion_state") or "CARRIED").strip()
+    impact = bool(data.get("impact") or data.get("impact_detected") or False)
+    res = esp32_spatial_receiver.simulate_esp32_packet(
+        static_ip=static_ip,
+        pos_x=pos_x,
+        pos_y=pos_y,
+        pos_z=pos_z,
+        roll=roll,
+        pitch=pitch,
+        yaw=yaw,
+        motion_state=motion_state,
+        impact=impact,
+    )
+    return jsonify(res)
+
+
+@app.route("/api/spatial/calibrate", methods=["POST"])
+def api_spatial_calibrate():
+    """Rule 233: Zero current position and orientation as reference origin."""
+    data = request.json or {}
+    zero_pos = bool(data.get("zero_position", True))
+    zero_orient = bool(data.get("zero_orientation", True))
+    res = esp32_spatial_receiver.calibrate_spatial_tracker(
+        zero_position=zero_pos,
+        zero_orientation=zero_orient,
+    )
+    return jsonify(res)
+
+
+@app.route("/api/spatial/config", methods=["POST"])
+def api_spatial_config():
+    """Rule 233: Configure receiver socket host, port, and expected ESP32 static IP."""
+    data = request.json or {}
+    host = str(data.get("host") or "0.0.0.0").strip()
+    port = int(data.get("port") or 8888)
+    expected_ip = str(data.get("expected_static_ip") or "192.168.1.150").strip()
+    with esp32_spatial_receiver._LOCK:
+        esp32_spatial_receiver._SPATIAL_STATE["expected_static_ip"] = expected_ip
+    esp32_spatial_receiver.stop_spatial_receiver()
+    res = esp32_spatial_receiver.start_spatial_receiver(host=host, port=port)
+    return jsonify(res)
+
 
 # ===================== RULE 224: MUSIC PLAYER & PROCEDURAL SYNTHESIS =====================
 @app.route("/api/music/tracks", methods=["GET"])
@@ -2670,6 +2734,11 @@ def api_summary():
             "tools_count": len(game_inventory_loop.GAME_INVENTORY_TOOLS),
             "summary": game_inventory_loop.MatrixGameInventory().get_inventory_summary(),
         },
+        "esp32_spatial_tracking": {
+            "rule": 233,
+            "status": esp32_spatial_receiver.get_spatial_tracking_status(),
+            "tools_count": len(esp32_spatial_receiver.ESP32_SPATIAL_TOOLS),
+        },
         "word": {"rules": 226, "slots": ["morning", "midday", "evening"]},
         "endpoints": ["/api", "/api/summary", "/api/host", "/api/stream",
                       "/api/mesh/nodes", "/api/mesh/poll", "/api/faq/list",
@@ -2704,6 +2773,8 @@ def api_summary():
                       "/api/game/inventory/pickup", "/api/game/inventory/label",
                       "/api/mcp", "/api/mcp/sse", "/api/mcp/messages",
                       "/api/mcp/inventory/status", "/api/mcp/inventory/tick",
+                      "/api/spatial/status", "/api/spatial/simulate",
+                      "/api/spatial/calibrate", "/api/spatial/config",
                       "/api/music/tracks", "/api/music/play",
                       "/api/music/stop", "/api/music/compose",
                       "/api/music/status", "/api/music/guide",

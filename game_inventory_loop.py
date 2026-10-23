@@ -36,6 +36,7 @@ DEFAULT_STATE: Dict[str, Any] = {
         {"id": "field_journal", "name": "Field Notebook & Pen", "label": "Desk Center-Left", "reach": "within_reach"},
         {"id": "water_flask", "name": "Water Flask", "label": "Nightstand Top Surface", "reach": "within_reach"},
         {"id": "net_dongle", "name": "Wi-Fi Network Dongle", "label": "USB Hub Port 2", "reach": "within_reach"},
+        {"id": "rdp_screen", "name": "Host Computer Screen (RDP)", "label": "Remote Desktop Display 1", "reach": "within_reach"},
     ],
     "dropped_items": [],
     "labels_registry": {
@@ -45,6 +46,7 @@ DEFAULT_STATE: Dict[str, Any] = {
         "field_journal": "Desk Center-Left",
         "water_flask": "Nightstand Top Surface",
         "net_dongle": "USB Hub Port 2",
+        "rdp_screen": "Remote Desktop Display 1",
     },
     "discussion_log": [],
 }

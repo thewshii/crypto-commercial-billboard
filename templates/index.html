@@ -1001,6 +1001,7 @@
             <button id="langchain-btn" onclick="window.openLangChainSeparation()" title="LangChain Degrees of Separation for Agents (rule 221). Multi-agent partitions, degree routing, and tool dispatch." style="background:#0a1220; border:2px solid #00d4ff; color:#99eeff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #00d4ff; box-shadow:0 0 10px rgba(0,212,255,0.3); transition:all 0.2s;">🔗 LANGCHAIN / DEGREES</button>
             <button id="net-adapter-btn" onclick="window.inspectWifiProbes()" title="802.11 Network Adapter &amp; Management Probe Frame Analyzer (Rule 223). Maps interfaces, SSIDs, words on the wire, physical boundary audit." style="background:#041818; border:2px solid #00ffc8; color:#88ffee; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #00ffc8; box-shadow:0 0 10px rgba(0,255,200,0.3); transition:all 0.2s;">📡 NET ADAPTER / PROBES</button>
             <button id="music-btn" onclick="window.openMusicModal()" title="Music Player &amp; Procedural Synthesizer (Rule 224). Play soundtrack or synthesize 432Hz ambient, reggae, 8-bit chiptune." style="background:#180824; border:2px solid #d466ff; color:#f0b3ff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #d466ff; box-shadow:0 0 10px rgba(212,102,255,0.3); transition:all 0.2s;">🎵 MUSIC / SYNTH</button>
+            <button id="rdp-screen-btn" onclick="window.acknowledgeRdpScreen()" oncontextmenu="window.openRdpScreenModal(); return false;" title="Acknowledge the game can see your computer screen with RDP (Rule 231). Click to acknowledge screen seen; right-click for RDP telemetry overlay." style="background:#071824; border:2px solid #00d4ff; color:#88eeff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #00d4ff; box-shadow:0 0 10px rgba(0,212,255,0.3); transition:all 0.2s;">🖥️ ACK RDP SCREEN</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -1113,6 +1114,7 @@
         <button id="host-link-btn" onclick="toggleHostLinkMic()" style="position:absolute; top:1px; right:270px; z-index:3; background:#0b0f16; border:1px solid #00ffff; color:#00ffff; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">📡 HOST LINK: OFF</button>
         <button id="att-s-btn" onclick="attSSpeak()" style="position:absolute; top:1px; right:610px; z-index:3; background:#0b0f16; border:1px solid #ff003c; color:#ff003c; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🔊 ATT S SPEAK</button>
         <button id="becuz-black-tts-btn" onclick="window.becauseImBlackSpeak()" style="position:absolute; top:1px; right:700px; z-index:3; background:#0b0f16; border:1px solid #ffaa00; color:#ffaa00; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;">🗣 BECUZ IM BLACK</button>
+        <button id="rdp-screen-quick-btn" onclick="window.acknowledgeRdpScreen()" style="position:absolute; top:1px; right:790px; z-index:3; background:#071824; border:1px solid #00d4ff; color:#88eeff; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); padding:1px 5px; border-radius:4px; cursor:pointer;" title="Acknowledge game sees screen with RDP">🖥️ RDP ACK</button>
         <span id="osc-hud" style="position:absolute; top:1px; right:190px; z-index:3; font-family:'Roboto Mono',monospace; font-size:clamp(0.45rem,0.7vw,0.6rem); color:#ffaa00; text-shadow:0 0 4px #ffaa00; pointer-events:none;">OSC 0 live | peak 0 | made 0</span>
         <canvas id="spectrum-canvas" style="width:100%; height:100%; display:block;"></canvas>
     </div>
@@ -1171,6 +1173,54 @@
         <div style="margin-top:10px;">
             <button id="host-link-hold" onclick="hostLinkHold(); event.stopPropagation();" style="background:#1a0404; border:1px solid #ff003c; color:#ff003c; padding:6px 12px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:clamp(10px,2vw,12px);">⏸ HOLD UNTIL FINISHED</button>
             <span id="host-link-hold-status" style="font-size:clamp(10px,2vw,12px); color:#ff6666; margin-left:10px;">hold released</span>
+        </div>
+    </div>
+
+    <!-- Floating RDP Screen Acknowledgment Toast Badge -->
+    <div id="rdp-ack-toast" style="display:none; position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:10200; background:#03141a; border:2px solid #00ff88; color:#00ff88; font-family:'Roboto Mono',monospace; font-size:clamp(12px,2vw,14px); font-weight:bold; padding:8px 20px; border-radius:6px; box-shadow:0 0 16px rgba(0,255,136,0.6); pointer-events:none; text-shadow:0 0 8px #00ff88;">
+        🖥️ RDP SCREEN ACKNOWLEDGED: The game sees your computer screen
+    </div>
+
+    <!-- Dedicated RDP Screen Visibility & Display Sync Overlay (Rule 231) -->
+    <div id="rdp-screen-overlay" style="display:none; position:fixed; inset:0; z-index:10115; background:rgba(3,7,12,0.96); align-items:center; justify-content:center; flex-direction:column; gap:12px; font-family:'Roboto Mono',monospace; color:#88eeff; padding:20px; border:2px solid #00d4ff; backdrop-filter:blur(6px);" onclick="if(event.target.id==='rdp-screen-overlay') window.closeRdpScreenModal();">
+        <div style="width:min(900px, 94vw); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px solid #162c44; padding-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <strong style="color:#00d4ff; font-size:1.1rem; text-shadow:0 0 8px #00d4ff;">🖥️ RDP SCREEN VISIBILITY &amp; DISPLAY SYNC</strong>
+                <span id="rdp-screen-status-badge" style="font-size:0.75rem; color:#00ff88; border:1px solid #00ff88; background:#041812; padding:3px 8px; border-radius:4px; text-shadow:0 0 6px #00ff88;">🟢 SCREEN VISIBLE: ACKNOWLEDGED</span>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button onclick="window.acknowledgeRdpScreen(); event.stopPropagation();" style="background:#071f1a; border:1px solid #00ff88; color:#00ff88; padding:6px 14px; border-radius:4px; cursor:pointer; font-family:inherit; font-weight:bold; font-size:0.78rem; box-shadow:0 0 8px rgba(0,255,136,0.3);">✅ ACKNOWLEDGE SCREEN SEEN</button>
+                <button onclick="window.closeRdpScreenModal(); event.stopPropagation();" style="background:#1a0404; border:1px solid #ff003c; color:#ff003c; padding:6px 12px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.78rem;">✕ CLOSE OVERLAY</button>
+            </div>
+        </div>
+
+        <!-- Telemetry & Screen Sync Grid -->
+        <div style="width:min(900px, 94vw); display:grid; grid-template-columns:1fr 1fr; gap:14px; font-size:0.8rem;">
+            <div style="background:#050c14; border:1px solid #162c44; border-radius:6px; padding:12px; display:flex; flex-direction:column; gap:8px;">
+                <div style="color:#00ffff; font-weight:bold; border-bottom:1px solid #162c44; padding-bottom:4px;">📡 RDP CONNECTION METRICS</div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#8899aa;">Protocol:</span><span style="color:#ffffff;">Remote Desktop Protocol (RDP)</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#8899aa;">Display Resolution:</span><span id="rdp-telemetry-res" style="color:#00ff88; font-weight:bold;">1920x1080</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#8899aa;">Pixel Ratio / Viewport:</span><span id="rdp-telemetry-vp" style="color:#ffffff;">1.0 (1920 x 950)</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#8899aa;">Color Depth:</span><span style="color:#ffffff;">24-bit TrueColor</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#8899aa;">Frame Buffer Sync:</span><span style="color:#00ff88;">60 FPS (Hardware Accelerated)</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#8899aa;">Total Acknowledgements:</span><span id="rdp-telemetry-count" style="color:#ffdd00; font-weight:bold;">0</span></div>
+                <div style="margin-top:6px; background:#071420; border-left:3px solid #00d4ff; padding:6px 10px; font-size:0.75rem; color:#ccddee;" id="rdp-telemetry-msg">
+                    "The game acknowledges it can see your computer screen across the remote desktop session."
+                </div>
+            </div>
+
+            <!-- Virtual Display Test Pattern & Screen Mirror Canvas -->
+            <div style="background:#050c14; border:1px solid #162c44; border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px; align-items:center;">
+                <div style="width:100%; display:flex; justify-content:space-between; color:#00ffff; font-weight:bold; font-size:0.75rem;">
+                    <span>🖥️ RDP VIRTUAL DISPLAY BUFFER</span>
+                    <span id="rdp-live-fps" style="color:#00ff88;">60.0 FPS</span>
+                </div>
+                <canvas id="rdp-screen-canvas" width="400" height="225" style="width:100%; height:auto; max-height:225px; background:#020508; border:1px solid #00d4ff; border-radius:4px; box-shadow:0 0 10px rgba(0,212,255,0.2);"></canvas>
+                <div style="width:100%; display:flex; justify-content:space-between; font-size:0.72rem; color:#667788;">
+                    <span>Target: Host Desktop</span>
+                    <span style="color:#00ff88;">● STREAM LIVE</span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -18654,6 +18704,13 @@ function connectAudio() {
           const lastIndex = ev.results.length - 1;
           const transcript = ev.results[lastIndex][0].transcript.trim();
           const greetingRegex = /\b(hello|can you hear me|can you hear|are you there|is anyone there|hey|hi|mic check|test mic)\b/i;
+          const rdpRegex = /\b(see my screen|can you see my screen|rdp screen|acknowledge screen|remote desktop)\b/i;
+          if (rdpRegex.test(transcript)) {
+            if (typeof window.acknowledgeRdpScreen === 'function') {
+              window.acknowledgeRdpScreen();
+              return;
+            }
+          }
           if (greetingRegex.test(transcript)) {
             openSpeakerDialogue(transcript);
           }
@@ -18678,6 +18735,179 @@ function connectAudio() {
         _speakerRecognizer = rec;
       } catch(e) {}
     } catch(e) {}
+  }
+
+  // ==========================================================================
+  // Rule 231: Remote Desktop (RDP) Screen Visibility & Display Synchronization
+  // ==========================================================================
+  function acknowledgeRdpScreen(optResolution) {
+    try {
+      const sw = window.screen.width || 1920;
+      const sh = window.screen.height || 1080;
+      const dpr = window.devicePixelRatio || 1;
+      const res = optResolution || (sw + "x" + sh);
+      const vp = (window.innerWidth || 1920) + "x" + (window.innerHeight || 1080);
+
+      // 1. Update HUD buttons immediately
+      const btn = document.getElementById("rdp-screen-btn");
+      if (btn) {
+        btn.innerText = "🟢 RDP: SCREEN SEEN";
+        btn.style.borderColor = "#00ff88";
+        btn.style.color = "#00ff88";
+        btn.style.boxShadow = "0 0 14px rgba(0,255,136,0.6)";
+      }
+      const qBtn = document.getElementById("rdp-screen-quick-btn");
+      if (qBtn) {
+        qBtn.innerText = "🟢 RDP: SEEN";
+        qBtn.style.borderColor = "#00ff88";
+        qBtn.style.color = "#00ff88";
+      }
+
+      // 2. Update modal telemetry
+      const resEl = document.getElementById("rdp-telemetry-res");
+      if (resEl) resEl.innerText = res;
+      const vpEl = document.getElementById("rdp-telemetry-vp");
+      if (vpEl) vpEl.innerText = dpr + " (" + vp + ")";
+      const badge = document.getElementById("rdp-screen-status-badge");
+      if (badge) {
+        badge.innerText = "🟢 SCREEN VISIBLE: ACKNOWLEDGED (" + res + ")";
+        badge.style.color = "#00ff88";
+        badge.style.borderColor = "#00ff88";
+      }
+
+      // 3. Show floating on-screen HUD toast
+      const toast = document.getElementById("rdp-ack-toast");
+      if (toast) {
+        toast.innerText = "🖥️ RDP SCREEN ACKNOWLEDGED: The game sees your computer screen (" + res + ")";
+        toast.style.display = "block";
+        setTimeout(function () {
+          if (toast) toast.style.display = "none";
+        }, 4000);
+      }
+
+      // 4. Play audio chime
+      try {
+        if (typeof window.soundNote === 'function') window.soundNote('bell', 'rdp screen acknowledged');
+      } catch (e) {}
+
+      // 5. POST to backend (Rule 231)
+      fetch('/api/game/rdp/acknowledge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resolution: res,
+          client_info: navigator.userAgent || 'Remote Desktop Client'
+        })
+      })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        const countEl = document.getElementById("rdp-telemetry-count");
+        if (countEl && data.total_acknowledgements) {
+          countEl.innerText = data.total_acknowledgements;
+        }
+        const msgEl = document.getElementById("rdp-telemetry-msg");
+        if (msgEl && data.speech) {
+          msgEl.innerText = '"' + data.speech + '"';
+        }
+        // Speak vocal acknowledgment with master audio ducking
+        try {
+          if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const speechText = data.speech || "Remote desktop connection acknowledged. The game can see your computer screen loud and clear. Display stream is synchronized.";
+            const u = new SpeechSynthesisUtterance(speechText);
+            u.rate = 0.96; u.pitch = 1.0; u.volume = 0.95;
+            u.onend = function () {
+              try { fetch('/api/audio/duck/stop', { method: 'POST', headers: { 'Content-Type': 'application/json' } }).catch(function(){}); } catch(e) {}
+            };
+            window.speechSynthesis.speak(u);
+          }
+        } catch (e) {}
+      })
+      .catch(function () {
+        try {
+          if ('speechSynthesis' in window) {
+            const fallback = "Remote desktop connection acknowledged. The game can see your computer screen loud and clear.";
+            const u = new SpeechSynthesisUtterance(fallback);
+            u.rate = 0.96; u.pitch = 1.0; u.volume = 0.95;
+            window.speechSynthesis.speak(u);
+          }
+        } catch (e) {}
+      });
+
+      // 6. Draw virtual screen pattern
+      drawRdpScreenPattern();
+    } catch (e) {
+      console.warn("acknowledgeRdpScreen error:", e);
+    }
+  }
+
+  function openRdpScreenModal() {
+    const ov = document.getElementById("rdp-screen-overlay");
+    if (ov) {
+      ov.style.display = "flex";
+      ov.style.setProperty("display", "flex", "important");
+    }
+    const sw = window.screen.width || 1920;
+    const sh = window.screen.height || 1080;
+    const dpr = window.devicePixelRatio || 1;
+    const resEl = document.getElementById("rdp-telemetry-res");
+    if (resEl) resEl.innerText = sw + "x" + sh;
+    const vpEl = document.getElementById("rdp-telemetry-vp");
+    if (vpEl) vpEl.innerText = dpr + " (" + (window.innerWidth || 1920) + " x " + (window.innerHeight || 1080) + ")";
+    
+    fetch('/api/game/rdp/status')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        const countEl = document.getElementById("rdp-telemetry-count");
+        if (countEl) countEl.innerText = data.total_acknowledgements || 0;
+      }).catch(function(){});
+
+    drawRdpScreenPattern();
+  }
+
+  function closeRdpScreenModal() {
+    const ov = document.getElementById("rdp-screen-overlay");
+    if (ov) {
+      ov.style.display = "none";
+      ov.style.setProperty("display", "none", "important");
+    }
+  }
+
+  function drawRdpScreenPattern() {
+    const cvs = document.getElementById("rdp-screen-canvas");
+    if (!cvs || !cvs.getContext) return;
+    const ctx = cvs.getContext("2d");
+    const w = cvs.width;
+    const h = cvs.height;
+    
+    // Background CRT grid
+    ctx.fillStyle = "#03080e";
+    ctx.fillRect(0, 0, w, h);
+    
+    ctx.strokeStyle = "rgba(0, 212, 255, 0.15)";
+    ctx.lineWidth = 1;
+    for (let x = 0; x < w; x += 20) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    }
+    for (let y = 0; y < h; y += 20) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+    
+    // Crosshair target
+    ctx.strokeStyle = "#00ff88";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(w / 2, h / 2, 40, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(w / 2 - 50, h / 2); ctx.lineTo(w / 2 + 50, h / 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(w / 2, h / 2 - 50); ctx.lineTo(w / 2, h / 2 + 50); ctx.stroke();
+    
+    // Status text
+    ctx.font = "11px 'Roboto Mono', monospace";
+    ctx.fillStyle = "#00d4ff";
+    ctx.fillText("RDP SCREEN VISIBLE: HOST DISPLAY 1", 12, 22);
+    ctx.fillStyle = "#00ff88";
+    ctx.fillText("RESOLUTION: " + (window.screen.width || 1920) + "x" + (window.screen.height || 1080) + " @ 60Hz", 12, 40);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("SYNC TIME: " + new Date().toISOString(), 12, h - 14);
   }
 
   function hostLinkRespond(mode) {
@@ -18725,6 +18955,10 @@ function connectAudio() {
   window.sendSpeakerDialogueMessage = sendSpeakerDialogueMessage;
   window.listenSpeakerPrompt = listenSpeakerPrompt;
   window.startSpeakerVoiceRecognition = startSpeakerVoiceRecognition;
+  window.acknowledgeRdpScreen = acknowledgeRdpScreen;
+  window.openRdpScreenModal = openRdpScreenModal;
+  window.closeRdpScreenModal = closeRdpScreenModal;
+  window.drawRdpScreenPattern = drawRdpScreenPattern;
 
   // Host link mic toggle: turns mic input on/off from the host link button.
   function toggleHostLinkMic() {
@@ -18751,11 +18985,12 @@ function connectAudio() {
     }, 100);
   }
 
-  // Escape key always closes the host link overlay so you can see the dashboard again.
+  // Escape key always closes overlays so you can see the dashboard again.
   try {
     document.addEventListener('keydown', function (ev) {
       if (ev.key === 'Escape') {
         try { closeHostLink(); } catch (e) {}
+        try { closeRdpScreenModal(); } catch (e) {}
       }
     }, true);
   } catch (e) {}

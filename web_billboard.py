@@ -21,6 +21,7 @@ import langsmith_engine_tools
 import master_audio_ducking
 import agent_tuning_timer
 import speaker_recognition_tools
+import rdp_screen_manager
 
 
 def _load_env():
@@ -949,6 +950,40 @@ def api_speaker_dialogue_close():
     data = request.json or {}
     reason = str(data.get("reason") or "User closed dialogue")
     res = speaker_recognition_tools.close_speaker_dialogue(reason=reason)
+    return jsonify(res)
+
+
+# ==============================================================================
+# Rule 231: Remote Desktop (RDP) Screen Acknowledgment & Display Sync
+# ==============================================================================
+
+@app.route("/api/game/rdp/acknowledge", methods=["POST"])
+def api_game_rdp_acknowledge():
+    """Rule 231: Acknowledge that the game can see the host computer screen via RDP."""
+    data = request.json or {}
+    resolution = str(data.get("resolution") or "1920x1080").strip()
+    client_info = str(data.get("client_info") or "Windows/FreeRDP Remote Desktop Session").strip()
+    speech_text = data.get("speech_text")
+    res = rdp_screen_manager.acknowledge_rdp_screen(
+        resolution=resolution,
+        client_info=client_info,
+        speech_text=speech_text
+    )
+    return jsonify(res)
+
+
+@app.route("/api/game/rdp/status", methods=["GET"])
+def api_game_rdp_status():
+    """Rule 231: Live RDP screen visibility status and display telemetry."""
+    return jsonify(rdp_screen_manager.get_rdp_screen_status())
+
+
+@app.route("/api/game/rdp/toggle", methods=["POST"])
+def api_game_rdp_toggle():
+    """Rule 231: Toggle or set RDP screen visibility."""
+    data = request.json or {}
+    visible = data.get("visible")
+    res = rdp_screen_manager.toggle_rdp_screen_visibility(visible=visible)
     return jsonify(res)
 
 @app.route("/api/speak", methods=["POST"])
@@ -2605,6 +2640,8 @@ def api_summary():
                       "/api/tuning-timer/simulate-vote", "/api/tuning-timer/config",
                       "/api/speaker/acknowledge", "/api/speaker/dialogue",
                       "/api/speaker/dialogue/close",
+                      "/api/game/rdp/acknowledge", "/api/game/rdp/status",
+                      "/api/game/rdp/toggle",
                       "/separation", "/langchain",
                       "/api/voice/because-im-black",
                       "/api/voice/colors-simulation", "/api/word"],

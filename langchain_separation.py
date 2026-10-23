@@ -25,6 +25,7 @@ import langsmith_engine_tools
 import master_audio_ducking
 import agent_tuning_timer
 import speaker_recognition_tools
+import rdp_screen_manager
 
 try:
     from pydantic import BaseModel, Field
@@ -1270,6 +1271,7 @@ LANGCHAIN_SEPARATION_TOOLS = [
     *master_audio_ducking.MASTER_DUCKING_TOOLS,
     *agent_tuning_timer.TUNING_TIMER_TOOLS,
     *speaker_recognition_tools.SPEAKER_DIALOGUE_TOOLS,
+    *rdp_screen_manager.RDP_SCREEN_TOOLS,
 ]
 
 
@@ -1277,7 +1279,10 @@ def list_available_analysis_tools() -> List[Dict[str, Any]]:
     """Return catalog of all available agent analysis tools."""
     tools_catalog = []
     for t in LANGCHAIN_SEPARATION_TOOLS:
-        if "speaker_dialogue" in t.name or "acknowledge_speaker" in t.name or "close_speaker" in t.name:
+        if "rdp" in t.name or "screen_status" in t.name or "screen_visibility" in t.name:
+            cat = "rdp_screen_sync"
+            rule = 231
+        elif "speaker_dialogue" in t.name or "acknowledge_speaker" in t.name or "close_speaker" in t.name:
             cat = "speaker_recognition_dialogue"
             rule = 230
         elif "tuning" in t.name or "timer" in t.name or "speaking_intent" in t.name or "speaker_ranking" in t.name or "speaker_turn" in t.name or "vote" in t.name:

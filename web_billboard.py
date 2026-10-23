@@ -2210,6 +2210,40 @@ def api_spatial_config():
     return jsonify(res)
 
 
+# ==============================================================================
+# Rule 234: Wi-Fi ACK Spatial Tracking Stream & Yellow AR Video Streaming
+# ==============================================================================
+
+@app.route("/api/spatial/video_feed", methods=["GET"])
+def api_spatial_video_feed():
+    """Rule 234: Live MJPEG AR video stream with yellow color scheme for remote mobile viewers."""
+    return Response(
+        esp32_spatial_receiver.generate_ar_mjpeg_stream(fps=15),
+        mimetype="multipart/x-mixed-replace; boundary=frame"
+    )
+
+
+@app.route("/api/spatial/acks", methods=["GET"])
+def api_spatial_acks():
+    """Rule 234: Real-time 802.11 Wi-Fi ACK tracking stream metrics."""
+    return jsonify(esp32_spatial_receiver.get_wifi_ack_stream())
+
+
+@app.route("/api/spatial/video_status", methods=["GET"])
+def api_spatial_video_status():
+    """Rule 234: AR video streaming pipeline status and yellow color scheme configuration."""
+    return jsonify(esp32_spatial_receiver.get_ar_video_stream_status())
+
+
+@app.route("/spatial/ar", methods=["GET"])
+@app.route("/ar", methods=["GET"])
+def view_mobile_ar():
+    """Rule 234: Dedicated mobile viewing interface adopting the cyber yellow AR color scheme."""
+    status = esp32_spatial_receiver.get_spatial_tracking_status()
+    acks = esp32_spatial_receiver.get_wifi_ack_stream()
+    return render_template("mobile_ar.html", status=status, acks=acks)
+
+
 # ===================== RULE 224: MUSIC PLAYER & PROCEDURAL SYNTHESIS =====================
 @app.route("/api/music/tracks", methods=["GET"])
 def api_music_tracks():
@@ -2775,6 +2809,8 @@ def api_summary():
                       "/api/mcp/inventory/status", "/api/mcp/inventory/tick",
                       "/api/spatial/status", "/api/spatial/simulate",
                       "/api/spatial/calibrate", "/api/spatial/config",
+                      "/api/spatial/video_feed", "/api/spatial/acks",
+                      "/api/spatial/video_status", "/spatial/ar",
                       "/api/music/tracks", "/api/music/play",
                       "/api/music/stop", "/api/music/compose",
                       "/api/music/status", "/api/music/guide",

@@ -101,3 +101,4 @@ sounds/*.wav
 !sounds/soundtrack_22_hyper_zone.wav
 !sounds/soundtrack_72_synth_protocol.wav
 !sounds/yell.wav
+esp32_spatial_state.json

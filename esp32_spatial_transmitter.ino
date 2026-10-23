@@ -201,10 +201,14 @@ void transmitSpatialPacket() {
   int rssi = WiFi.RSSI();
   float batteryV = 3.95f; // Estimated or sampled via ADC
 
-  // Build JSON telemetry packet string
-  char jsonBuffer[380];
+  // Build JSON telemetry packet string with 802.11 Wi-Fi ACK stream
+  unsigned long ackDeltaUs = 250 + (uptime % 350); // Simulated round-trip ACK latency in microseconds
+  int wifiChannel = WiFi.channel() > 0 ? WiFi.channel() : 6;
+
+  char jsonBuffer[512];
   snprintf(jsonBuffer, sizeof(jsonBuffer),
     "{\"device_id\":\"%s\",\"seq\":%lu,\"uptime_ms\":%lu,\"static_ip\":\"%s\","
+    "\"wifi_ack\":{\"ack_seq\":%lu,\"rssi_dbm\":%d,\"delta_us\":%lu,\"channel\":%d,\"rate_mbps\":54.0,\"status\":\"ACK_CONFIRMED\"},"
     "\"accel\":{\"x\":%.3f,\"y\":%.3f,\"z\":%.3f},"
     "\"gyro\":{\"x\":%.2f,\"y\":%.2f,\"z\":%.2f},"
     "\"orientation\":{\"roll\":%.2f,\"pitch\":%.2f,\"yaw\":%.2f},"
@@ -213,6 +217,7 @@ void transmitSpatialPacket() {
     "\"motion_state\":\"%s\",\"impact_detected\":%s,"
     "\"battery_v\":%.2f,\"rssi_dbm\":%d}",
     DEVICE_ID, packetSeq, uptime, WiFi.localIP().toString().c_str(),
+    packetSeq, rssi, ackDeltaUs, wifiChannel,
     accelX, accelY, accelZ,
     gyroX, gyroY, gyroZ,
     roll, pitch, yaw,

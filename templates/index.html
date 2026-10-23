@@ -1325,84 +1325,107 @@
         </div>
     </div>
 
-    <!-- Dedicated ESP32 Mobile Spatial Tracking & Stationary Socket Receiver Overlay (Rule 233) -->
-    <div id="esp32-spatial-overlay" style="display:none; position:fixed; inset:0; z-index:10117; background:rgba(3,7,14,0.96); align-items:center; justify-content:center; flex-direction:column; gap:12px; font-family:'Roboto Mono',monospace; color:#88d4ff; padding:20px; border:2px solid #00aaff; backdrop-filter:blur(6px);" onclick="if(event.target.id==='esp32-spatial-overlay') window.closeEsp32SpatialModal();">
-        <div style="width:min(940px, 95vw); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px solid #16304a; padding-bottom:8px;">
+    <!-- Dedicated ESP32 Mobile Spatial Tracking & Yellow AR Video Interface Overlay (Rule 233 & 234) -->
+    <div id="esp32-spatial-overlay" style="display:none; position:fixed; inset:0; z-index:10117; background:rgba(11,9,2,0.97); align-items:center; justify-content:center; flex-direction:column; gap:12px; font-family:'Roboto Mono',monospace; color:#ffee55; padding:20px; border:2px solid #ffdd00; outline:1px solid #000; backdrop-filter:blur(6px);" onclick="if(event.target.id==='esp32-spatial-overlay') window.closeEsp32SpatialModal();">
+        <div style="width:min(960px, 95vw); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px solid #473a05; padding-bottom:8px;">
             <div style="display:flex; align-items:center; gap:10px;">
-                <strong style="color:#00aaff; font-size:1.1rem; text-shadow:0 0 8px #00aaff;">🛰️ ESP32 MOBILE SPATIAL TRACKING RECEIVER</strong>
-                <span id="esp32-socket-status-badge" style="font-size:0.75rem; color:#00ff88; border:1px solid #00ff88; background:#041812; padding:3px 8px; border-radius:4px; text-shadow:0 0 6px #00ff88;">🟢 UDP :8888 LISTENING [192.168.1.150]</span>
+                <strong style="color:#ffdd00; font-size:1.1rem; text-shadow:0 0 3px #0b0902, -1px -1px 0 #0b0902, 1px 1px 0 #0b0902;">🛰️ ESP32 MOBILE SPATIAL TRACKING RECEIVER &amp; YELLOW AR HUD</strong>
+                <span id="esp32-socket-status-badge" style="font-size:0.75rem; color:#ffea00; border:1px solid #ffdd00; background:#241c03; padding:3px 8px; border-radius:4px; text-shadow:0 0 3px #0b0902;">🟡 UDP :8888 LISTENING [192.168.1.150]</span>
             </div>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <button onclick="window.refreshEsp32Spatial(); event.stopPropagation();" style="background:#072030; border:1px solid #00aaff; color:#88d4ff; padding:6px 14px; border-radius:4px; cursor:pointer; font-family:inherit; font-weight:bold; font-size:0.78rem; box-shadow:0 0 8px rgba(0,170,255,0.3);">🔄 REFRESH</button>
-                <button onclick="window.calibrateEsp32Spatial(); event.stopPropagation();" style="background:#071f1a; border:1px solid #00ff88; color:#00ff88; padding:6px 14px; border-radius:4px; cursor:pointer; font-family:inherit; font-weight:bold; font-size:0.78rem; box-shadow:0 0 8px rgba(0,255,136,0.3);">🎯 ZERO CALIBRATE</button>
-                <button onclick="window.simulateEsp32Impact(); event.stopPropagation();" style="background:#2b1204; border:1px solid #ff6600; color:#ffaa88; padding:6px 12px; border-radius:4px; cursor:pointer; font-family:inherit; font-weight:bold; font-size:0.78rem;">💥 SIMULATE DROP</button>
+                <a href="/spatial/ar" target="_blank" style="background:#241c03; border:1px solid #ffdd00; color:#ffea00; padding:6px 12px; border-radius:4px; text-decoration:none; font-weight:bold; font-size:0.78rem; text-shadow:0 0 3px #0b0902;">📱 MOBILE AR VIEW</a>
+                <button onclick="window.refreshEsp32Spatial(); event.stopPropagation();" style="background:#1f1803; border:1px solid #ffdd00; color:#ffee55; padding:6px 14px; border-radius:4px; cursor:pointer; font-family:inherit; font-weight:bold; font-size:0.78rem;">🔄 REFRESH</button>
+                <button onclick="window.calibrateEsp32Spatial(); event.stopPropagation();" style="background:#241c03; border:1px solid #ffaa00; color:#ffea00; padding:6px 14px; border-radius:4px; cursor:pointer; font-family:inherit; font-weight:bold; font-size:0.78rem;">🎯 ZERO CALIBRATE</button>
+                <button onclick="window.simulateEsp32Impact(); event.stopPropagation();" style="background:#2b1204; border:1px solid #ffaa00; color:#ffcc66; padding:6px 12px; border-radius:4px; cursor:pointer; font-family:inherit; font-weight:bold; font-size:0.78rem;">💥 SIMULATE DROP</button>
                 <button onclick="window.closeEsp32SpatialModal(); event.stopPropagation();" style="background:#1a0404; border:1px solid #ff003c; color:#ff003c; padding:6px 12px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.78rem;">✕ CLOSE</button>
             </div>
         </div>
 
         <!-- Telemetry & Kinematics Grid -->
-        <div style="width:min(940px, 95vw); display:grid; grid-template-columns:1fr 1fr; gap:14px; font-size:0.8rem; max-height:calc(85vh - 70px); overflow-y:auto;">
-            <!-- Left: Attitude & 3D Coordinates -->
+        <div style="width:min(960px, 95vw); display:grid; grid-template-columns:1fr 1fr; gap:14px; font-size:0.8rem; max-height:calc(85vh - 70px); overflow-y:auto;">
+            <!-- Left: Attitude Horizon & Live Yellow AR Video Feed -->
             <div style="display:flex; flex-direction:column; gap:10px;">
-                <!-- Attitude Horizon Canvas -->
-                <div style="background:#040c18; border:1px solid #16304a; border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px; align-items:center;">
-                    <div style="width:100%; display:flex; justify-content:space-between; color:#00ffff; font-weight:bold; font-size:0.75rem;">
-                        <span>📐 3D ATTITUDE (GIMBAL / HORIZON)</span>
-                        <span id="esp32-attitude-angles" style="color:#00ff88;">R: 0.0° | P: 0.0° | Y: 0.0°</span>
+                <!-- Live AR Video Streaming Feed (Rule 234) -->
+                <div style="background:#140f02; border:1px solid #332800; border-left:3px solid #ffdd00; border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px; align-items:center;">
+                    <div style="width:100%; display:flex; justify-content:space-between; color:#ffaa00; font-weight:bold; font-size:0.75rem;">
+                        <span>📹 LIVE MJPEG AR INTERFACE FEED</span>
+                        <span style="color:#ffee55;">15 FPS • /api/spatial/video_feed</span>
                     </div>
-                    <canvas id="esp32-spatial-canvas" width="400" height="180" style="width:100%; height:auto; max-height:180px; background:#02060e; border:1px solid #00aaff; border-radius:4px; box-shadow:0 0 10px rgba(0,170,255,0.2);"></canvas>
+                    <img id="esp32-ar-live-video" src="/api/spatial/video_feed" alt="AR Interface Video Feed" style="width:100%; height:auto; max-height:180px; object-fit:contain; background:#000; border:1px solid #ffdd00; border-radius:4px;" />
+                </div>
+
+                <!-- Attitude Horizon Canvas with Cyber Yellow Styling -->
+                <div style="background:#140f02; border:1px solid #332800; border-left:3px solid #ffdd00; border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px; align-items:center;">
+                    <div style="width:100%; display:flex; justify-content:space-between; color:#ffaa00; font-weight:bold; font-size:0.75rem;">
+                        <span>📐 3D ATTITUDE (HORIZON &amp; GIMBAL)</span>
+                        <span id="esp32-attitude-angles" style="color:#ffee55;">R: 0.0° | P: 0.0° | Y: 0.0°</span>
+                    </div>
+                    <canvas id="esp32-spatial-canvas" width="400" height="150" style="width:100%; height:auto; max-height:150px; background:#0b0902; border:1px solid #ffdd00; border-radius:4px;"></canvas>
                 </div>
 
                 <!-- 3D Position Coordinates -->
-                <div style="background:#040c18; border:1px solid #16304a; border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px;">
-                    <div style="color:#00ffff; font-weight:bold; border-bottom:1px solid #16304a; padding-bottom:4px; display:flex; justify-content:space-between;">
+                <div style="background:#140f02; border:1px solid #332800; border-left:3px solid #ffdd00; border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px;">
+                    <div style="color:#ffaa00; font-weight:bold; border-bottom:1px solid #332800; padding-bottom:4px; display:flex; justify-content:space-between;">
                         <span>📍 RELATIVE 3D COORDINATES</span>
-                        <span id="esp32-motion-badge" style="background:#0c2a1c; color:#00ff88; border:1px solid #00ff88; font-size:0.7rem; padding:1px 6px; border-radius:3px;">STATIONARY</span>
+                        <span id="esp32-motion-badge" style="background:#241c03; color:#ffee55; border:1px solid #ffdd00; font-size:0.7rem; padding:1px 6px; border-radius:3px;">STATIONARY</span>
                     </div>
                     <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; text-align:center; margin-top:4px;">
-                        <div style="background:#061424; padding:6px; border-radius:4px; border:1px solid #1a3c5a;">
-                            <div style="color:#8899aa; font-size:0.68rem;">X (LATERAL)</div>
-                            <div id="esp32-pos-x" style="color:#00ff88; font-size:1.1rem; font-weight:bold;">+0.00 m</div>
+                        <div style="background:#1e1703; padding:6px; border-radius:4px; border:1px solid #ffdd00;">
+                            <div style="color:#d4ba77; font-size:0.68rem;">X (LATERAL)</div>
+                            <div id="esp32-pos-x" style="color:#ffee55; font-size:1.1rem; font-weight:bold; text-shadow:0 0 3px #0b0902;">+0.00 m</div>
                         </div>
-                        <div style="background:#061424; padding:6px; border-radius:4px; border:1px solid #1a3c5a;">
-                            <div style="color:#8899aa; font-size:0.68rem;">Y (LONGITUDINAL)</div>
-                            <div id="esp32-pos-y" style="color:#00ff88; font-size:1.1rem; font-weight:bold;">+0.00 m</div>
+                        <div style="background:#1e1703; padding:6px; border-radius:4px; border:1px solid #ffdd00;">
+                            <div style="color:#d4ba77; font-size:0.68rem;">Y (LONGITUDINAL)</div>
+                            <div id="esp32-pos-y" style="color:#ffee55; font-size:1.1rem; font-weight:bold; text-shadow:0 0 3px #0b0902;">+0.00 m</div>
                         </div>
-                        <div style="background:#061424; padding:6px; border-radius:4px; border:1px solid #1a3c5a;">
-                            <div style="color:#8899aa; font-size:0.68rem;">Z (VERTICAL / ELEV)</div>
-                            <div id="esp32-pos-z" style="color:#00d4ff; font-size:1.1rem; font-weight:bold;">+0.95 m</div>
+                        <div style="background:#1e1703; padding:6px; border-radius:4px; border:1px solid #ffdd00;">
+                            <div style="color:#d4ba77; font-size:0.68rem;">Z (VERTICAL / ELEV)</div>
+                            <div id="esp32-pos-z" style="color:#ffee55; font-size:1.1rem; font-weight:bold; text-shadow:0 0 3px #0b0902;">+0.95 m</div>
                         </div>
                     </div>
-                    <div style="display:flex; justify-content:space-between; font-size:0.74rem; color:#88aacc; margin-top:4px;">
-                        <span>Linear Velocity: <span id="esp32-vel" style="color:#fff;">(0.00, 0.00, 0.00) m/s</span></span>
-                        <span>Total Accel: <span id="esp32-accel-total" style="color:#fff;">9.81 m/s²</span></span>
+                    <div style="display:flex; justify-content:space-between; font-size:0.74rem; color:#d4ba77; margin-top:4px;">
+                        <span>Linear Velocity: <span id="esp32-vel" style="color:#ffee55;">(0.00, 0.00, 0.00) m/s</span></span>
+                        <span>Total Accel: <span id="esp32-accel-total" style="color:#ffee55;">9.81 m/s²</span></span>
                     </div>
                 </div>
             </div>
 
-            <!-- Right: Network Link, Hardware Telemetry & Simulator -->
+            <!-- Right: Wi-Fi ACK Waterfall, Socket Telemetry & Simulator -->
             <div style="display:flex; flex-direction:column; gap:10px;">
-                <!-- Stationary Socket Connection Telemetry -->
-                <div style="background:#040c18; border:1px solid #16304a; border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px;">
-                    <div style="color:#00ffff; font-weight:bold; border-bottom:1px solid #16304a; padding-bottom:4px;">
-                        📡 SOCKET &amp; STATIC IP NETWORK LINK
+                <!-- 802.11 Wi-Fi ACK Stream Tracking (Rule 234) -->
+                <div style="background:#140f02; border:1px solid #332800; border-left:3px solid #ffdd00; border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px;">
+                    <div style="color:#ffaa00; font-weight:bold; border-bottom:1px solid #332800; padding-bottom:4px; display:flex; justify-content:space-between;">
+                        <span>📡 802.11 WI-FI ACK TRACKING STREAM</span>
+                        <span id="esp32-ack-age-badge" style="background:#241c03; color:#ffee55; border:1px solid #ffdd00; font-size:0.7rem; padding:1px 6px; border-radius:3px;">ACTIVE STREAM</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between;"><span style="color:#8899aa;">Stationary Socket:</span><span id="esp32-socket-endpoint" style="color:#ffffff;">0.0.0.0:8888 (UDP)</span></div>
-                    <div style="display:flex; justify-content:space-between;"><span style="color:#8899aa;">Expected Static IP:</span><span id="esp32-static-ip" style="color:#00ff88; font-weight:bold;">192.168.1.150</span></div>
-                    <div style="display:flex; justify-content:space-between;"><span style="color:#8899aa;">Active Client Connection:</span><span id="esp32-client-info" style="color:#ffffff;">Waiting for packets...</span></div>
-                    <div style="display:flex; justify-content:space-between;"><span style="color:#8899aa;">Packets Ingested:</span><span id="esp32-packet-count" style="color:#ffdd00; font-weight:bold;">0</span></div>
-                    <div style="display:flex; justify-content:space-between;"><span style="color:#8899aa;">Mobile Battery / RSSI:</span><span><span id="esp32-battery" style="color:#00ff88;">3.95 V</span> • <span id="esp32-rssi" style="color:#00d4ff;">-55 dBm</span></span></div>
-                    <div style="display:flex; justify-content:space-between;"><span style="color:#8899aa;">Inventory Loop Link:</span><span style="color:#00ff88;">✅ Synchronized (Rule 232 Drop Audit)</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:#d4ba77;">Last ACK Seq:</span><span id="esp32-ack-seq" style="color:#ffee55; font-weight:bold;">#000000</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:#d4ba77;">ACK RSSI:</span><span id="esp32-ack-rssi" style="color:#ffea00; font-weight:bold;">-55 dBm</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:#d4ba77;">Round-Trip Latency:</span><span id="esp32-ack-delta" style="color:#ffee55; font-weight:bold;">280 μs</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:#d4ba77;">Path-Loss Est. Distance:</span><span id="esp32-ack-dist" style="color:#ffea00; font-weight:bold;">1.25 m</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:#d4ba77;">Wi-Fi Channel:</span><span id="esp32-ack-channel" style="color:#ffee55;">6 (2.4 GHz)</span></div>
+                </div>
+
+                <!-- Stationary Socket Connection Telemetry -->
+                <div style="background:#140f02; border:1px solid #332800; border-left:3px solid #ffdd00; border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px;">
+                    <div style="color:#ffaa00; font-weight:bold; border-bottom:1px solid #332800; padding-bottom:4px;">
+                        🛰️ SOCKET &amp; STATIC IP NETWORK LINK
+                    </div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:#d4ba77;">Stationary Socket:</span><span id="esp32-socket-endpoint" style="color:#ffffff;">0.0.0.0:8888 (UDP)</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:#d4ba77;">Expected Static IP:</span><span id="esp32-static-ip" style="color:#ffee55; font-weight:bold;">192.168.1.150</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:#d4ba77;">Active Client Connection:</span><span id="esp32-client-info" style="color:#ffffff;">Waiting for packets...</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:#d4ba77;">Packets Ingested:</span><span id="esp32-packet-count" style="color:#ffdd00; font-weight:bold;">0</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:#d4ba77;">Mobile Battery / RSSI:</span><span><span id="esp32-battery" style="color:#ffee55;">3.95 V</span> • <span id="esp32-rssi" style="color:#ffea00;">-55 dBm</span></span></div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:#d4ba77;">Inventory Loop Link:</span><span style="color:#00ff66;">✅ Synchronized (Rule 232 Drop Audit)</span></div>
                 </div>
 
                 <!-- Packet Injection & Simulator Form -->
-                <div style="background:#040c18; border:1px solid #16304a; border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px;">
-                    <div style="color:#00ffff; font-weight:bold; font-size:0.75rem;">🧪 SPATIAL PACKET SIMULATOR &amp; INJECTOR</div>
+                <div style="background:#140f02; border:1px solid #332800; border-left:3px solid #ffdd00; border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px;">
+                    <div style="color:#ffaa00; font-weight:bold; font-size:0.75rem;">🧪 SPATIAL PACKET SIMULATOR &amp; INJECTOR</div>
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-                        <input id="sim-pos-x" type="number" step="0.1" value="0.7" placeholder="X (m)" style="background:#071424; border:1px solid #1a3c5a; color:#fff; padding:4px 6px; border-radius:4px; font-family:inherit; font-size:0.72rem;">
-                        <input id="sim-pos-y" type="number" step="0.1" value="1.4" placeholder="Y (m)" style="background:#071424; border:1px solid #1a3c5a; color:#fff; padding:4px 6px; border-radius:4px; font-family:inherit; font-size:0.72rem;">
-                        <input id="sim-pos-z" type="number" step="0.1" value="0.8" placeholder="Z (m)" style="background:#071424; border:1px solid #1a3c5a; color:#fff; padding:4px 6px; border-radius:4px; font-family:inherit; font-size:0.72rem;">
-                        <select id="sim-motion-state" style="background:#071424; border:1px solid #1a3c5a; color:#fff; padding:4px 6px; border-radius:4px; font-family:inherit; font-size:0.72rem;">
+                        <input id="sim-pos-x" type="number" step="0.1" value="0.7" placeholder="X (m)" style="background:#1e1703; border:1px solid #332800; color:#fff; padding:4px 6px; border-radius:4px; font-family:inherit; font-size:0.72rem;">
+                        <input id="sim-pos-y" type="number" step="0.1" value="1.4" placeholder="Y (m)" style="background:#1e1703; border:1px solid #332800; color:#fff; padding:4px 6px; border-radius:4px; font-family:inherit; font-size:0.72rem;">
+                        <input id="sim-pos-z" type="number" step="0.1" value="0.8" placeholder="Z (m)" style="background:#1e1703; border:1px solid #332800; color:#fff; padding:4px 6px; border-radius:4px; font-family:inherit; font-size:0.72rem;">
+                        <select id="sim-motion-state" style="background:#1e1703; border:1px solid #332800; color:#fff; padding:4px 6px; border-radius:4px; font-family:inherit; font-size:0.72rem;">
                             <option value="CARRIED">CARRIED</option>
                             <option value="MOVING">MOVING</option>
                             <option value="STATIONARY">STATIONARY</option>
@@ -1410,9 +1433,9 @@
                         </select>
                     </div>
                     <div style="display:flex; gap:6px; margin-top:4px;">
-                        <button onclick="window.injectCustomSpatialPacket();" style="flex:1; background:#0d243a; border:1px solid #00aaff; color:#88d4ff; padding:5px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.72rem; font-weight:bold;">TRANSMIT TEST PACKET</button>
+                        <button onclick="window.injectCustomSpatialPacket();" style="flex:1; background:#241c03; border:1px solid #ffdd00; color:#ffee55; padding:5px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.72rem; font-weight:bold;">TRANSMIT TEST PACKET</button>
                     </div>
-                    <div id="sim-inject-status" style="font-size:0.7rem; color:#88ffbb; margin-top:2px;">Stationary terminal ready for real-time ESP32 UDP packets.</div>
+                    <div id="sim-inject-status" style="font-size:0.7rem; color:#ffea00; margin-top:2px;">Stationary terminal ready for real-time ESP32 UDP packets.</div>
                 </div>
             </div>
         </div>
@@ -19533,17 +19556,19 @@ function connectAudio() {
     fetch('/api/spatial/status')
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        // 1. Socket & Network Status
+        // 1. Socket & Network Status (Cyber Yellow AR Scheme)
         const badge = document.getElementById("esp32-socket-status-badge");
         if (badge) {
           if (data.receiver_active) {
-            badge.innerText = "🟢 UDP :" + data.listen_port + " LISTENING [" + data.expected_static_ip + "]";
-            badge.style.color = "#00ff88";
-            badge.style.borderColor = "#00ff88";
+            badge.innerText = "🟡 UDP :" + data.listen_port + " LISTENING [" + data.expected_static_ip + "]";
+            badge.style.color = "#ffea00";
+            badge.style.borderColor = "#ffdd00";
+            badge.style.background = "#241c03";
           } else {
             badge.innerText = "🔴 UDP RECEIVER INACTIVE";
-            badge.style.color = "#ff4444";
-            badge.style.borderColor = "#ff4444";
+            badge.style.color = "#ff003c";
+            badge.style.borderColor = "#ff003c";
+            badge.style.background = "#24040a";
           }
         }
 
@@ -19585,17 +19610,17 @@ function connectAudio() {
           const st = tel.motion_state || "STATIONARY";
           stateBadge.innerText = st;
           if (st === "IMPACT" || tel.impact_detected) {
-            stateBadge.style.color = "#ff3300";
-            stateBadge.style.borderColor = "#ff3300";
-            stateBadge.style.background = "#2b0d04";
+            stateBadge.style.color = "#ff003c";
+            stateBadge.style.borderColor = "#ff003c";
+            stateBadge.style.background = "#2b050d";
           } else if (st === "MOVING" || st === "CARRIED") {
-            stateBadge.style.color = "#00d4ff";
-            stateBadge.style.borderColor = "#00d4ff";
-            stateBadge.style.background = "#071c2b";
+            stateBadge.style.color = "#ffea00";
+            stateBadge.style.borderColor = "#ffaa00";
+            stateBadge.style.background = "#241c03";
           } else {
-            stateBadge.style.color = "#00ff88";
-            stateBadge.style.borderColor = "#00ff88";
-            stateBadge.style.background = "#0c2a1c";
+            stateBadge.style.color = "#ffee55";
+            stateBadge.style.borderColor = "#ffdd00";
+            stateBadge.style.background = "#191402";
           }
         }
 
@@ -19608,6 +19633,45 @@ function connectAudio() {
         drawEsp32AttitudeHorizon(orient.roll || 0, orient.pitch || 0, orient.yaw || 0);
       })
       .catch(function (e) {
+        console.warn("refreshEsp32Spatial error:", e);
+      });
+
+    // 4. Fetch Wi-Fi ACK tracking stream metrics (Rule 234)
+    fetch('/api/spatial/acks')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        const was = data.wifi_ack_stream || {};
+        const seqEl = document.getElementById("esp32-ack-seq");
+        if (seqEl) seqEl.innerText = "#" + (was.last_ack_seq || 0);
+        const rssiEl = document.getElementById("esp32-ack-rssi");
+        if (rssiEl) rssiEl.innerText = (was.last_rssi_dbm || -55) + " dBm";
+        const deltaEl = document.getElementById("esp32-ack-delta");
+        const deltaUs = was.last_delta_us || 280;
+        if (deltaEl) deltaEl.innerText = deltaUs + " μs";
+        const distEl = document.getElementById("esp32-ack-dist");
+        if (distEl) distEl.innerText = Number(was.estimated_distance_m || 1.25).toFixed(2) + " m";
+        const chanEl = document.getElementById("esp32-ack-channel");
+        if (chanEl) chanEl.innerText = (was.channel || 6) + " (2.4 GHz)";
+
+        const ageBadge = document.getElementById("esp32-ack-age-badge");
+        if (ageBadge) {
+          if (deltaUs > 500) {
+            ageBadge.innerText = "STALE STREAM";
+            ageBadge.style.color = "#886600";
+            ageBadge.style.borderColor = "#886600";
+          } else if (deltaUs > 150) {
+            ageBadge.innerText = "AGING STREAM";
+            ageBadge.style.color = "#ffaa00";
+            ageBadge.style.borderColor = "#ffaa00";
+          } else {
+            ageBadge.innerText = "FRESH ACK STREAM";
+            ageBadge.style.color = "#ffdd00";
+            ageBadge.style.borderColor = "#ffdd00";
+          }
+        }
+      })
+      .catch(function () {});
+  }
         console.warn("refreshEsp32Spatial error:", e);
       });
   }
@@ -19701,8 +19765,8 @@ function connectAudio() {
     ctx.save();
     ctx.clearRect(0, 0, w, h);
 
-    // Dark space background
-    ctx.fillStyle = "#020712";
+    // Deep obsidian background
+    ctx.fillStyle = "#0b0902";
     ctx.fillRect(0, 0, w, h);
 
     // Artificial horizon pitch shift & roll rotation
@@ -19712,35 +19776,52 @@ function connectAudio() {
     ctx.translate(cx, cy + pitchPx);
     ctx.rotate(rollRad);
 
-    // Sky gradient
+    // Sky gradient in amber/gold tones
     const skyGrad = ctx.createLinearGradient(0, -h, 0, 0);
-    skyGrad.addColorStop(0, "#071c36");
-    skyGrad.addColorStop(1, "#0f3a69");
+    skyGrad.addColorStop(0, "#1c1402");
+    skyGrad.addColorStop(1, "#362604");
     ctx.fillStyle = skyGrad;
     ctx.fillRect(-w * 1.5, -h * 2, w * 3, h * 2);
 
     // Ground gradient
     const gndGrad = ctx.createLinearGradient(0, 0, 0, h);
-    gndGrad.addColorStop(0, "#2b1406");
-    gndGrad.addColorStop(1, "#0d0602");
+    gndGrad.addColorStop(0, "#261501");
+    gndGrad.addColorStop(1, "#0d0700");
     ctx.fillStyle = gndGrad;
     ctx.fillRect(-w * 1.5, 0, w * 3, h * 2);
 
-    // Horizon line
-    ctx.strokeStyle = "#00ff88";
+    // Horizon line with 2px obsidian backing stroke for daylight / bright camera contrast
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-w, 0);
+    ctx.lineTo(w, 0);
+    ctx.stroke();
+
+    ctx.strokeStyle = "#ffdd00";
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(-w, 0);
     ctx.lineTo(w, 0);
     ctx.stroke();
 
-    // Pitch ladder rungs
-    ctx.strokeStyle = "rgba(0, 212, 255, 0.6)";
-    ctx.lineWidth = 1;
+    // Pitch ladder rungs with backing strokes in amber
     for (let p = -30; p <= 30; p += 10) {
       if (p === 0) continue;
       const rungY = -(p / 45.0) * (h / 3);
       const rungW = Math.abs(p) === 10 ? 30 : 50;
+
+      // Obsidian outline
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-rungW, rungY);
+      ctx.lineTo(rungW, rungY);
+      ctx.stroke();
+
+      // Yellow/Amber line
+      ctx.strokeStyle = "#ffaa00";
+      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(-rungW, rungY);
       ctx.lineTo(rungW, rungY);
@@ -19749,8 +19830,16 @@ function connectAudio() {
 
     ctx.restore();
 
-    // Fixed aircraft symbol / reticle in center
-    ctx.strokeStyle = "#ffdd00";
+    // Fixed aircraft symbol / reticle in center with obsidian backing stroke
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(cx - 35, cy); ctx.lineTo(cx - 10, cy);
+    ctx.moveTo(cx + 10, cy); ctx.lineTo(cx + 35, cy);
+    ctx.moveTo(cx, cy - 8); ctx.lineTo(cx, cy + 8);
+    ctx.stroke();
+
+    ctx.strokeStyle = "#ffee55";
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(cx - 35, cy); ctx.lineTo(cx - 10, cy);
@@ -19759,19 +19848,25 @@ function connectAudio() {
     ctx.stroke();
 
     // Outer attitude border ring
-    ctx.strokeStyle = "rgba(0, 170, 255, 0.4)";
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.min(w, h) * 0.44, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(255, 221, 0, 0.45)";
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.arc(cx, cy, Math.min(w, h) * 0.44, 0, Math.PI * 2);
     ctx.stroke();
 
     // Compass heading strip at bottom
-    ctx.fillStyle = "#020712";
+    ctx.fillStyle = "#0b0902";
     ctx.fillRect(0, h - 20, w, 20);
-    ctx.strokeStyle = "#16304a";
+    ctx.strokeStyle = "#332800";
     ctx.beginPath(); ctx.moveTo(0, h - 20); ctx.lineTo(w, h - 20); ctx.stroke();
     ctx.font = "10px 'Roboto Mono', monospace";
-    ctx.fillStyle = "#00d4ff";
+    ctx.fillStyle = "#ffee55";
     ctx.textAlign = "center";
     ctx.fillText("HDG (YAW): " + Number(yawDeg).toFixed(1) + "°", cx, h - 6);
   }

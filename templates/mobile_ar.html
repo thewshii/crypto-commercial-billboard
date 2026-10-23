@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Stationary Terminal — Mobile AR Interface (Yellow Theme)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ar-primary: #ffdd00;  /* live spatial telemetry / fresh ACK */
+            --ar-bright: #ffea00;   /* active / locked only */
+            --ar-dim: #ffaa00;      /* secondary / aging telemetry */
+            --ar-stale: #886600;    /* stale / aged packets */
+            --ar-bg: #0b0902;       /* deep obsidian */
+            --ar-panel: rgba(18, 14, 3, 0.92);
+            --hazard: #ff003c;      /* drop impact, ACK drop only (never decorative) */
+            --matrix: #00ff66;      /* Rule 232 Matrix inventory namespace */
+            --rdp: #00e5ff;         /* Rule 231 RDP / desktop namespace */
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--ar-bg);
+            color: var(--ar-primary);
+            font-family: 'Roboto Mono', monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        /* Top Mobile Header */
+        .mobile-header {
+            background: rgba(18, 14, 3, 0.98);
+            border-bottom: 2px solid var(--ar-primary);
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .mobile-title {
+            font-size: 0.95rem;
+            font-weight: 900;
+            color: var(--ar-primary);
+            text-shadow: 0 0 3px #0b0902, -1px -1px 0 #0b0902, 1px -1px 0 #0b0902, -1px 1px 0 #0b0902, 1px 1px 0 #0b0902;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .theme-badge {
+            background: #181302;
+            border: 1px solid var(--ar-primary);
+            color: var(--ar-bright);
+            font-size: 0.68rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            text-shadow: 0 0 3px #0b0902;
+        }
+
+        /* Main AR Viewport */
+        .ar-viewport-container {
+            position: relative;
+            width: 100%;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            border-bottom: 2px solid var(--ar-dim);
+        }
+        #ar-camera-video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+            z-index: 1;
+        }
+        #ar-video-stream {
+            width: 100%;
+            height: auto;
+            max-height: 60vh;
+            object-fit: contain;
+            display: block;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Floating Yellow AR Overlay Strips with Obsidian Stroke Protection */
+        .ar-hud-overlay {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+        .hud-pill {
+            background: var(--ar-panel);
+            border: 1.5px solid var(--ar-primary);
+            color: var(--ar-bright);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.72rem;
+            font-weight: bold;
+            outline: 1px solid #0b0902;
+            text-shadow: 0 0 3px #0b0902, -1px -1px 0 #0b0902, 1px -1px 0 #0b0902, -1px 1px 0 #0b0902, 1px 1px 0 #0b0902;
+        }
+
+        /* Telemetry Cards Grid */
+        .telemetry-grid {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+        }
+        .telemetry-card {
+            background: var(--ar-panel);
+            border: 1px solid #332800;
+            border-left: 3px solid var(--ar-primary);
+            border-radius: 6px;
+            padding: 10px 12px;
+            outline: 1px solid #000000;
+        }
+        .card-header {
+            font-size: 0.78rem;
+            font-weight: bold;
+            color: var(--ar-dim);
+            border-bottom: 1px solid rgba(255, 221, 0, 0.2);
+            padding-bottom: 4px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            text-shadow: 0 0 3px #0b0902;
+        }
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            margin: 3px 0;
+            color: #fff;
+        }
+        .metric-label { color: #d4ba77; }
+        .metric-value { 
+            color: var(--ar-bright); 
+            font-weight: bold;
+            text-shadow: 0 0 3px #0b0902, 1px 1px 0 #0b0902;
+        }
+
+        /* 3D Coordinates Yellow Pill Row */
+        .coords-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+            margin-top: 4px;
+        }
+        .coord-box {
+            background: #140f02;
+            border: 1px solid var(--ar-primary);
+            border-radius: 4px;
+            padding: 6px 4px;
+            text-align: center;
+            outline: 1px solid #0b0902;
+        }
+        .coord-title { font-size: 0.65rem; color: var(--ar-dim); }
+        .coord-num { 
+            font-size: 1.05rem; 
+            font-weight: 900; 
+            color: var(--ar-bright);
+            text-shadow: 0 0 3px #0b0902, -1px -1px 0 #0b0902, 1px -1px 0 #0b0902, -1px 1px 0 #0b0902, 1px 1px 0 #0b0902;
+        }
+
+        /* Touch Action Buttons in Yellow Scheme */
+        .touch-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            padding: 4px 12px 14px 12px;
+        }
+        .btn-yellow {
+            background: #1f1803;
+            border: 1.5px solid var(--ar-primary);
+            color: var(--ar-bright);
+            padding: 10px 8px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.78rem;
+            font-weight: 900;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            transition: transform 0.1s, opacity 0.1s;
+            text-shadow: 0 0 3px #0b0902;
+            outline: 1px solid #000;
+        }
+        .btn-yellow:active {
+            background: var(--ar-primary);
+            color: #0b0902;
+            transform: scale(0.98);
+        }
+        .btn-amber {
+            background: #261502;
+            border: 1.5px solid var(--ar-dim);
+            color: #ffbb66;
+        }
+
+        /* Watermark & Footer */
+        .mobile-footer {
+            background: rgba(14, 11, 2, 0.95);
+            border-top: 1px solid #332800;
+            padding: 8px 14px;
+            font-size: 0.68rem;
+            color: #a8945b;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Mobile Yellow Header -->
+    <header class="mobile-header">
+        <div class="mobile-title">
+            <span>🛰️</span>
+            <span>TERMINAL AR INTERFACE</span>
+        </div>
+        <div class="theme-badge">YELLOW AR SCHEME</div>
+    </header>
+
+    <!-- Real-Time Video Streaming Viewport -->
+    <div class="ar-viewport-container">
+        <!-- Optional Camera Passthrough Video -->
+        <video id="ar-camera-video" autoplay playsinline muted></video>
+
+        <!-- Live MJPEG Stream from Stationary Terminal -->
+        <img id="ar-video-stream" src="/api/spatial/video_feed" alt="AR Interface Video Feed (Stationary Terminal)">
+
+        <!-- Floating Yellow HUD Overlay -->
+        <div class="ar-hud-overlay">
+            <div class="hud-pill" id="mobile-ack-pill">📡 ACK: STREAMING</div>
+            <div class="hud-pill" id="mobile-fps-pill">15 FPS • MJPEG</div>
+        </div>
+    </div>
+
+    <!-- Telemetry Cards Grid -->
+    <div class="telemetry-grid">
+        <!-- 1. Spatial Coordinates (Yellow Scheme) -->
+        <div class="telemetry-card">
+            <div class="card-header">
+                <span>📍 MOBILE 3D SPATIAL COORDINATES</span>
+                <span id="mobile-state-badge" style="color:var(--ar-yellow); font-weight:bold;">CARRIED</span>
+            </div>
+            <div class="coords-row">
+                <div class="coord-box">
+                    <div class="coord-title">X (LATERAL)</div>
+                    <div class="coord-num" id="mob-x">+0.00m</div>
+                </div>
+                <div class="coord-box">
+                    <div class="coord-title">Y (LONGITUDINAL)</div>
+                    <div class="coord-num" id="mob-y">+0.00m</div>
+                </div>
+                <div class="coord-box">
+                    <div class="coord-title">Z (ELEVATION)</div>
+                    <div class="coord-num" id="mob-z">+0.95m</div>
+                </div>
+            </div>
+            <div class="metric-row" style="margin-top:8px;">
+                <span class="metric-label">Attitude (R / P / Y):</span>
+                <span class="metric-value" id="mob-att">0.0° / 0.0° / 90.0°</span>
+            </div>
+        </div>
+
+        <!-- 2. 802.11 Wi-Fi ACK Stream Card -->
+        <div class="telemetry-card">
+            <div class="card-header">
+                <span>📡 802.11 WI-FI ACK TRACKING STREAM</span>
+                <span style="color:var(--ar-amber);">RULE 234</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Last ACK Sequence:</span>
+                <span class="metric-value" id="mob-ack-seq">#000000</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">ACK RSSI Signal:</span>
+                <span class="metric-value" id="mob-ack-rssi">-55 dBm</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Round-Trip ACK Latency:</span>
+                <span class="metric-value" id="mob-ack-delta">280 μs</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Path-Loss Distance:</span>
+                <span class="metric-value" id="mob-ack-dist">1.25 m</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Static IP Source:</span>
+                <span class="metric-value" id="mob-static-ip">192.168.1.150</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Touch Actions in Yellow Scheme -->
+    <div class="touch-actions">
+        <button class="btn-yellow" onclick="zeroCalibrate();">🎯 ZERO ORIGIN</button>
+        <button class="btn-yellow btn-amber" onclick="simulateDropImpact();">💥 SIMULATE DROP</button>
+        <button class="btn-yellow" onclick="toggleCameraPassthrough();" id="cam-toggle-btn">📷 CAMERA OVERLAY</button>
+        <a class="btn-yellow" href="/" style="display:flex; align-items:center; justify-content:center;">🖥️ BILLBOARD HOME</a>
+    </div>
+
+    <!-- Mobile Footer -->
+    <footer class="mobile-footer">
+        <span>Stationary Terminal • UDP :8888</span>
+        <span style="color:var(--ar-yellow);">Rule 234: Yellow AR View</span>
+    </footer>
+
+    <!-- Mobile JavaScript Logic -->
+    <script>
+        function updateTelemetry() {
+            fetch('/api/spatial/status')
+                .then(r => r.json())
+                .then(data => {
+                    const tel = data.telemetry || {};
+                    const pos = tel.position || {};
+                    const orient = tel.orientation || {};
+
+                    document.getElementById('mob-x').innerText = (pos.x >= 0 ? '+' : '') + Number(pos.x || 0).toFixed(2) + 'm';
+                    document.getElementById('mob-y').innerText = (pos.y >= 0 ? '+' : '') + Number(pos.y || 0).toFixed(2) + 'm';
+                    document.getElementById('mob-z').innerText = (pos.z >= 0 ? '+' : '') + Number(pos.z || 0).toFixed(2) + 'm';
+                    document.getElementById('mob-att').innerText = 
+                        Number(orient.roll || 0).toFixed(1) + '° / ' + 
+                        Number(orient.pitch || 0).toFixed(1) + '° / ' + 
+                        Number(orient.yaw || 0).toFixed(1) + '°';
+
+                    const badge = document.getElementById('mobile-state-badge');
+                    if (badge) {
+                        badge.innerText = tel.motion_state || 'STATIONARY';
+                        badge.style.color = tel.impact_detected ? '#ff3300' : '#ffdd00';
+                    }
+                    if (tel.static_ip) {
+                        document.getElementById('mob-static-ip').innerText = tel.static_ip;
+                    }
+                }).catch(() => {});
+
+            fetch('/api/spatial/acks')
+                .then(r => r.json())
+                .then(data => {
+                    const was = data.wifi_ack_stream || {};
+                    const deltaUs = was.last_delta_us || 280;
+                    document.getElementById('mob-ack-seq').innerText = '#' + (was.last_ack_seq || 0);
+                    document.getElementById('mob-ack-rssi').innerText = (was.last_rssi_dbm || -55) + ' dBm';
+                    document.getElementById('mob-ack-delta').innerText = deltaUs + ' μs';
+                    document.getElementById('mob-ack-dist').innerText = Number(was.estimated_distance_m || 1.25).toFixed(2) + ' m';
+                    
+                    // Data age color encoding: fresh (<150us) = primary (#ffdd00), aging (150-500us) = dim (#ffaa00), stale (>500us) = stale (#886600)
+                    const ackPill = document.getElementById('mobile-ack-pill');
+                    let ageColor = 'var(--ar-primary)';
+                    if (deltaUs > 500) {
+                        ageColor = 'var(--ar-stale)';
+                    } else if (deltaUs > 150) {
+                        ageColor = 'var(--ar-dim)';
+                    }
+                    if (ackPill) {
+                        ackPill.innerText = '📡 ACK: #' + (was.last_ack_seq || 0);
+                        ackPill.style.borderColor = ageColor;
+                        ackPill.style.color = ageColor;
+                    }
+                }).catch(() => {});
+        }
+
+        setInterval(updateTelemetry, 400);
+
+        function zeroCalibrate() {
+            fetch('/api/spatial/calibrate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ zero_position: true, zero_orientation: true })
+            }).then(() => updateTelemetry());
+        }
+
+        function simulateDropImpact() {
+            fetch('/api/spatial/simulate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    static_ip: '192.168.1.150',
+                    pos_x: 0.1, pos_y: 0.2, pos_z: 0.05,
+                    motion_state: 'IMPACT',
+                    impact: true
+                })
+            }).then(() => updateTelemetry());
+        }
+
+        let camActive = false;
+        function toggleCameraPassthrough() {
+            const video = document.getElementById('ar-camera-video');
+            const streamImg = document.getElementById('ar-video-stream');
+            const btn = document.getElementById('cam-toggle-btn');
+
+            if (!camActive) {
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                        .then(stream => {
+                            video.srcObject = stream;
+                            video.style.display = 'block';
+                            streamImg.style.opacity = '0.78';
+                            camActive = true;
+                            btn.innerText = '📷 HIDE CAMERA';
+                        })
+                        .catch(err => {
+                            alert('Camera passthrough unavailable: ' + err.message);
+                        });
+                }
+            } else {
+                if (video.srcObject) {
+                    video.srcObject.getTracks().forEach(t => t.stop());
+                }
+                video.style.display = 'none';
+                streamImg.style.opacity = '1.0';
+                camActive = false;
+                btn.innerText = '📷 CAMERA OVERLAY';
+            }
+        }
+    </script>
+</body>
+</html>

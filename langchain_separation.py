@@ -28,6 +28,7 @@ import speaker_recognition_tools
 import rdp_screen_manager
 import game_inventory_loop
 import esp32_spatial_receiver
+import rtl8812au_usb_controller
 
 try:
     from pydantic import BaseModel, Field
@@ -1276,6 +1277,7 @@ LANGCHAIN_SEPARATION_TOOLS = [
     *rdp_screen_manager.RDP_SCREEN_TOOLS,
     *game_inventory_loop.GAME_INVENTORY_TOOLS,
     *esp32_spatial_receiver.ESP32_SPATIAL_TOOLS,
+    *rtl8812au_usb_controller.RTL8812AU_USB_TOOLS,
 ]
 
 
@@ -1283,7 +1285,10 @@ def list_available_analysis_tools() -> List[Dict[str, Any]]:
     """Return catalog of all available agent analysis tools."""
     tools_catalog = []
     for t in LANGCHAIN_SEPARATION_TOOLS:
-        if "wifi_ack" in t.name or "video_stream" in t.name:
+        if "rtl8812au" in t.name:
+            cat = "rtl8812au_usb_controller"
+            rule = 235
+        elif "wifi_ack" in t.name or "video_stream" in t.name:
             cat = "wifi_ack_ar_streaming"
             rule = 234
         elif "spatial" in t.name or "esp32" in t.name:

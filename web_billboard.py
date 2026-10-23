@@ -24,6 +24,7 @@ import agent_tuning_timer
 import speaker_recognition_tools
 import rdp_screen_manager
 import esp32_spatial_receiver
+import rtl8812au_usb_controller
 
 
 def _load_env():
@@ -2244,6 +2245,34 @@ def view_mobile_ar():
     return render_template("mobile_ar.html", status=status, acks=acks)
 
 
+# ===================== RULE 235: RTL8812AU USERSPACE USB WI-FI CONTROLLER =====================
+@app.route("/api/usb/wifi/status", methods=["GET"])
+def api_usb_wifi_status():
+    """Rule 235: Telemetry, hardware MAC address, and active endpoint statuses for RTL8812AU."""
+    return jsonify(rtl8812au_usb_controller.get_rtl8812au_usb_status())
+
+
+@app.route("/api/usb/wifi/capture", methods=["POST", "GET"])
+def api_usb_wifi_capture():
+    """Rule 235: Sample Bulk IN endpoint 0x81 for raw 802.11 frames/packets."""
+    duration = float(request.args.get("duration", 1.0))
+    ctrl = rtl8812au_usb_controller.get_global_controller()
+    pkts = []
+    start_t = _time.time()
+    while _time.time() - start_t < duration and len(pkts) < 20:
+        p = ctrl.read_bulk_packet(timeout_ms=50)
+        if p:
+            pkts.append({"len": len(p), "hex": p[:32].hex()})
+    return jsonify({
+        "ok": True,
+        "chipset": "Realtek RTL8812AU",
+        "mac": ctrl.device_info.get("mac_address", "00:00:00:00:00:00"),
+        "packets_captured": len(pkts),
+        "packets": pkts,
+        "rule": 235,
+    })
+
+
 # ===================== RULE 224: MUSIC PLAYER & PROCEDURAL SYNTHESIS =====================
 @app.route("/api/music/tracks", methods=["GET"])
 def api_music_tracks():
@@ -2811,6 +2840,7 @@ def api_summary():
                       "/api/spatial/calibrate", "/api/spatial/config",
                       "/api/spatial/video_feed", "/api/spatial/acks",
                       "/api/spatial/video_status", "/spatial/ar",
+                      "/api/usb/wifi/status", "/api/usb/wifi/capture",
                       "/api/music/tracks", "/api/music/play",
                       "/api/music/stop", "/api/music/compose",
                       "/api/music/status", "/api/music/guide",

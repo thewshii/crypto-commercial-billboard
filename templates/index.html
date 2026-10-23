@@ -19653,18 +19653,35 @@ function connectAudio() {
         const chanEl = document.getElementById("esp32-ack-channel");
         if (chanEl) chanEl.innerText = (was.channel || 6) + " (2.4 GHz)";
 
+        // Asymmetric Switching: instant promotion, 3-sample hold demotion
+        if (deltaUs <= 150) {
+          window.__esp32AckState = 'fresh';
+          window.__esp32DemoteStreak = 0;
+        } else if (deltaUs <= 500) {
+          if (window.__esp32AckState === 'stale') {
+            window.__esp32AckState = 'aging';
+            window.__esp32DemoteStreak = 0;
+          } else if (window.__esp32AckState === 'fresh') {
+            window.__esp32DemoteStreak = (window.__esp32DemoteStreak || 0) + 1;
+            if (window.__esp32DemoteStreak >= 3) window.__esp32AckState = 'aging';
+          }
+        } else {
+          window.__esp32DemoteStreak = (window.__esp32DemoteStreak || 0) + 1;
+          if (window.__esp32DemoteStreak >= 3) window.__esp32AckState = 'stale';
+        }
+
         const ageBadge = document.getElementById("esp32-ack-age-badge");
         if (ageBadge) {
-          if (deltaUs > 500) {
-            ageBadge.innerText = "STALE STREAM";
+          if (window.__esp32AckState === 'stale') {
+            ageBadge.innerText = "STALE STREAM (>500μs)";
             ageBadge.style.color = "#886600";
             ageBadge.style.borderColor = "#886600";
-          } else if (deltaUs > 150) {
-            ageBadge.innerText = "AGING STREAM";
+          } else if (window.__esp32AckState === 'aging') {
+            ageBadge.innerText = "AGING STREAM (150-500μs)";
             ageBadge.style.color = "#ffaa00";
             ageBadge.style.borderColor = "#ffaa00";
           } else {
-            ageBadge.innerText = "FRESH ACK STREAM";
+            ageBadge.innerText = "FRESH ACK STREAM (<150μs)";
             ageBadge.style.color = "#ffdd00";
             ageBadge.style.borderColor = "#ffdd00";
           }

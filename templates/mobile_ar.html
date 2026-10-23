@@ -7,15 +7,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --ar-primary: #ffdd00;  /* live spatial telemetry / fresh ACK */
-            --ar-bright: #ffea00;   /* active / locked only */
-            --ar-dim: #ffaa00;      /* secondary / aging telemetry */
-            --ar-stale: #886600;    /* stale / aged packets */
-            --ar-bg: #0b0902;       /* deep obsidian */
-            --ar-panel: rgba(18, 14, 3, 0.92);
-            --hazard: #ff003c;      /* drop impact, ACK drop only (never decorative) */
+            /* Pre-attentive Subsystem Namespaces */
             --matrix: #00ff66;      /* Rule 232 Matrix inventory namespace */
             --rdp: #00e5ff;         /* Rule 231 RDP / desktop namespace */
+
+            /* Cyber Yellow AR Spatial Standard */
+            --ar-primary: #ffdd00;  /* Live spatial telemetry / fresh ACK (<150 μs) */
+            --ar-bright: #ffea00;   /* Active / locked reticle readouts only */
+            --ar-dim: #ffaa00;      /* Advisory horizon ladders / aging ACK (150–500 μs) */
+            --ar-stale: #886600;    /* Stale ACK packets (>500 μs) */
+            --ar-video: #ffee55;    /* MJPEG chroma-bleed compensation & high-acuity vector stroke */
+            --hazard: #ff003c;      /* Drop impact, ACK drop only (strictly reserved, never decorative) */
+
+            /* Obsidian Split: raster (PIL/canvas) #000000 for MJPEG edge, DOM/CSS #0b0902 for warm OLED backdrop */
+            --ar-bg: #0b0902;       /* Warm obsidian DOM background (90%+ unlit AMOLED subpixels) */
+            --ar-panel: rgba(18, 14, 3, 0.92);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -360,12 +366,32 @@
                     document.getElementById('mob-ack-delta').innerText = deltaUs + ' μs';
                     document.getElementById('mob-ack-dist').innerText = Number(was.estimated_distance_m || 1.25).toFixed(2) + ' m';
                     
-                    // Data age color encoding: fresh (<150us) = primary (#ffdd00), aging (150-500us) = dim (#ffaa00), stale (>500us) = stale (#886600)
+                    // Asymmetric Switching / Hysteresis Filter: instant promotion to fresh, 3-sample hold to demote
+                    if (deltaUs <= 150) {
+                        _currentAckState = 'fresh';
+                        _demoteStreak = 0;
+                    } else if (deltaUs <= 500) {
+                        if (_currentAckState === 'stale') {
+                            _currentAckState = 'aging'; // immediate promotion from stale
+                            _demoteStreak = 0;
+                        } else if (_currentAckState === 'fresh') {
+                            _demoteStreak++;
+                            if (_demoteStreak >= DEMOTE_HOLD_SAMPLES) {
+                                _currentAckState = 'aging';
+                            }
+                        }
+                    } else {
+                        _demoteStreak++;
+                        if (_demoteStreak >= DEMOTE_HOLD_SAMPLES) {
+                            _currentAckState = 'stale';
+                        }
+                    }
+
                     const ackPill = document.getElementById('mobile-ack-pill');
                     let ageColor = 'var(--ar-primary)';
-                    if (deltaUs > 500) {
+                    if (_currentAckState === 'stale') {
                         ageColor = 'var(--ar-stale)';
-                    } else if (deltaUs > 150) {
+                    } else if (_currentAckState === 'aging') {
                         ageColor = 'var(--ar-dim)';
                     }
                     if (ackPill) {
@@ -376,7 +402,13 @@
                 }).catch(() => {});
         }
 
-        setInterval(updateTelemetry, 400);
+        // Asymmetric state trackers for anti-flicker stability
+        let _currentAckState = 'fresh';
+        let _demoteStreak = 0;
+        const DEMOTE_HOLD_SAMPLES = 3;
+
+        // Decoupled DOM telemetry polling at 10 Hz (100ms) to prevent mobile repainting on shadows
+        setInterval(updateTelemetry, 150);
 
         function zeroCalibrate() {
             fetch('/api/spatial/calibrate', {

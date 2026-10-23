@@ -26,6 +26,7 @@ import master_audio_ducking
 import agent_tuning_timer
 import speaker_recognition_tools
 import rdp_screen_manager
+import game_inventory_loop
 
 try:
     from pydantic import BaseModel, Field
@@ -1272,6 +1273,7 @@ LANGCHAIN_SEPARATION_TOOLS = [
     *agent_tuning_timer.TUNING_TIMER_TOOLS,
     *speaker_recognition_tools.SPEAKER_DIALOGUE_TOOLS,
     *rdp_screen_manager.RDP_SCREEN_TOOLS,
+    *game_inventory_loop.GAME_INVENTORY_TOOLS,
 ]
 
 
@@ -1279,7 +1281,10 @@ def list_available_analysis_tools() -> List[Dict[str, Any]]:
     """Return catalog of all available agent analysis tools."""
     tools_catalog = []
     for t in LANGCHAIN_SEPARATION_TOOLS:
-        if "rdp" in t.name or "screen_status" in t.name or "screen_visibility" in t.name:
+        if "inventory" in t.name or "drop_game" in t.name or "pickup_game" in t.name or "label_game" in t.name or "loop_tick" in t.name or "find_game" in t.name:
+            cat = "game_inventory_mcp"
+            rule = 232
+        elif "rdp" in t.name or "screen_status" in t.name or "screen_visibility" in t.name:
             cat = "rdp_screen_sync"
             rule = 231
         elif "speaker_dialogue" in t.name or "acknowledge_speaker" in t.name or "close_speaker" in t.name:

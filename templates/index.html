@@ -1002,6 +1002,7 @@
             <button id="net-adapter-btn" onclick="window.inspectWifiProbes()" title="802.11 Network Adapter &amp; Management Probe Frame Analyzer (Rule 223). Maps interfaces, SSIDs, words on the wire, physical boundary audit." style="background:#041818; border:2px solid #00ffc8; color:#88ffee; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #00ffc8; box-shadow:0 0 10px rgba(0,255,200,0.3); transition:all 0.2s;">📡 NET ADAPTER / PROBES</button>
             <button id="music-btn" onclick="window.openMusicModal()" title="Music Player &amp; Procedural Synthesizer (Rule 224). Play soundtrack or synthesize 432Hz ambient, reggae, 8-bit chiptune." style="background:#180824; border:2px solid #d466ff; color:#f0b3ff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #d466ff; box-shadow:0 0 10px rgba(212,102,255,0.3); transition:all 0.2s;">🎵 MUSIC / SYNTH</button>
             <button id="rdp-screen-btn" onclick="window.acknowledgeRdpScreen()" oncontextmenu="window.openRdpScreenModal(); return false;" title="Acknowledge the game can see your computer screen with RDP (Rule 231). Click to acknowledge screen seen; right-click for RDP telemetry overlay." style="background:#071824; border:2px solid #00d4ff; color:#88eeff; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #00d4ff; box-shadow:0 0 10px rgba(0,212,255,0.3); transition:all 0.2s;">🖥️ ACK RDP SCREEN</button>
+            <button id="inventory-mcp-btn" onclick="window.openGameInventoryMCPModal()" title="In-Game Matrix Inventory Loop &amp; Model Context Protocol (MCP) Server for LLM with LangChain Tools (Rule 232)." style="background:#1a1004; border:2px solid #ffaa00; color:#ffdd88; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Roboto Mono',monospace; font-weight:bold; font-size:clamp(0.6rem, 0.85vw, 0.78rem); text-shadow:0 0 6px #ffaa00; box-shadow:0 0 10px rgba(255,170,0,0.3); transition:all 0.2s;">📦 INVENTORY MCP</button>
             <div class="value-scale">VALUE SCALE: $10+</div>
         </div>
     </div>
@@ -1219,6 +1220,105 @@
                 <div style="width:100%; display:flex; justify-content:space-between; font-size:0.72rem; color:#667788;">
                     <span>Target: Host Desktop</span>
                     <span style="color:#00ff88;">● STREAM LIVE</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dedicated Game Inventory Loop Model Context Protocol (MCP) Overlay (Rule 232) -->
+    <div id="game-inventory-mcp-overlay" style="display:none; position:fixed; inset:0; z-index:10116; background:rgba(4,6,10,0.96); align-items:center; justify-content:center; flex-direction:column; gap:12px; font-family:'Roboto Mono',monospace; color:#ffdd88; padding:20px; border:2px solid #ffaa00; backdrop-filter:blur(6px);" onclick="if(event.target.id==='game-inventory-mcp-overlay') window.closeGameInventoryMCPModal();">
+        <div style="width:min(940px, 95vw); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px solid #332200; padding-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <strong style="color:#ffaa00; font-size:1.1rem; text-shadow:0 0 8px #ffaa00;">📦 GAME INVENTORY LOOP — MODEL CONTEXT PROTOCOL (MCP)</strong>
+                <span id="mcp-server-status-badge" style="font-size:0.75rem; color:#00ff88; border:1px solid #00ff88; background:#041812; padding:3px 8px; border-radius:4px; text-shadow:0 0 6px #00ff88;">🟢 MCP PROTOCOL 2024-11-05 READY</span>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button onclick="window.refreshGameInventory(); event.stopPropagation();" style="background:#1f1807; border:1px solid #ffaa00; color:#ffdd88; padding:6px 14px; border-radius:4px; cursor:pointer; font-family:inherit; font-weight:bold; font-size:0.78rem; box-shadow:0 0 8px rgba(255,170,0,0.3);">🔄 AUDIT NOW</button>
+                <button onclick="window.tickGameInventoryLoop(); event.stopPropagation();" style="background:#071f1a; border:1px solid #00ff88; color:#00ff88; padding:6px 14px; border-radius:4px; cursor:pointer; font-family:inherit; font-weight:bold; font-size:0.78rem; box-shadow:0 0 8px rgba(0,255,136,0.3);">⚡ LOOP TICK</button>
+                <button onclick="window.closeGameInventoryMCPModal(); event.stopPropagation();" style="background:#1a0404; border:1px solid #ff003c; color:#ff003c; padding:6px 12px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.78rem;">✕ CLOSE</button>
+            </div>
+        </div>
+
+        <!-- Inventory Grid & MCP Console -->
+        <div style="width:min(940px, 95vw); display:grid; grid-template-columns:1.1fr 1fr; gap:14px; font-size:0.8rem; max-height:calc(85vh - 70px); overflow-y:auto;">
+            <!-- Left: Current Items & Quick Action Form -->
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <!-- Carried & Within Reach -->
+                <div style="background:#0c0802; border:1px solid #332200; border-radius:6px; padding:10px;">
+                    <div style="color:#ffaa00; font-weight:bold; border-bottom:1px solid #332200; padding-bottom:4px; margin-bottom:6px; display:flex; justify-content:space-between;">
+                        <span>🥋 ON PERSON (Carried)</span>
+                        <span id="mcp-count-person" style="color:#00ff88;">0 items</span>
+                    </div>
+                    <div id="mcp-list-person" style="max-height:100px; overflow-y:auto; color:#ffffff; font-size:0.75rem;">Loading...</div>
+                </div>
+
+                <div style="background:#0c0802; border:1px solid #332200; border-radius:6px; padding:10px;">
+                    <div style="color:#ffaa00; font-weight:bold; border-bottom:1px solid #332200; padding-bottom:4px; margin-bottom:6px; display:flex; justify-content:space-between;">
+                        <span>🤲 WITHIN REACH (Desk / Shelf)</span>
+                        <span id="mcp-count-reach" style="color:#00d4ff;">0 items</span>
+                    </div>
+                    <div id="mcp-list-reach" style="max-height:100px; overflow-y:auto; color:#ffffff; font-size:0.75rem;">Loading...</div>
+                </div>
+
+                <div style="background:#140804; border:1px solid #662200; border-radius:6px; padding:10px;">
+                    <div style="color:#ff6600; font-weight:bold; border-bottom:1px solid #662200; padding-bottom:4px; margin-bottom:6px; display:flex; justify-content:space-between;">
+                        <span>⚠️ DROPPED ITEMS (Floor / Boundaries)</span>
+                        <span id="mcp-count-dropped" style="color:#ff3300;">0 items</span>
+                    </div>
+                    <div id="mcp-list-dropped" style="max-height:100px; overflow-y:auto; color:#ffeeee; font-size:0.75rem;">None</div>
+                </div>
+
+                <!-- Fast Actions Panel -->
+                <div style="background:#090602; border:1px solid #332200; border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px;">
+                    <div style="color:#ffdd88; font-weight:bold; font-size:0.75rem;">🎮 IN-GAME ITEM ACTIONS (LLM SYNCHRONIZED)</div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <input id="mcp-item-input" type="text" placeholder="Item ID (e.g. comms_phone)" style="flex:1; min-width:130px; background:#120c04; border:1px solid #553300; color:#fff; padding:4px 8px; border-radius:4px; font-family:inherit; font-size:0.75rem;">
+                        <input id="mcp-landing-input" type="text" placeholder="Landing area / label" style="flex:1.2; min-width:150px; background:#120c04; border:1px solid #553300; color:#fff; padding:4px 8px; border-radius:4px; font-family:inherit; font-size:0.75rem;">
+                    </div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">
+                        <button onclick="window.triggerMcpDrop();" style="flex:1; background:#291404; border:1px solid #ff6600; color:#ffaa88; padding:5px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.72rem; font-weight:bold;">⬇️ DROP &amp; DELIBERATE</button>
+                        <button onclick="window.triggerMcpPickup();" style="flex:1; background:#072418; border:1px solid #00ff88; color:#aaffdd; padding:5px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.72rem; font-weight:bold;">⬆️ PICK UP</button>
+                        <button onclick="window.triggerMcpRelabel();" style="flex:1; background:#101a2b; border:1px solid #00d4ff; color:#99eeff; padding:5px; border-radius:4px; cursor:pointer; font-family:inherit; font-size:0.72rem; font-weight:bold;">🏷️ RELABEL</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: MCP JSON-RPC Gateway & Consensus Log -->
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <!-- MCP Interactive Simulator -->
+                <div style="background:#0c0802; border:1px solid #332200; border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:6px;">
+                    <div style="color:#ffaa00; font-weight:bold; font-size:0.75rem; display:flex; justify-content:space-between; align-items:center;">
+                        <span>🤖 LLM MCP JSON-RPC SIMULATOR</span>
+                        <span style="font-size:0.68rem; color:#8899aa;">ENDPOINT: /api/mcp</span>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        <select id="mcp-method-select" onchange="window.updateMcpPreset();" style="flex:1; background:#120c04; border:1px solid #553300; color:#ffdd88; padding:4px 6px; border-radius:4px; font-family:inherit; font-size:0.72rem;">
+                            <option value="tools/list">tools/list (Inspect MCP Tools)</option>
+                            <option value="tools/call:game_inventory_audit">tools/call: game_inventory_audit</option>
+                            <option value="tools/call:game_inventory_drop">tools/call: game_inventory_drop</option>
+                            <option value="tools/call:game_inventory_pickup">tools/call: game_inventory_pickup</option>
+                            <option value="tools/call:game_inventory_loop_tick">tools/call: game_inventory_loop_tick</option>
+                            <option value="resources/list">resources/list (Inspect MCP Resources)</option>
+                            <option value="resources/read:inventory://state">resources/read: inventory://state</option>
+                            <option value="prompts/list">prompts/list (Inspect MCP Prompts)</option>
+                            <option value="initialize">initialize (MCP Handshake)</option>
+                            <option value="ping">ping</option>
+                        </select>
+                        <button onclick="window.executeMcpRequest();" style="background:#2b1b04; border:1px solid #ffaa00; color:#ffdd88; padding:4px 10px; border-radius:4px; cursor:pointer; font-family:inherit; font-weight:bold; font-size:0.72rem; box-shadow:0 0 8px rgba(255,170,0,0.3);">EXECUTE MCP</button>
+                    </div>
+                    <textarea id="mcp-rpc-request" rows="4" style="width:100%; box-sizing:border-box; background:#040301; border:1px solid #332200; color:#88eeff; font-family:inherit; font-size:0.7rem; padding:6px; border-radius:4px; resize:vertical;"></textarea>
+                    <div style="color:#8899aa; font-size:0.7rem;">MCP JSON-RPC Response:</div>
+                    <pre id="mcp-rpc-response" style="margin:0; background:#040301; border:1px solid #221500; color:#00ff88; font-family:inherit; font-size:0.7rem; padding:8px; border-radius:4px; max-height:160px; overflow:auto; white-space:pre-wrap; word-break:break-all;">Click "EXECUTE MCP" to test JSON-RPC response.</pre>
+                </div>
+
+                <!-- In-Game Deliberation & Spatial Consensus Feed -->
+                <div style="background:#0c0802; border:1px solid #332200; border-radius:6px; padding:10px; flex:1; display:flex; flex-direction:column; gap:4px;">
+                    <div style="color:#ffaa00; font-weight:bold; font-size:0.75rem; border-bottom:1px solid #332200; padding-bottom:4px;">
+                        🗣️ SPATIAL CONSENSUS &amp; DISCUSSION FEED
+                    </div>
+                    <div id="mcp-discussion-feed" style="max-height:130px; overflow-y:auto; font-size:0.72rem; color:#d8e6f3; display:flex; flex-direction:column; gap:4px; margin-top:4px;">
+                        No discussions yet.
+                    </div>
                 </div>
             </div>
         </div>
@@ -18959,6 +19059,362 @@ function connectAudio() {
   window.openRdpScreenModal = openRdpScreenModal;
   window.closeRdpScreenModal = closeRdpScreenModal;
   window.drawRdpScreenPattern = drawRdpScreenPattern;
+
+  // ==========================================================================
+  // Rule 232: Game Inventory Loop Model Context Protocol (MCP) Client Logic
+  // ==========================================================================
+  function openGameInventoryMCPModal() {
+    const ov = document.getElementById("game-inventory-mcp-overlay");
+    if (ov) {
+      ov.style.display = "flex";
+      ov.style.setProperty("display", "flex", "important");
+    }
+    refreshGameInventory();
+    updateMcpPreset();
+  }
+
+  function closeGameInventoryMCPModal() {
+    const ov = document.getElementById("game-inventory-mcp-overlay");
+    if (ov) {
+      ov.style.display = "none";
+      ov.style.setProperty("display", "none", "important");
+    }
+  }
+
+  function refreshGameInventory() {
+    fetch('/api/game/inventory')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        // 1. Render counts
+        const pCount = document.getElementById("mcp-count-person");
+        if (pCount) pCount.innerText = (data.on_person_count || (data.on_person || []).length) + " items";
+        const rCount = document.getElementById("mcp-count-reach");
+        if (rCount) rCount.innerText = (data.within_reach_count || (data.within_reach || []).length) + " items";
+        const dCount = document.getElementById("mcp-count-dropped");
+        if (dCount) dCount.innerText = (data.dropped_count || (data.dropped_items || []).length) + " items";
+
+        // 2. Render On Person
+        const pList = document.getElementById("mcp-list-person");
+        if (pList) {
+          if (!data.on_person || data.on_person.length === 0) {
+            pList.innerHTML = '<span style="color:#8899aa;">(None carried)</span>';
+          } else {
+            pList.innerHTML = data.on_person.map(function (it) {
+              return '<div style="margin:2px 0; cursor:pointer;" onclick="document.getElementById(\'mcp-item-input\').value=\'' + it.id + '\';">' +
+                '<span style="color:#00ff88;">• [' + it.id + ']</span> ' + it.name + ' <span style="color:#ffaa00;">➔ "' + it.label + '"</span></div>';
+            }).join('');
+          }
+        }
+
+        // 3. Render Within Reach
+        const rList = document.getElementById("mcp-list-reach");
+        if (rList) {
+          if (!data.within_reach || data.within_reach.length === 0) {
+            rList.innerHTML = '<span style="color:#8899aa;">(None within reach)</span>';
+          } else {
+            rList.innerHTML = data.within_reach.map(function (it) {
+              return '<div style="margin:2px 0; cursor:pointer;" onclick="document.getElementById(\'mcp-item-input\').value=\'' + it.id + '\';">' +
+                '<span style="color:#00d4ff;">• [' + it.id + ']</span> ' + it.name + ' <span style="color:#ffaa00;">➔ "' + it.label + '"</span></div>';
+            }).join('');
+          }
+        }
+
+        // 4. Render Dropped
+        const dList = document.getElementById("mcp-list-dropped");
+        if (dList) {
+          if (!data.dropped_items || data.dropped_items.length === 0) {
+            dList.innerHTML = '<span style="color:#8899aa;">(No dropped items detected)</span>';
+          } else {
+            dList.innerHTML = data.dropped_items.map(function (it) {
+              return '<div style="margin:2px 0; cursor:pointer;" onclick="document.getElementById(\'mcp-item-input\').value=\'' + it.id + '\';">' +
+                '<span style="color:#ff3300;">• [' + it.id + ']</span> ' + it.name + ' <span style="color:#ff8866;">➔ At: "' + it.label + '"</span></div>';
+            }).join('');
+          }
+        }
+      })
+      .catch(function (e) {
+        console.warn("refreshGameInventory error:", e);
+      });
+
+    // Also fetch MCP status for discussion feed
+    fetch('/api/mcp/inventory/status')
+      .then(function (r) { return r.json(); })
+      .then(function (statusData) {
+        const feed = document.getElementById("mcp-discussion-feed");
+        if (feed && statusData.resources) {
+          fetch('/api/mcp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0',
+              id: 99,
+              method: 'resources/read',
+              params: { uri: 'inventory://discussions' }
+            })
+          })
+          .then(function (r) { return r.json(); })
+          .then(function (rpcRes) {
+            if (rpcRes.result && rpcRes.result.contents && rpcRes.result.contents[0]) {
+              try {
+                const logs = JSON.parse(rpcRes.result.contents[0].text) || [];
+                if (logs.length === 0) {
+                  feed.innerHTML = '<span style="color:#8899aa;">No spatial discussions recorded yet.</span>';
+                } else {
+                  feed.innerHTML = logs.slice(-5).reverse().map(function (item) {
+                    const timeStr = new Date((item.timestamp || 0) * 1000).toLocaleTimeString();
+                    const title = '<strong>[' + timeStr + '] ' + (item.item_name || item.item_id) + '</strong> ➔ ' + (item.assigned_label || item.new_label || '');
+                    const lines = (item.discussion || []).map(function (l) {
+                      return '<div style="padding-left:10px; color:#aaccff;">💬 ' + l + '</div>';
+                    }).join('');
+                    return '<div style="background:#040810; border-left:3px solid #ffaa00; padding:4px 6px; margin-bottom:4px;">' + title + lines + '</div>';
+                  }).join('');
+                }
+              } catch (ex) {}
+            }
+          })
+          .catch(function () {});
+        }
+      })
+      .catch(function () {});
+  }
+
+  function tickGameInventoryLoop() {
+    fetch('/api/mcp/inventory/tick', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'audit' })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      refreshGameInventory();
+      const respEl = document.getElementById("mcp-rpc-response");
+      if (respEl) respEl.innerText = JSON.stringify(data, null, 2);
+    })
+    .catch(function (e) {
+      console.warn("tickGameInventoryLoop error:", e);
+    });
+  }
+
+  function triggerMcpDrop() {
+    const itemEl = document.getElementById("mcp-item-input");
+    const landEl = document.getElementById("mcp-landing-input");
+    const item_id = (itemEl ? itemEl.value : "").trim() || "comms_phone";
+    const landing = (landEl ? landEl.value : "").trim() || "Floor by foot of desk";
+
+    fetch('/api/game/inventory/drop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        item_id: item_id,
+        landing: landing
+      })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      refreshGameInventory();
+      const respEl = document.getElementById("mcp-rpc-response");
+      if (respEl) respEl.innerText = JSON.stringify(data, null, 2);
+      try {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance("Item dropped: " + item_id + ". Spatial consensus label confirmed.");
+          u.rate = 0.96; window.speechSynthesis.speak(u);
+        }
+      } catch (e) {}
+    })
+    .catch(function (e) {
+      console.warn("triggerMcpDrop error:", e);
+    });
+  }
+
+  function triggerMcpPickup() {
+    const itemEl = document.getElementById("mcp-item-input");
+    const landEl = document.getElementById("mcp-landing-input");
+    const item_id = (itemEl ? itemEl.value : "").trim();
+    const label = (landEl ? landEl.value : "").trim() || "Right Hand";
+
+    if (!item_id) {
+      alert("Please enter the item ID to pick up.");
+      return;
+    }
+
+    fetch('/api/game/inventory/pickup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        item_id: item_id,
+        target_reach: 'on_person',
+        label: label
+      })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      refreshGameInventory();
+      const respEl = document.getElementById("mcp-rpc-response");
+      if (respEl) respEl.innerText = JSON.stringify(data, null, 2);
+    })
+    .catch(function (e) {
+      console.warn("triggerMcpPickup error:", e);
+    });
+  }
+
+  function triggerMcpRelabel() {
+    const itemEl = document.getElementById("mcp-item-input");
+    const landEl = document.getElementById("mcp-landing-input");
+    const item_id = (itemEl ? itemEl.value : "").trim();
+    const new_label = (landEl ? landEl.value : "").trim();
+
+    if (!item_id || !new_label) {
+      alert("Please provide both Item ID and new label.");
+      return;
+    }
+
+    fetch('/api/game/inventory/label', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        item_id: item_id,
+        label: new_label,
+        discussion: "Deliberated on Web Billboard UI by agent"
+      })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      refreshGameInventory();
+      const respEl = document.getElementById("mcp-rpc-response");
+      if (respEl) respEl.innerText = JSON.stringify(data, null, 2);
+    })
+    .catch(function (e) {
+      console.warn("triggerMcpRelabel error:", e);
+    });
+  }
+
+  function updateMcpPreset() {
+    const sel = document.getElementById("mcp-method-select");
+    const txt = document.getElementById("mcp-rpc-request");
+    if (!sel || !txt) return;
+
+    const val = sel.value;
+    let payload = {};
+
+    if (val === "initialize") {
+      payload = {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          clientInfo: { name: "web-billboard-client", version: "1.0.0" },
+          protocolVersion: "2024-11-05"
+        }
+      };
+    } else if (val === "ping") {
+      payload = { jsonrpc: "2.0", id: 2, method: "ping" };
+    } else if (val === "tools/list") {
+      payload = { jsonrpc: "2.0", id: 3, method: "tools/list", params: {} };
+    } else if (val === "tools/call:game_inventory_audit") {
+      payload = {
+        jsonrpc: "2.0",
+        id: 4,
+        method: "tools/call",
+        params: {
+          name: "game_inventory_audit",
+          arguments: { include_discussions: true }
+        }
+      };
+    } else if (val === "tools/call:game_inventory_drop") {
+      payload = {
+        jsonrpc: "2.0",
+        id: 5,
+        method: "tools/call",
+        params: {
+          name: "game_inventory_drop",
+          arguments: {
+            item_id: "comms_phone",
+            landing_description: "Carpet by the desk corner",
+            final_label: "Dropped: Carpet by desk"
+          }
+        }
+      };
+    } else if (val === "tools/call:game_inventory_pickup") {
+      payload = {
+        jsonrpc: "2.0",
+        id: 6,
+        method: "tools/call",
+        params: {
+          name: "game_inventory_pickup",
+          arguments: {
+            item_id: "comms_phone",
+            target_reach: "on_person",
+            new_label: "Right Pocket"
+          }
+        }
+      };
+    } else if (val === "tools/call:game_inventory_loop_tick") {
+      payload = {
+        jsonrpc: "2.0",
+        id: 7,
+        method: "tools/call",
+        params: {
+          name: "game_inventory_loop_tick",
+          arguments: { action: "audit" }
+        }
+      };
+    } else if (val === "resources/list") {
+      payload = { jsonrpc: "2.0", id: 8, method: "resources/list", params: {} };
+    } else if (val === "resources/read:inventory://state") {
+      payload = {
+        jsonrpc: "2.0",
+        id: 9,
+        method: "resources/read",
+        params: { uri: "inventory://state" }
+      };
+    } else if (val === "prompts/list") {
+      payload = { jsonrpc: "2.0", id: 10, method: "prompts/list", params: {} };
+    }
+
+    txt.value = JSON.stringify(payload, null, 2);
+  }
+
+  function executeMcpRequest() {
+    const txt = document.getElementById("mcp-rpc-request");
+    const respEl = document.getElementById("mcp-rpc-response");
+    if (!txt || !respEl) return;
+
+    let payload;
+    try {
+      payload = JSON.parse(txt.value);
+    } catch (err) {
+      respEl.innerText = "Error parsing JSON request: " + err.message;
+      return;
+    }
+
+    respEl.innerText = "Executing MCP request over JSON-RPC 2.0 gateway...";
+
+    fetch('/api/mcp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      respEl.innerText = JSON.stringify(data, null, 2);
+      refreshGameInventory();
+    })
+    .catch(function (err) {
+      respEl.innerText = "HTTP Error: " + err.message;
+    });
+  }
+
+  window.openGameInventoryMCPModal = openGameInventoryMCPModal;
+  window.closeGameInventoryMCPModal = closeGameInventoryMCPModal;
+  window.refreshGameInventory = refreshGameInventory;
+  window.tickGameInventoryLoop = tickGameInventoryLoop;
+  window.triggerMcpDrop = triggerMcpDrop;
+  window.triggerMcpPickup = triggerMcpPickup;
+  window.triggerMcpRelabel = triggerMcpRelabel;
+  window.updateMcpPreset = updateMcpPreset;
+  window.executeMcpRequest = executeMcpRequest;
+
 
   // Host link mic toggle: turns mic input on/off from the host link button.
   function toggleHostLinkMic() {

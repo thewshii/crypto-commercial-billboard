@@ -5,9 +5,10 @@ import shutil
 import subprocess
 import threading
 import time
+import uuid
 import urllib.parse
 import urllib.request
-from flask import Flask, render_template, send_from_directory, request, jsonify, redirect
+from flask import Flask, render_template, send_from_directory, request, jsonify, redirect, Response
 import word_segment
 import tts_dossier_env
 import letta_memgpt
@@ -2014,7 +2015,7 @@ def api_network_adapter_analyze():
     return jsonify(network_adapter_manager.analyze_wifi_package())
 
 
-# ===================== IN-GAME INVENTORY & DROP TRACKER =====================
+# ===================== IN-GAME INVENTORY & DROP TRACKER (RULE 232 MCP) =====================
 @app.route("/api/game/inventory", methods=["GET"])
 def api_game_inventory_state():
     """In-game inventory audit: items on person, within reach, dropped, and labeled positions."""
@@ -2069,6 +2070,80 @@ def api_game_inventory_label():
     inv = game_inventory_loop.MatrixGameInventory()
     res = inv.deliberate_label(item_id, new_label, discussion_text=discussion)
     return jsonify(res)
+
+
+# ===================== RULE 232: MODEL CONTEXT PROTOCOL (MCP) FOR LLM =====================
+@app.route("/api/mcp", methods=["POST"])
+def api_mcp_gateway():
+    """Rule 232: Model Context Protocol (MCP) JSON-RPC 2.0 gateway for the LLM."""
+    req_data = request.json
+    if req_data is None:
+        return jsonify({
+            "jsonrpc": "2.0",
+            "id": None,
+            "error": {"code": -32700, "message": "Parse error: expected valid JSON request"}
+        }), 400
+    res = game_inventory_loop.handle_mcp_request(req_data)
+    if res is None:
+        return ("", 204)
+    return jsonify(res)
+
+
+@app.route("/api/mcp/sse", methods=["GET"])
+def api_mcp_sse():
+    """Rule 232: Model Context Protocol (MCP) Server-Sent Events endpoint."""
+    session_id = str(uuid.uuid4())
+    endpoint_url = f"/api/mcp/messages?sessionId={session_id}"
+    def generate():
+        yield f"event: endpoint\ndata: {endpoint_url}\n\n"
+    return Response(generate(), mimetype="text/event-stream")
+
+
+@app.route("/api/mcp/messages", methods=["POST"])
+def api_mcp_messages():
+    """Rule 232: Model Context Protocol (MCP) SSE message receiver."""
+    req_data = request.json or {}
+    res = game_inventory_loop.handle_mcp_request(req_data)
+    return jsonify(res or {"ok": True})
+
+
+@app.route("/api/mcp/inventory/status", methods=["GET"])
+def api_mcp_inventory_status():
+    """Rule 232: Live status of Game Inventory MCP Server, capabilities, and tools."""
+    inv = game_inventory_loop.MatrixGameInventory()
+    server = game_inventory_loop.GameInventoryMCPServer(inv=inv)
+    return jsonify({
+        "ok": True,
+        "mcp_server": "game-inventory-mcp",
+        "protocol_version": game_inventory_loop.MCP_PROTOCOL_VERSION,
+        "tools": server.get_tool_definitions(),
+        "resources": inv.get_mcp_resources(),
+        "prompts": inv.get_mcp_prompts(),
+        "inventory_summary": inv.get_inventory_summary(),
+        "langchain_tools_count": len(game_inventory_loop.GAME_INVENTORY_TOOLS),
+        "rule": 232,
+    })
+
+
+@app.route("/api/mcp/inventory/tick", methods=["POST"])
+def api_mcp_inventory_tick():
+    """Rule 232: Execute an in-game inventory loop tick with LLM spatial reasoning."""
+    data = request.json or {}
+    action = data.get("action") or "audit"
+    item_id = data.get("item_id")
+    landing = data.get("landing") or data.get("landing_description")
+    label = data.get("label") or data.get("new_label")
+    note = data.get("note")
+    inv = game_inventory_loop.MatrixGameInventory()
+    res = inv.run_inventory_tick(
+        action=action,
+        item_id=item_id,
+        landing_description=landing,
+        new_label=label,
+        note=note,
+    )
+    return jsonify(res)
+
 
 
 # ===================== RULE 224: MUSIC PLAYER & PROCEDURAL SYNTHESIS =====================
@@ -2588,6 +2663,13 @@ def api_summary():
             "summary": music_playback_tools.reduce_playback_summary(window_sec=86400),
             "invariant": "The Tool IS the face of the music player — every play is an append-only ledger record.",
         },
+        "game_inventory_mcp": {
+            "rule": 232,
+            "protocol_version": game_inventory_loop.MCP_PROTOCOL_VERSION,
+            "server_name": "game-inventory-mcp",
+            "tools_count": len(game_inventory_loop.GAME_INVENTORY_TOOLS),
+            "summary": game_inventory_loop.MatrixGameInventory().get_inventory_summary(),
+        },
         "word": {"rules": 226, "slots": ["morning", "midday", "evening"]},
         "endpoints": ["/api", "/api/summary", "/api/host", "/api/stream",
                       "/api/mesh/nodes", "/api/mesh/poll", "/api/faq/list",
@@ -2620,6 +2702,8 @@ def api_summary():
                       "/api/network-adapter/analyze",
                       "/api/game/inventory", "/api/game/inventory/drop",
                       "/api/game/inventory/pickup", "/api/game/inventory/label",
+                      "/api/mcp", "/api/mcp/sse", "/api/mcp/messages",
+                      "/api/mcp/inventory/status", "/api/mcp/inventory/tick",
                       "/api/music/tracks", "/api/music/play",
                       "/api/music/stop", "/api/music/compose",
                       "/api/music/status", "/api/music/guide",
